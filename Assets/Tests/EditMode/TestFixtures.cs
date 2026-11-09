@@ -61,6 +61,55 @@ namespace QL.Tests.EditMode
 
         private static DroneType[] AllTypes => (DroneType[])Enum.GetValues(typeof(DroneType));
 
+        // ── 경제 (L04) ──
+
+        public const int StartCoin = 47;
+        public const int SummonBaseCost = 7;
+        // 종류 수 · 등급 수와 겹치지 않는 값 — 비용 계산에 다른 수가 섞이면 드러나게
+        public const int SummonCostStep = 9;
+        public const int RandomSeed = 20261110;
+
+        /// <summary><see cref="Config()"/> 에 경제 값만 바꾼 설정. 레인 · 줄 · 머지 잠금은 같다.</summary>
+        public static RuleConfig Config(int startCoin, int baseCost, int costStep)
+        {
+            return new RuleConfig(
+                laneCount: LaneCount,
+                rowCount: RowCount,
+                pathLength: 0f,
+                cellSize: 0f,
+                hatchMaxHp: 0,
+                hatchCriticalHp: 0,
+                startCoin: startCoin,
+                summonBaseCost: baseCost,
+                summonCostStep: costStep,
+                mergeLockDuration: MergeLockDuration,
+                contaminateDuration: 0f,
+                cleanReward: 0,
+                randomSeed: RandomSeed);
+        }
+
+        /// <summary>경제 픽스처 값 (StartCoin · SummonBaseCost · SummonCostStep) 을 넣은 설정.</summary>
+        public static RuleConfig EconomyConfig()
+        {
+            return Config(StartCoin, SummonBaseCost, SummonCostStep);
+        }
+
+        /// <summary>공식으로 계산한 n 번째 (0 부터) 소환 비용.</summary>
+        public static int CostAt(int summonCount)
+        {
+            return SummonBaseCost + SummonCostStep * summonCount;
+        }
+
+        /// <summary>처음부터 count 번 소환하는 데 드는 비용 합.</summary>
+        public static int TotalCost(int count)
+        {
+            int sum = 0;
+            for (int n = 0; n < count; n++) sum += CostAt(n);
+            return sum;
+        }
+
+        public static DroneType[] DroneTypes() => (DroneType[])Enum.GetValues(typeof(DroneType));
+
         // ── Cell 스냅샷 ──
 
         public static Cell Drone(DroneType type, int grade, bool contaminated = false, bool locked = false)

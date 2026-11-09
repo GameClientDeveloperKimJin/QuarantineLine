@@ -146,6 +146,7 @@ R5    A01→A07 첫날부터 상시. 에셋 완료 시마다 R1 에 보고. 가�
 - `.meta` 파일은 짝이 되는 파일과 같이 add 한다.
 - 커밋할 때, 내 깃허브 계정만 표시되게끔 해라. ( 클로드 아이콘 없어야 한다 )
 
+- **예외 — `Assets/05_Docs/**/*.meta`:** R1 이 문서를 만들면 Unity 가 나중에 `.meta` 를 만든다. 내용 충돌이 없는 자동 생성물이므로 **미추적으로 보이면 어느 세션이든 자기 커밋에 함께 add 해도 된다** (문서 본문 `.md` 는 여전히 R1 만)
 - 커밋 본문에 `Co-Authored-By: Claude …` 줄을 넣지 않는다. 작성자 = `KJ <devjin6189@gmail.com>`
 
 > **저장소** — `D:\UnityProject\3D\QuarantineLine\QuarantineLine` (브랜치 `main`, 2026-11-10 생성). Unity `.gitignore` + 바이너리(fbx · png · wav · dll 등) Git LFS. GitHub Desktop 에 등록됨.

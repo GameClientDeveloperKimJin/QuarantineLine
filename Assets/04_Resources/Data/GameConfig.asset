@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a51bb525062b1ad46868859d33d0f756, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: QL.Data::QL.Data.GameConfig
+  laneCount: 5
+  rowCount: 3
+  pathLength: 10
+  cellSize: 1
+  hatchMaxHp: 20
+  hatchCriticalHp: 5
+  startCoin: 120
+  summonBaseCost: 30
+  summonCostStep: 5
+  mergeLockDuration: 0.3
+  contaminateDuration: 5
+  cleanReward: 10
+  randomSeed: 20261110

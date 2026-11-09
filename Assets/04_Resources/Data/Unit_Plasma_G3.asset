@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b98c54917b2b80c4e9f110a6590cdb88, type: 3}
+  m_Name: Unit_Plasma_G3
+  m_EditorClassIdentifier: QL.Data::QL.Data.UnitData
+  droneType: 1
+  grade: 3
+  attackKind: 1
+  damage: 25
+  attackInterval: 0.6
+  range: 3
+  slowRate: 0
+  slowDuration: 0
+  pierceCount: 1
+  coneLaneSpread: 1
+  burnDps: 5
+  burnDuration: 2
+  freezeInterval: 0
+  freezeRadius: 0
+  freezeDuration: 0
+  prefab: {fileID: 0}
+  tintColor: {r: 1, g: 0.78431374, b: 0.4392157, a: 1}

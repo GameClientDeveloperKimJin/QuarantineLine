@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15341b5f4411f30409ba63bec18fd522, type: 3}
+  m_Name: Waves
+  m_EditorClassIdentifier: QL.Data::QL.Data.WaveData
+  waves:
+  - entries:
+    - slime: {fileID: 11400000, guid: 04806f8733ba19d49a3e3fe69d2ebffe, type: 2}
+      count: 15
+      spawnInterval: 1
+      startRatio: 0
+    prepTime: 8
+    clearBonus: 50
+    bannerText: "C-1 \uD654\uBB3C\uCE78, \uC810\uC561 \uB204\uCD9C"
+  - entries:
+    - slime: {fileID: 11400000, guid: 04806f8733ba19d49a3e3fe69d2ebffe, type: 2}
+      count: 25
+      spawnInterval: 0.8
+      startRatio: 0
+    - slime: {fileID: 11400000, guid: 2bc3b9f0264b09149a14d4b707e5d4c4, type: 2}
+      count: 3
+      spawnInterval: 0.8
+      startRatio: 0.66
+    prepTime: 5
+    clearBonus: 50
+    bannerText: "C-2 \uD654\uBB3C\uCE78, \uBCC0\uC774 \uBC18\uC751 \uAC10\uC9C0"
+  - entries:
+    - slime: {fileID: 11400000, guid: 04806f8733ba19d49a3e3fe69d2ebffe, type: 2}
+      count: 60
+      spawnInterval: 0.4
+      startRatio: 0
+    - slime: {fileID: 11400000, guid: 2bc3b9f0264b09149a14d4b707e5d4c4, type: 2}
+      count: 8
+      spawnInterval: 3
+      startRatio: 0
+    prepTime: 5
+    clearBonus: 50
+    bannerText: "C-3 \uD654\uBB3C\uCE78, \uB300\uB7C9 \uBC94\uB78C"

@@ -1,0 +1,14 @@
+{
+    "name": "QL.Editor",
+    "rootNamespace": "QL.Editor",
+    "references": ["QL.Core", "QL.Data"],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

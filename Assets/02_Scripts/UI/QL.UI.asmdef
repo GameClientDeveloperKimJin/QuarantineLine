@@ -1,0 +1,14 @@
+{
+    "name": "QL.UI",
+    "rootNamespace": "QL.UI",
+    "references": ["QL.Game", "QL.Core", "QL.Data", "Unity.TextMeshPro", "DOTween.Modules", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

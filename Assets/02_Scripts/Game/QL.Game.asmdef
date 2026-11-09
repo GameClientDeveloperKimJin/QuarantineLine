@@ -1,0 +1,14 @@
+{
+    "name": "QL.Game",
+    "rootNamespace": "QL.Game",
+    "references": ["QL.Core", "QL.Data", "DOTween.Modules", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

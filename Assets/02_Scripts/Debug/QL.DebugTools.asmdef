@@ -1,0 +1,14 @@
+{
+    "name": "QL.DebugTools",
+    "rootNamespace": "QL.DebugTools",
+    "references": ["QL.Game", "QL.Core", "Unity.InputSystem"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

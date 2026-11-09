@@ -1,0 +1,14 @@
+{
+    "name": "QL.Audio",
+    "rootNamespace": "QL.Audio",
+    "references": ["QL.Game", "QL.Core"],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -48,5 +48,15 @@ namespace QL.Game.Bootstrap
             Summoner = new Summoner(Config, Catalog);
             IsReady = true;
         }
+
+        private void Update()
+        {
+            if (IsReady) Grid.Tick(Time.deltaTime); // 머지 잠금 시간
+        }
+
+        private void OnDestroy()
+        {
+            GameEvents.ClearAll(); // 씬 재시작 대비
+        }
     }
 }

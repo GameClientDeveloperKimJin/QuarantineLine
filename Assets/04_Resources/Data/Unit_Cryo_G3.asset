@@ -27,5 +27,5 @@ MonoBehaviour:
   freezeInterval: 4
   freezeRadius: 1.5
   freezeDuration: 1
-  prefab: {fileID: 0}
+  prefab: {fileID: 632846991453722770, guid: 19a891a26ed41fd4b92f2bb33037074c, type: 3}
   tintColor: {r: 0.76862746, g: 0.9098039, b: 1, a: 1}

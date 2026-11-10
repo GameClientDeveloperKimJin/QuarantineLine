@@ -26,7 +26,7 @@ namespace QL.Game.Stage
         [Tooltip("바닥이 레인 폭 · 경로 바깥으로 나가는 여백")]
         [SerializeField] private float floorMarginCells = 1f;
         [SerializeField] private float floorThicknessCells = 0.1f;
-        [SerializeField] private float hatchHeightCells = 1.5f;
+        [SerializeField] private float hatchHeightCells = 0.8f;
         [Tooltip("해치가 z = 0 뒤쪽으로 차지하는 두께")]
         [SerializeField] private float hatchDepthCells = 0.3f;
         [Tooltip("스폰선 띠 두께 (z 방향)")]
@@ -114,10 +114,12 @@ namespace QL.Game.Stage
             // 격리 해치 — z = 0 뒤쪽, 레인 폭 전체
             float hatchHeight = hatchHeightCells * cs;
             float hatchDepth = hatchDepthCells * cs;
-            CreatePrimitive(PrimitiveType.Cube, "Hatch", root, hatchMaterial,
+            MeshRenderer hatch = CreatePrimitive(PrimitiveType.Cube, "Hatch", root, hatchMaterial,
                 new Vector3(0f, hatchHeight * 0.5f, -hatchDepth * 0.5f),
                 Quaternion.identity,
                 new Vector3(laneSpan, hatchHeight, hatchDepth));
+            // 첫 줄 칸이 해치 그림자로 어두워져 하이라이트 색이 달라 보이지 않게 (조명 · 그림자 전체는 U07)
+            hatch.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
             // 스폰선 — z = pathLength, 가는 띠
             CreatePrimitive(PrimitiveType.Quad, "SpawnLine", root, spawnLineMaterial,
@@ -134,7 +136,7 @@ namespace QL.Game.Stage
             return t;
         }
 
-        private static void CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material,
+        private static MeshRenderer CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material,
             Vector3 localPosition, Quaternion localRotation, Vector3 localScale)
         {
             GameObject go = GameObject.CreatePrimitive(type);
@@ -145,7 +147,9 @@ namespace QL.Game.Stage
             t.localPosition = localPosition;
             t.localRotation = localRotation;
             t.localScale = localScale;
-            go.GetComponent<MeshRenderer>().sharedMaterial = material;
+            MeshRenderer renderer = go.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            return renderer;
         }
 
         private void OnDrawGizmos()

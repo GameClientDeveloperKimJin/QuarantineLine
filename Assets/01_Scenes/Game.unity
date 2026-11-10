@@ -471,7 +471,7 @@ MonoBehaviour:
   laneWidthRatio: 0.9
   floorMarginCells: 1
   floorThicknessCells: 0.1
-  hatchHeightCells: 1.5
+  hatchHeightCells: 0.8
   hatchDepthCells: 0.3
   spawnLineThicknessCells: 0.1
   laneYOffset: 0.005
@@ -524,6 +524,169 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1560824564
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1560824567}
+  - component: {fileID: 1560824565}
+  - component: {fileID: 1560824566}
+  m_Layer: 0
+  m_Name: '[Drones]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1560824565
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1560824564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52c799fe28517094ba3c923dfe92702c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Drones.DroneBoard
+  bootstrap: {fileID: 916952042}
+  poolRoot: {fileID: 0}
+--- !u!114 &1560824566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1560824564}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb1b980b6e623444bb2677ae34ae3f08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Drones.DroneSeeder
+  bootstrap: {fileID: 916952042}
+  board: {fileID: 1560824565}
+  entries:
+  - lane: 0
+    row: 0
+    type: 0
+    grade: 1
+  - lane: 1
+    row: 0
+    type: 0
+    grade: 1
+  - lane: 3
+    row: 0
+    type: 0
+    grade: 1
+  - lane: 4
+    row: 0
+    type: 0
+    grade: 1
+  - lane: 1
+    row: 1
+    type: 1
+    grade: 1
+  - lane: 3
+    row: 1
+    type: 1
+    grade: 1
+  - lane: 0
+    row: 2
+    type: 2
+    grade: 2
+  - lane: 4
+    row: 2
+    type: 2
+    grade: 1
+--- !u!4 &1560824567
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1560824564}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1741833814
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1741833817}
+  - component: {fileID: 1741833816}
+  - component: {fileID: 1741833815}
+  m_Layer: 0
+  m_Name: '[Input]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1741833815
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741833814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2d278004060f1c46904751a5d6d2ce4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Input.DragController
+  bootstrap: {fileID: 916952042}
+  board: {fileID: 1560824565}
+  highlighter: {fileID: 1741833816}
+  viewCamera: {fileID: 472742587}
+--- !u!114 &1741833816
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741833814}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb2ba131cf527a6498263a737f99e75a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Input.CellHighlighter
+  stage: {fileID: 982715535}
+  normal: {r: 0.62, g: 0.7, b: 0.78, a: 1}
+  move: {r: 0.95, g: 0.95, b: 0.95, a: 1}
+  merge: {r: 0.3, g: 0.85, b: 0.35, a: 1}
+  swap: {r: 0.95, g: 0.85, b: 0.25, a: 1}
+  reject: {r: 0.9, g: 0.25, b: 0.25, a: 1}
+  origin: {r: 0.3, g: 0.34, b: 0.4, a: 1}
+  hover: {r: 0.78, g: 0.86, b: 0.94, a: 1}
+--- !u!4 &1741833817
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1741833814}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1840085648
 GameObject:
   m_ObjectHideFlags: 0
@@ -566,3 +729,5 @@ SceneRoots:
   - {fileID: 1840085649}
   - {fileID: 129237096}
   - {fileID: 1282938886}
+  - {fileID: 1560824567}
+  - {fileID: 1741833817}

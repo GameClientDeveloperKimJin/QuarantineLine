@@ -17,5 +17,5 @@ MonoBehaviour:
   moveSpeed: 1.2
   hatchDamage: 1
   reward: 5
-  prefab: {fileID: 8221155836668398354, guid: bf25033be69e8eb41a5c750396b5c9eb, type: 3}
+  prefab: {fileID: 8362172931578330666, guid: fc02cc2917e0dcc478237b1b5261da33, type: 3}
   scale: 1

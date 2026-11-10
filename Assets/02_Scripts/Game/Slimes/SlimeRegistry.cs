@@ -31,6 +31,8 @@ namespace QL.Game.Slimes
         [SerializeField] private GameBootstrap bootstrap;
         [Tooltip("풀 오브젝트를 둘 부모. 비우면 이 오브젝트")]
         [SerializeField] private Transform poolRoot;
+        [Tooltip("점액 겉모습 변형(A/B) 고르는 시드 — 표현 전용이라 IRandom 이 아니다. 풀 만들 때 한 번 쓴다")]
+        [SerializeField] private int variantSeed = 20261110;
 
         private GridSpace _space;
         private float _pathLength;
@@ -41,6 +43,7 @@ namespace QL.Game.Slimes
         private readonly List<SlimeView> _byId = new List<SlimeView>();   // Id → 뷰 (풀 슬롯이 처음 쓰일 때만 늘어남)
         private readonly List<SlimeView> _alive = new List<SlimeView>();
         private SlimeTarget[] _targets = Array.Empty<SlimeTarget>();
+        private System.Random _variantRandom;
 
         /// <summary>점액이 반납될 때 (GameEvents.SlimeKilled / SlimeReachedHatch 바로 다음). 남은 수는 GameLoop 가 GameEvents 로 센다.</summary>
         public event Action<SlimeView, DespawnReason> Despawned;
@@ -84,6 +87,7 @@ namespace QL.Game.Slimes
             if (!BuildTypeTables()) { enabled = false; return; }
 
             PoolCapacity = LargestWaveCount();
+            _variantRandom = new System.Random(variantSeed);
             var poolOfPrefab = new Dictionary<SlimeView, int>();
             _poolByType = new int[_visualByType.Length];
             for (int t = 0; t < _visualByType.Length; t++)
@@ -95,6 +99,7 @@ namespace QL.Game.Slimes
                     p = _pools.Count;
                     poolOfPrefab.Add(prefab, p);
                     _pools.Add(new Pool<SlimeView>(prefab, poolRoot, PoolCapacity));
+                    AssignVariants(_pools[p], PoolCapacity);
                 }
                 _poolByType[t] = p;
             }
@@ -102,6 +107,26 @@ namespace QL.Game.Slimes
             _targets = new SlimeTarget[PoolCountTotal];
             _alive.Capacity = PoolCountTotal;
             IsReady = true;
+        }
+
+        /// <summary>
+        /// 풀 생성 때 한 번 — 미리 만든 슬롯을 모두 꺼내 겉모습 변형을 하나씩 정하고 바로 돌려놓는다 (스폰 때 할당 · 탐색 없음).
+        /// </summary>
+        private void AssignVariants(Pool<SlimeView> pool, int count)
+        {
+            var slots = new SlimeView[count];
+            for (int i = 0; i < count; i++)
+            {
+                slots[i] = pool.Get();
+                PickVariant(slots[i]);
+            }
+            for (int i = 0; i < count; i++) pool.Release(slots[i]);
+        }
+
+        private void PickVariant(SlimeView s)
+        {
+            int n = s.VariantCount;
+            if (n > 0) s.SetVariant(_variantRandom.Next(n));
         }
 
         private bool BuildTypeTables()
@@ -173,6 +198,7 @@ namespace QL.Game.Slimes
         private void RegisterNew(SlimeView s, int poolIndex)
         {
             s.Init(_byId.Count, poolIndex, _space.CellSize);
+            if (s.Variant < 0) PickVariant(s); // 풀이 런타임에 늘어난 슬롯 (미리 만든 슬롯은 AssignVariants 에서 정했다)
             _byId.Add(s);
             if (_targets.Length < PoolCountTotal) Array.Resize(ref _targets, PoolCountTotal);
         }

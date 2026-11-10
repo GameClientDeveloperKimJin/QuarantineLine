@@ -539,15 +539,46 @@ MonoBehaviour:
   hatchMaterial: {fileID: 2100000, guid: 71395de71ca8c9143a3de6ada1e15dce, type: 2}
   spawnLineMaterial: {fileID: 2100000, guid: da7dc1277d88df2438a6a8f3e48a7086, type: 2}
   laserMaterial: {fileID: 2100000, guid: a7c926b6da2c55947b6d51cb7ed46fd3, type: 2}
+  lineSill: {fileID: 2334797657807792110, guid: 1a352e6d63faf3c4aa76336c90098cd0, type: 3}
+  linePost: {fileID: 2489912361597177375, guid: 5f7f69f83dfe91a42b571cc11243e725, type: 3}
+  wallPanel: {fileID: 8869888741690603275, guid: a95006e302650084ab678e71277fa64f, type: 3}
+  spawnGate: {fileID: 2948793488811425009, guid: b73fbf12fde180e46ba64245fec38f3b, type: 3}
+  floorTile: {fileID: 1508651731957086373, guid: 3cbfa5897e1ee744b9c89ed3eb995372, type: 3}
+  propCrate: {fileID: 2353768955935871291, guid: 7fd1074a89920ac47a0aa82e75253a04, type: 3}
+  propPipe: {fileID: 4958079160227169058, guid: 2d19d12fced89f14d81465d0c2e6ec79, type: 3}
   cellTileRatio: 0.9
   laneWidthRatio: 0.9
   floorMarginCells: 1
   floorThicknessCells: 0.1
   hatchHeightCells: 0.25
   hatchDepthCells: 0.2
-  laserHeightCells: 0.35
+  laserHeightCells: 0.75
   laserThicknessCells: 0.03
   spawnLineThicknessCells: 0.1
+  floorTileCells: 2
+  floorTileTopCells: 0.05
+  stageBackMarginCells: 1
+  stageFrontMarginCells: 2
+  floorSideMarginCells: 1.5
+  postOffsetCells: 0.25
+  postLaserInsetCells: 0.2
+  wallOffsetCells: 1
+  wallPanelCells: 2
+  gateOffsetCells: 0.4
+  pipeCells: 1
+  pipeHeightCells: 1.5
+  crateOffsetCells: 0.5
+  crateHeightCells: 0.7
+  crateSlots:
+  - {x: -1, y: 0, z: -2.5}
+  - {x: -1, y: 1, z: -2.5}
+  - {x: -1, y: 0, z: 6}
+  - {x: 1, y: 0, z: -1.5}
+  - {x: 1, y: 0, z: 4}
+  - {x: 1, y: 1, z: 4}
+  mirrorLeftSide: 1
+  mirrorByRotation: 0
+  hideSpawnLineWithGate: 1
   laneYOffset: 0.005
   cellYOffset: 0.01
   spawnLineYOffset: 0.01
@@ -663,6 +694,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: QL.Game::QL.Game.Slimes.SlimeRegistry
   bootstrap: {fileID: 916952042}
   poolRoot: {fileID: 0}
+  variantSeed: 20261110
 --- !u!4 &1104750594
 Transform:
   m_ObjectHideFlags: 0

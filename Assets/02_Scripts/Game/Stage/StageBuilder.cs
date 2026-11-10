@@ -6,6 +6,8 @@ namespace QL.Game.Stage
     /// <summary>
     /// 바닥 · 레인 · 칸 · 격리선(해치 턱 + 레이저) · 스폰선을 런타임에 만든다 (씬에 타일을 두지 않는다 — 수치가 바뀌면 따라온다).
     /// 크기 · 위치는 전부 GridSpace / RuleConfig. 아래 직렬화 기본값은 표시용 비율 · 연출값만.
+    /// G07: 무대 모듈 프리팹(루트 + 자식 Model) 칸이 차 있으면 그것을 깔고, 비어 있으면 예전 임시 도형(바닥 · 턱 큐브)을 쓴다.
+    /// 모듈 배치는 _아트납품.md A09 표 — Config(레인 · 줄 · 길이 · 칸 크기)와 아래 칸 단위 오프셋으로 계산한다. 시작 때 한 번만.
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
     {
@@ -20,24 +22,82 @@ namespace QL.Game.Stage
         [Tooltip("격리선 레이저 — URP Unlit (블룸은 U07)")]
         [SerializeField] private Material laserMaterial;
 
+        [Header("무대 모듈 프리팹 (비우면 임시 도형 / 없음)")]
+        [Tooltip("M1 격리선 턱 — 레인마다 1개. 비우면 Hatch 큐브")]
+        [SerializeField] private GameObject lineSill;
+        [Tooltip("M2 경고등 기둥 — 격리선 양끝")]
+        [SerializeField] private GameObject linePost;
+        [Tooltip("M3 벽 토막 — 좌우")]
+        [SerializeField] private GameObject wallPanel;
+        [Tooltip("M4 스폰 게이트 — 앞면이 점액 길 끝")]
+        [SerializeField] private GameObject spawnGate;
+        [Tooltip("M5 바닥 판 — 비우면 Floor 큐브")]
+        [SerializeField] private GameObject floorTile;
+        [Tooltip("M6 화물 상자 — crateSlots 자리")]
+        [SerializeField] private GameObject propCrate;
+        [Tooltip("M6 배관 토막 — 벽 안쪽 면")]
+        [SerializeField] private GameObject propPipe;
+
         [Header("표시용 비율 (칸 단위)")]
         [Tooltip("칸 타일 한 변 = cellSize × 이 값")]
         [SerializeField] private float cellTileRatio = 0.9f;
         [Tooltip("레인 띠 폭 = 레인 하나 폭 × 이 값")]
         [SerializeField] private float laneWidthRatio = 0.9f;
-        [Tooltip("바닥이 레인 폭 · StageBounds 앞뒤 바깥으로 나가는 여백")]
+        [Tooltip("임시 바닥 큐브가 레인 폭 · StageBounds 앞뒤 바깥으로 나가는 여백")]
         [SerializeField] private float floorMarginCells = 1f;
         [SerializeField] private float floorThicknessCells = 0.1f;
-        [Tooltip("격리선 턱 높이")]
+        [Tooltip("격리선 턱 높이 (임시 큐브)")]
         [SerializeField] private float hatchHeightCells = 0.25f;
-        [Tooltip("격리선 턱 두께 (z 방향, 중심 z = 0)")]
+        [Tooltip("격리선 턱 두께 (z 방향, 중심 z = 0, 임시 큐브)")]
         [SerializeField] private float hatchDepthCells = 0.2f;
-        [Tooltip("레이저 막대 중심 높이 (바닥 기준) — 턱 위에 뜬다")]
-        [SerializeField] private float laserHeightCells = 0.35f;
+        [Tooltip("레이저 막대 중심 높이 (바닥 기준) — 기둥 발사구 렌즈 중심")]
+        [SerializeField] private float laserHeightCells = 0.75f;
         [Tooltip("레이저 막대 굵기 (y · z)")]
         [SerializeField] private float laserThicknessCells = 0.03f;
         [Tooltip("스폰선 띠 두께 (z 방향)")]
         [SerializeField] private float spawnLineThicknessCells = 0.1f;
+
+        [Header("모듈 배치 (칸 단위 — A09)")]
+        [Tooltip("바닥 판 한 변")]
+        [SerializeField] private float floorTileCells = 2f;
+        [Tooltip("바닥 판 윗면 높이 — y = −이 값에 깔아 윗면을 0 에 맞춘다")]
+        [SerializeField] private float floorTileTopCells = 0.05f;
+        [Tooltip("바닥 판 · 벽이 칸 마지막 줄 뒤로 나가는 길이 (z 시작 = −(rowCount + 이 값))")]
+        [SerializeField] private float stageBackMarginCells = 1f;
+        [Tooltip("바닥 판 · 벽이 스폰선 너머로 나가는 길이 (z 끝 = pathLength + 이 값)")]
+        [SerializeField] private float stageFrontMarginCells = 2f;
+        [Tooltip("바닥 판이 레인 폭 양옆으로 나가는 여백")]
+        [SerializeField] private float floorSideMarginCells = 1.5f;
+        [Tooltip("경고등 기둥 중심 x = 격리선 끝(레인 폭 반) + 이 값")]
+        [SerializeField] private float postOffsetCells = 0.25f;
+        [Tooltip("기둥 중심에서 발사구까지 — 레이저가 두 발사구 사이를 잇는다")]
+        [SerializeField] private float postLaserInsetCells = 0.2f;
+        [Tooltip("벽 안쪽 면 x = 레인 폭 반 + 이 값")]
+        [SerializeField] private float wallOffsetCells = 1f;
+        [Tooltip("벽 토막 길이 (z)")]
+        [SerializeField] private float wallPanelCells = 2f;
+        [Tooltip("스폰 게이트 중심 z = pathLength + 이 값 (앞면이 점액 길 끝)")]
+        [SerializeField] private float gateOffsetCells = 0.4f;
+        [Tooltip("배관 토막 길이 (z, 이음 간격)")]
+        [SerializeField] private float pipeCells = 1f;
+        [Tooltip("배관 바닥 높이 — 벽 발광 띠 · 상자와 겹치지 않게")]
+        [SerializeField] private float pipeHeightCells = 1.5f;
+        [Tooltip("상자 중심 x = 레인 폭 반 + 이 값")]
+        [SerializeField] private float crateOffsetCells = 0.5f;
+        [Tooltip("상자 높이 — 2단째 상자 바닥 높이")]
+        [SerializeField] private float crateHeightCells = 0.7f;
+        [Tooltip("상자 자리: x = 쪽(음수 왼쪽 · 양수 오른쪽), y = 단(0 · 1), z = 칸 단위 z")]
+        [SerializeField] private Vector3[] crateSlots =
+        {
+            new Vector3(-1f, 0f, -2.5f), new Vector3(-1f, 1f, -2.5f), new Vector3(-1f, 0f, 6f),
+            new Vector3(1f, 0f, -1.5f), new Vector3(1f, 0f, 4f), new Vector3(1f, 1f, 4f)
+        };
+        [Tooltip("좌우 대칭 모듈(기둥 · 벽 · 배관) 중 뒤집어 놓을 쪽이 왼쪽인가. Unity 의 OBJ import 는 x 를 반전하므로 납품 문서의 '오른쪽 뒤집기' 가 Unity 에서는 왼쪽이 된다")]
+        [SerializeField] private bool mirrorLeftSide = true;
+        [Tooltip("뒤집기를 scale.x = −1 대신 Y 180° 회전으로 (법선이 뒤집혀 보이면 켠다)")]
+        [SerializeField] private bool mirrorByRotation;
+        [Tooltip("스폰 게이트가 있으면 스폰선 띠를 끈다 (게이트 앞면과 같은 z — 판정과 무관)")]
+        [SerializeField] private bool hideSpawnLineWithGate = true;
 
         [Header("겹침 방지 y 오프셋 (월드)")]
         [SerializeField] private float laneYOffset = 0.005f;
@@ -78,20 +138,39 @@ namespace QL.Game.Stage
             float laneSpan = space.LaneCount * cs;
             float pathSpan = space.PathLength * cs;
             Transform root = transform;
+            Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
 
-            // 바닥 — 윗면이 y = 0, StageBounds(칸 3줄 뒤 끝 ~ 스폰선) 앞뒤로 여백
-            Bounds stage = space.StageBounds;
-            float floorZMin = stage.min.z - floorMarginCells * cs;
-            float floorZMax = stage.max.z + floorMarginCells * cs;
-            float floorThickness = floorThicknessCells * cs;
-            CreatePrimitive(PrimitiveType.Cube, "Floor", root, floorMaterial,
-                new Vector3(0f, -floorThickness * 0.5f, (floorZMin + floorZMax) * 0.5f),
-                Quaternion.identity,
-                new Vector3(laneSpan + 2f * floorMarginCells * cs, floorThickness, floorZMax - floorZMin));
+            // 무대 앞뒤 범위 (바닥 판 · 벽 · 배관 공용) — 칸 뒤 ~ 스폰선 너머
+            float stageZMin = -(space.RowCount + stageBackMarginCells) * cs;
+            float stageZMax = pathSpan + stageFrontMarginCells * cs;
+
+            // 바닥 — 윗면이 y = 0
+            if (floorTile != null)
+            {
+                Transform floor = CreateGroup("Floor", root);
+                float tile = floorTileCells * cs;
+                int nx = TileCount(laneSpan + 2f * floorSideMarginCells * cs, tile);
+                int nz = TileCount(stageZMax - stageZMin, tile);
+                float x0 = -nx * tile * 0.5f;
+                for (int iz = 0; iz < nz; iz++)
+                for (int ix = 0; ix < nx; ix++)
+                    PlaceModule(floorTile, floor, "FloorTile_" + ix + "_" + iz,
+                        new Vector3(x0 + tile * (ix + 0.5f), -floorTileTopCells * cs, stageZMin + tile * (iz + 0.5f)), cs, false);
+            }
+            else
+            {
+                Bounds stage = space.StageBounds;
+                float floorZMin = stage.min.z - floorMarginCells * cs;
+                float floorZMax = stage.max.z + floorMarginCells * cs;
+                float floorThickness = floorThicknessCells * cs;
+                CreatePrimitive(PrimitiveType.Cube, "Floor", root, floorMaterial,
+                    new Vector3(0f, -floorThickness * 0.5f, (floorZMin + floorZMax) * 0.5f),
+                    Quaternion.identity,
+                    new Vector3(laneSpan + 2f * floorMarginCells * cs, floorThickness, floorZMax - floorZMin));
+            }
 
             // 레인 — 점액 길 z 0 ~ pathLength 만. 칸 영역(z < 0)은 칸이 레인을 대신 보여 준다
             Transform lanes = CreateGroup("Lanes", root);
-            Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
             for (int lane = 0; lane < space.LaneCount; lane++)
             {
                 Vector3 hatchPoint = space.PathToWorld(lane, 0f);
@@ -106,7 +185,7 @@ namespace QL.Game.Stage
             Transform cells = CreateGroup("Cells", root);
             int count = space.CellCount;
             CellRenderers = new Renderer[count];
-            float tile = cs * cellTileRatio;
+            float cellTile = cs * cellTileRatio;
             for (int i = 0; i < count; i++)
             {
                 MeshRenderer cell = Instantiate(cellPrefab, cells);
@@ -115,34 +194,124 @@ namespace QL.Game.Stage
                 Vector3 pos = space.CellToWorld(i);
                 pos.y = cellYOffset;
                 t.localPosition = pos;
-                t.localScale = new Vector3(tile, tile, 1f);
+                t.localScale = new Vector3(cellTile, cellTile, 1f);
                 CellRenderers[i] = cell;
             }
 
-            // 격리선 턱 (Hatch) — 중심 z = 0 (칸과 점액 길 사이), 레인 폭 전체
-            float hatchHeight = hatchHeightCells * cs;
-            float hatchDepth = hatchDepthCells * cs;
-            MeshRenderer hatch = CreatePrimitive(PrimitiveType.Cube, "Hatch", root, hatchMaterial,
-                new Vector3(0f, hatchHeight * 0.5f, 0f),
-                Quaternion.identity,
-                new Vector3(laneSpan, hatchHeight, hatchDepth));
-            // 첫 줄 칸이 턱 그림자로 어두워져 하이라이트 색이 달라 보이지 않게 (조명 · 그림자 전체는 U07)
-            hatch.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            // 격리선 턱 (Hatch) — 중심 z = 0 (칸과 점액 길 사이). 판정 · 위치는 그대로, 겉모습만
+            if (lineSill != null)
+            {
+                Transform hatchGroup = CreateGroup("Hatch", root);
+                for (int lane = 0; lane < space.LaneCount; lane++)
+                {
+                    Vector3 p = space.PathToWorld(lane, 0f);
+                    p.y = 0f;
+                    PlaceModule(lineSill, hatchGroup, "LineSill_" + lane, p, cs, false);
+                }
+            }
+            else
+            {
+                float hatchHeight = hatchHeightCells * cs;
+                float hatchDepth = hatchDepthCells * cs;
+                MeshRenderer hatch = CreatePrimitive(PrimitiveType.Cube, "Hatch", root, hatchMaterial,
+                    new Vector3(0f, hatchHeight * 0.5f, 0f),
+                    Quaternion.identity,
+                    new Vector3(laneSpan, hatchHeight, hatchDepth));
+                // 첫 줄 칸이 턱 그림자로 어두워져 하이라이트 색이 달라 보이지 않게 (조명 · 그림자 전체는 U07)
+                hatch.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
 
-            // 레이저 — 턱 위에 뜬 가로 막대, 레인 폭 전체
+            // 경고등 기둥 — 격리선 양끝
+            float postX = laneSpan * 0.5f + postOffsetCells * cs;
+            if (linePost != null)
+            {
+                Transform posts = CreateGroup("Posts", root);
+                PlaceModule(linePost, posts, "LinePost_L", new Vector3(-postX, 0f, 0f), cs, mirrorLeftSide);
+                PlaceModule(linePost, posts, "LinePost_R", new Vector3(postX, 0f, 0f), cs, !mirrorLeftSide);
+            }
+
+            // 레이저 — 가로 막대. 기둥이 있으면 두 발사구 사이, 없으면 레인 폭 전체
             float laserThickness = laserThicknessCells * cs;
+            float laserLength = linePost != null ? 2f * (postX - postLaserInsetCells * cs) : laneSpan;
             MeshRenderer laser = CreatePrimitive(PrimitiveType.Cube, "Laser", root, laserMaterial,
                 new Vector3(0f, laserHeightCells * cs, 0f),
                 Quaternion.identity,
-                new Vector3(laneSpan, laserThickness, laserThickness));
+                new Vector3(laserLength, laserThickness, laserThickness));
             laser.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             laser.receiveShadows = false;
 
             // 스폰선 — z = pathLength, 가는 띠
-            CreatePrimitive(PrimitiveType.Quad, "SpawnLine", root, spawnLineMaterial,
+            MeshRenderer spawnLine = CreatePrimitive(PrimitiveType.Quad, "SpawnLine", root, spawnLineMaterial,
                 new Vector3(0f, spawnLineYOffset, pathSpan),
                 flat,
                 new Vector3(laneSpan, spawnLineThicknessCells * cs, 1f));
+
+            // 스폰 게이트 — 앞면이 점액 길 끝 (z = pathLength)
+            if (spawnGate != null)
+            {
+                PlaceModule(spawnGate, root, "SpawnGate", new Vector3(0f, 0f, pathSpan + gateOffsetCells * cs), cs, false);
+                if (hideSpawnLineWithGate) spawnLine.gameObject.SetActive(false);
+            }
+
+            // 벽 · 배관 — 좌우, 무대 앞뒤 범위를 이어 붙인다
+            float wallX = laneSpan * 0.5f + wallOffsetCells * cs;
+            if (wallPanel != null)
+                PlaceRow(wallPanel, CreateGroup("Walls", root), "WallPanel", wallX, 0f, wallPanelCells * cs, stageZMin, stageZMax, cs);
+            if (propPipe != null)
+                PlaceRow(propPipe, CreateGroup("Pipes", root), "Pipe", wallX, pipeHeightCells * cs, pipeCells * cs, stageZMin, stageZMax, cs);
+
+            // 화물 상자 — 꾸밈, crateSlots 자리
+            if (propCrate != null && crateSlots != null)
+            {
+                Transform crates = CreateGroup("Crates", root);
+                float crateX = laneSpan * 0.5f + crateOffsetCells * cs;
+                for (int i = 0; i < crateSlots.Length; i++)
+                {
+                    Vector3 slot = crateSlots[i];
+                    float side = slot.x < 0f ? -1f : 1f;
+                    PlaceModule(propCrate, crates, "Crate_" + i,
+                        new Vector3(side * crateX, slot.y * crateHeightCells * cs, slot.z * cs), cs, false);
+                }
+            }
+        }
+
+        /// <summary>좌우 ±x 에 z 범위를 length 간격으로 이어 붙인다 (벽 · 배관).</summary>
+        private void PlaceRow(GameObject prefab, Transform parent, string baseName, float x, float y, float length,
+            float zMin, float zMax, float scale)
+        {
+            int n = TileCount(zMax - zMin, length);
+            for (int i = 0; i < n; i++)
+            {
+                float z = zMin + length * (i + 0.5f);
+                PlaceModule(prefab, parent, baseName + "_L_" + i, new Vector3(-x, y, z), scale, mirrorLeftSide);
+                PlaceModule(prefab, parent, baseName + "_R_" + i, new Vector3(x, y, z), scale, !mirrorLeftSide);
+            }
+        }
+
+        /// <summary>span 을 덮는 tile 개수 (부동소수 오차로 한 장 더 생기지 않게).</summary>
+        private static int TileCount(float span, float tile)
+        {
+            if (tile <= 0f) return 0;
+            return Mathf.Max(1, Mathf.CeilToInt(span / tile - 1e-3f));
+        }
+
+        /// <summary>모듈 프리팹 하나를 놓는다. mirror = 좌우 뒤집기 (scale.x = −1, mirrorByRotation 이면 Y 180°).</summary>
+        private void PlaceModule(GameObject prefab, Transform parent, string objectName, Vector3 localPosition,
+            float scale, bool mirror)
+        {
+            GameObject go = Instantiate(prefab, parent);
+            go.name = objectName;
+            Transform t = go.transform;
+            Vector3 s = prefab.transform.localScale * scale;
+            Quaternion r = prefab.transform.localRotation;
+            if (mirror)
+            {
+                if (mirrorByRotation) r = Quaternion.Euler(0f, 180f, 0f) * r;
+                else s.x = -s.x;
+            }
+            t.localPosition = localPosition;
+            t.localRotation = r;
+            t.localScale = s;
         }
 
         private static Transform CreateGroup(string name, Transform parent)

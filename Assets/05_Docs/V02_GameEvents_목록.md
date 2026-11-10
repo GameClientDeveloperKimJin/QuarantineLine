@@ -8,10 +8,10 @@
 |---|---|---|---|
 | `DroneMoved` | `int from, int to` | `Game/Input/DragController.cs:143` | U04 이동 |
 | `DroneSwapped` | `int a, int b` | `Game/Input/DragController.cs:146` | U04 교환 |
-| `DroneMerged` | `int from, int to, DroneType, int newGrade` | `Game/Input/DragController.cs:150` | U04 머지 펑 · U08 머지 소리 |
+| `DroneMerged` | `int from, int to, DroneType, int newGrade` | `Game/Input/DragController.cs:150` · `:153` (MergeClean) | U04 머지 펑 · U08 머지 소리 |
 | `DragStarted` | `int from` | `Game/Input/DragController.cs:103` | U03 집기 |
-| `DragEnded` | `int from, DropOutcome` | `DragController.cs:155` (드롭) · `:169` (취소 = `Return`) | U03 · U04 |
-| `CoinChanged` | `int now, int delta` | `Game/Summon/SummonController.cs:60` (시작, delta 0) · `:94` (소환) · `Game/Combat/KillRewarder.cs:40` (처치) · `Game/Flow/GameLoop.cs:114` (웨이브 클리어 보너스) · `Game/Summon/TempHud.cs:131` (디버그, TEMP) | U02 코인 DOCounter · U05 코인 비행 |
+| `DragEnded` | `int from, DropOutcome` | `DragController.cs:161` (드롭) · `:175` (취소 = `Return`) | U03 · U04 |
+| `CoinChanged` | `int now, int delta` | `Game/Summon/SummonController.cs:60` (시작, delta 0) · `:94` (소환) · `Game/Combat/KillRewarder.cs:40` (처치) · `Game/Flow/GameLoop.cs:144` (웨이브 클리어 수당 = `Pay.Total`, O02) · `Game/Summon/TempHud.cs:131` (디버그, TEMP) | U02 코인 DOCounter · U05 코인 비행 |
 | `SummonCostChanged` | `int cost` | `SummonController.cs:61` (시작) · `:95` | U02 · U03 소환 버튼 |
 | `SummonAvailabilityChanged` | `SummonBlock` | `SummonController.cs:64` (시작) · `:115` | U03 버튼 3상태 |
 | `DroneSpawned` | `int cell, DroneType, int grade` | `SummonController.cs:96` | U04 소환 연출 · U08 소환 소리 |
@@ -29,8 +29,16 @@
 | `DropPreviewChanged` | `int cell, DropOutcome, bool has` (`has=false` = 미리보기 없음) | `CellHighlighter.cs:69` (`Set`, 값 바뀔 때만) | U03 드래그 대상 사거리 |
 | `SummonRejected` | `SummonBlock` | `Game/Summon/SummonController.cs:90` (`RequestSummon` 막힘 — 버튼 · Space 공통. `CanAct` 거부엔 없음) | U03 버튼 흔들림 · 말풍선 |
 
-## 같은 프레임 순서
-`PrepTick` → `WaveStarted` → `RemainingSlimesChanged` → `CoinChanged`(보너스) → `StateChanged` → `GameEnded`
+| `WavePrepStarted` | `int index, WaveForecast` | `GameLoop.cs:79` (시작) · `:152` (클리어 뒤) — **O02** | U15 작업 지시서 · U16 |
+| `WaveCleared` | `int index, PayBreakdown` | `GameLoop.cs:139` (마지막 웨이브 포함, 수당 `CoinChanged` :144 직전) — **O02** | U14 영수증 |
+| `CellContaminated` | `int cell, int lane, float duration` | `GameLoop.cs:281` (`ContaminateInLane` ≠ −1) — **O02** | O03 · U16 레인 핑 |
+| `CellCleaned` | `int cell, bool byMerge` | `GameLoop.cs:183` (자연) · `:195` (머지, DragController.cs:155 가 부름) · `DragController.cs:156` (loop 없을 때) — **O02** | O03 |
+| `KillRewarded` | `SlimeView, int reward` | `Game/Combat/KillRewarder.cs:40` (`CoinChanged` :41 직전) — **O02 (보류함 21)** | U05 CoinFlyFx 전환 · U16 |
+
+## 같은 프레임 순서 (O02 기준 — `EventOrder_PrepClearVictory_BonusEarnedIsPayTotalSum` 고정)
+- `GameLoop.Step`: `CellCleaned(false)` → `SlimeSpawned` → `SlimeReachedHatch` → `HatchHpChanged` → `RemainingSlimesChanged` → `CellContaminated` → `SlimeKilled` → `KillRewarded` → `CoinChanged` · `RemainingSlimesChanged` (구독 순) → `PrepTick` → `WaveStarted` → `RemainingSlimesChanged` → `WaveCleared` → `CoinChanged`(수당) → `StateChanged` → `WavePrepStarted` | `GameEnded`
+- 시작: `StateChanged(Prep)` → `WavePrepStarted` (첫 `PrepTick` 은 다음 Step)
+- 드롭: `DroneMerged` → `CellCleaned(true)` → `DragEnded`
 
 ## 시작값 — 이벤트가 없는 값은 직접 읽는다
 - 해치 HP: `HatchHpChanged` 는 피해 때만 온다 → HUD 는 시작 때 `GameLoop.Flow.Hatch.Hp / MaxHp` 를 읽는다

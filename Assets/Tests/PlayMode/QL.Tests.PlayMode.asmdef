@@ -6,6 +6,7 @@
         "QL.Core",
         "QL.Data",
         "QL.UI",
+        "QL.FX",
         "Unity.TextMeshPro",
         "UnityEngine.UI",
         "Unity.InputSystem",

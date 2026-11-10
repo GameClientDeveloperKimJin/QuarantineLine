@@ -8,6 +8,7 @@ namespace QL.FX
     /// U01: 화면 전환 페이드 · 일시정지 / 결과 어둡게 · 엠블럼 크기 · 버튼 눌림 깊이.
     /// U02: HUD 숫자 튐 · 코인 굴림 · 카운트다운 크기 · 해치 게이지 색 · 남은 점액 막대 색.
     /// U03: 버튼 호버 크기 · 소환 버튼 3상태(비용 빨강 · 흔들림) · 칸 호버 외곽선 · 사거리 미리보기.
+    /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -103,5 +104,126 @@ namespace QL.FX
         [Header("월드 표시 높이 (U03)")]
         [Tooltip("바닥 · 칸(y 0.01) 위에 겹쳐 그릴 높이 (월드 단위)")]
         [Min(0f)] public float worldFxHeight;
+
+        [Header("드론 대기 — 호버링 (U04)")]
+        [Tooltip("자식 Model 의 localPosition.y 위아래 폭 (± 이 값, 루트 로컬 단위)")]
+        [Min(0f)] public float droneHoverAmp;
+        [Tooltip("위 → 아래 → 위 한 주기 (초)")]
+        [Min(0.01f)] public float droneHoverPeriod;
+        [Tooltip("칸 번호 하나당 위상 차 (주기 비율 0~1) — 이웃 칸이 같이 출렁이지 않게")]
+        [Range(0f, 1f)] public float droneHoverPhaseStep;
+
+        [Header("점액 출렁임 — 스쿼시 · 스트레치 (U04)")]
+        [Tooltip("켜진 Model_A/B 의 localScale — 가로 ×(1 ± 이 값), 세로 ×(1 ∓ 이 값)")]
+        [Min(0f)] public float slimeWobbleAmp;
+        [Tooltip("납작 → 길쭉 → 납작 한 주기 (초)")]
+        [Min(0.01f)] public float slimeWobblePeriod;
+        [Tooltip("변이 점액 — 더 느리고 묵직하게")]
+        [Min(0f)] public float slimeWobbleMutantAmp;
+        [Min(0.01f)] public float slimeWobbleMutantPeriod;
+        [Tooltip("점액 풀 번호(Id) 하나당 위상 차 (주기 비율 0~1)")]
+        [Range(0f, 1f)] public float slimeWobblePhaseStep;
+
+        [Header("머지 Sequence (U04) — 전체 길이 = GameConfig.mergeLockDuration")]
+        [Tooltip("끌려옴: 놓은 쪽(from)으로 밀려 있는 거리 (칸)")]
+        [Min(0f)] public float mergePullDistance;
+        [Tooltip("끌려옴 → 제자리 시간 (전체 길이 비율)")]
+        [Range(0f, 1f)] public float mergePullRatio;
+        [Tooltip("Model 크기 시작 → 최고 → 1")]
+        [Min(0f)] public float mergeScaleFrom;
+        [Min(0f)] public float mergeScalePeak;
+        [Tooltip("시작 → 최고 시간 (전체 비율)")]
+        [Range(0f, 1f)] public float mergeScaleUpRatio;
+        [Tooltip("최고 → 1 시간 (전체 비율). 남는 시간(1 - 위 둘)이 Punch")]
+        [Range(0f, 1f)] public float mergeScaleDownRatio;
+        [Tooltip("최고까지 — OutBack 이면 최고를 넘었다가 (펑)")]
+        public Ease mergeScaleUpEase;
+        [Tooltip("최고 → 1 — OutBack · OutElastic 이면 1 아래로 탄력 있게 내려갔다 제자리")]
+        public Ease mergeScaleDownEase;
+        [Tooltip("Back 계열 넘침 세기 (1.7 기본) · Elastic 계열이면 진폭")]
+        [Min(0f)] public float mergeScaleOvershoot;
+        [Tooltip("마지막 Punch Scale 세기 (0.1 = 10%)")]
+        [Min(0f)] public float mergePunchStrength;
+        [Min(0)] public int mergePunchVibrato;
+        [Range(0f, 1f)] public float mergePunchElasticity;
+
+        [Header("머지 이펙트 (U04) — 색 = 새 등급 UnitData.tintColor")]
+        [Tooltip("FX_Ring 지름 시작 → 끝 (칸)")]
+        [Min(0f)] public float mergeRingSizeFrom;
+        [Min(0f)] public float mergeRingSizeTo;
+        [Tooltip("링 수명 (머지 전체 길이 비율)")]
+        [Range(0f, 1f)] public float mergeRingLife;
+        [Range(0f, 1f)] public float mergeRingAlpha;
+        [Tooltip("링 밝기 배율 (색 × 이 값, 가산이라 1 보다 크면 더 밝게)")]
+        [Min(0f)] public float mergeRingIntensity;
+        [Tooltip("FX_Spark 개수 — 원 둘레로 고르게 (무작위 없음)")]
+        [Min(0)] public int mergeSparkCount;
+        [Tooltip("반짝임 크기 시작 → 끝 (칸)")]
+        [Min(0f)] public float mergeSparkSize;
+        [Min(0f)] public float mergeSparkSizeEnd;
+        [Tooltip("반짝임이 날아가는 거리 (칸, 수평) · 위로 뜨는 높이 (칸)")]
+        [Min(0f)] public float mergeSparkDistance;
+        public float mergeSparkRise;
+        [Range(0f, 1f)] public float mergeSparkLife;
+        [Tooltip("반짝임 밝기 배율")]
+        [Min(0f)] public float mergeSparkIntensity;
+        [Tooltip("FX_Glow_Dot 섬광 지름 시작 → 끝 (칸)")]
+        [Min(0f)] public float mergeGlowSizeFrom;
+        [Min(0f)] public float mergeGlowSizeTo;
+        [Range(0f, 1f)] public float mergeGlowLife;
+        [Range(0f, 1f)] public float mergeGlowAlpha;
+        [Tooltip("섬광 밝기 배율")]
+        [Min(0f)] public float mergeGlowIntensity;
+        [Tooltip("섬광 · 반짝임을 드론 중심에서 카메라 쪽으로 당겨 그리는 거리 (칸) — 불투명 몸체에 가리지 않게")]
+        [Min(0f)] public float mergeFxCameraOffset;
+
+        [Header("소환 팝 (U04)")]
+        [Tooltip("Model 크기 0 → 1 시간 (초). OutBack 으로 넘쳤다가 1")]
+        [Min(0.01f)] public float spawnPopDuration;
+        [Tooltip("OutBack 넘침 세기 — 1.7 ≈ 최고 1.1배")]
+        [Min(0f)] public float spawnPopOvershoot;
+        [Tooltip("작은 FX_Ring 지름 시작 → 끝 (칸) · 수명 (초) · 알파")]
+        [Min(0f)] public float spawnRingSizeFrom;
+        [Min(0f)] public float spawnRingSizeTo;
+        [Min(0.01f)] public float spawnRingDuration;
+        [Range(0f, 1f)] public float spawnRingAlpha;
+
+        [Header("이펙트 공통 (U04)")]
+        [Tooltip("크기 · 이동 이징 / 사라짐(알파) 이징 — t 0→1")]
+        public Ease fxGrowEase;
+        public Ease fxFadeEase;
+
+        [Header("이펙트 풀 크기 (U04, U05 · U06 이 늘려 씀) — 시작 때 미리 만든다. 모자라면 가장 오래된 것 재사용")]
+        [Min(1)] public int fxPoolRing;
+        [Min(1)] public int fxPoolSpark;
+        [Min(1)] public int fxPoolGlowDot;
+
+        [Header("DOTween 용량 (U04)")]
+        [Tooltip("연출 트윈은 뷰 · 이펙트마다 하나씩 만들어 재사용한다 — 그 수가 기본 용량(200 · 50)을 넘어 경고가 나지 않게 시작 때 한 번 늘린다")]
+        [Min(200)] public int tweenerCapacity;
+        [Min(50)] public int sequenceCapacity;
+
+        /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
+        public int PoolSizeOf(FxKind kind)
+        {
+            switch (kind)
+            {
+                case FxKind.Ring: return fxPoolRing;
+                case FxKind.Spark: return fxPoolSpark;
+                case FxKind.GlowDot: return fxPoolGlowDot;
+                default: return 1;
+            }
+        }
+    }
+
+    /// <summary>
+    /// 이펙트 풀 키 (<see cref="QL.FX.Motion.FxPool"/>). 흰 틴트 텍스처 (_아트납품.md A10) 한 장 = 한 종류.
+    /// U05 · U06 은 여기에 종류를 더하고 <see cref="FxConfig.PoolSizeOf"/> 에 크기를 잇는다.
+    /// </summary>
+    public enum FxKind
+    {
+        Ring = 0,
+        Spark = 1,
+        GlowDot = 2,
     }
 }

@@ -1,0 +1,36 @@
+newmtl QL_Drone_Incinerator_Tool
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+Ns 10
+d 1
+illum 1
+map_Kd QL_Drone_Incinerator_Tool_BaseColor.png
+
+newmtl QL_Drone_Incinerator_Body
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+Ns 10
+d 1
+illum 1
+map_Kd QL_Drone_Incinerator_Body_BaseColor.png
+
+newmtl QL_Drone_Incinerator_Part_G2
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+Ns 10
+d 1
+illum 1
+map_Kd QL_Drone_Incinerator_Part_G2_BaseColor.png
+
+newmtl QL_Drone_Incinerator_Part_G3
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+Ns 10
+d 1
+illum 1
+map_Kd QL_Drone_Incinerator_Part_G3_BaseColor.png
+

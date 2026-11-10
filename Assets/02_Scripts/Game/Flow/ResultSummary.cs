@@ -24,7 +24,7 @@ namespace QL.Game.Flow
         public readonly int WaveCount;
         /// <summary>깬 웨이브 수 — 승리 = WaveCount, 패배 = WaveReached − 1.</summary>
         public readonly int WavesCleared;
-        /// <summary>판 동안 받은 웨이브 클리어 보너스 합 (코인).</summary>
+        /// <summary>판 동안 받은 웨이브 수당 합 (코인) = 막은 웨이브마다 PayBreakdown.Total (클리어 수당 + 청소 수당, 마지막 웨이브 포함 · O02).</summary>
         public readonly int BonusEarned;
         /// <summary>점액이 가장 많이 격리선에 닿은 레인 (1부터). 동점이면 낮은 번호. 한 번도 안 닿았으면 0 (= 없음).</summary>
         public readonly int MostBreachedLane;
@@ -48,7 +48,7 @@ namespace QL.Game.Flow
             MostBreachedCount = mostBreachedCount;
         }
 
-        /// <param name="bonusEarned">판 동안 Wallet 에 더한 클리어 보너스 합</param>
+        /// <param name="bonusEarned">판 동안 Wallet 에 더한 웨이브 수당(Pay.Total) 합</param>
         /// <param name="laneBreaches">레인(0부터)별 격리선 도달 수. null 이면 없음</param>
         public static ResultSummary Collect(GameFlow flow, GridModel grid, UnitCatalog catalog, int bonusEarned, int[] laneBreaches)
         {

@@ -17,6 +17,7 @@ namespace QL.Game.Combat
     /// 실행 순서는 GameLoop.Step 이 고정한다: WaveRunner → SlimeRegistry(이동 · 스냅샷) → DroneCombat → GameFlow.Tick.
     /// 흐름은 Advance(dt) — 자체 Update 없음 (테스트는 Advance 를 직접 부른다).
     /// 공격 표시는 Pool&lt;AttackFxView&gt; (크기 = 칸 수 × fxPoolPerCell).
+    /// 오염 칸(Cell.IsContaminated) 드론은 공격 · 타이머 진행을 멈춘다 — 씻기거나 다른 칸으로 옮기면 멈췄던 타이머부터 다시 (O02).
     /// </summary>
     [DefaultExecutionOrder(10)] // Awake 준비 순서만 — SlimeRegistry.Awake 뒤 (프레임 순서는 GameLoop)
     public sealed class DroneCombat : MonoBehaviour
@@ -107,7 +108,7 @@ namespace QL.Game.Combat
         }
 
         /// <summary>
-        /// 표시 시간 → 칸마다 (드론 있음 · 집어 든 칸 아님) 타이머 Tick → Ready 면 Execute, 피해가 있으면 Consume + 표시.
+        /// 표시 시간 → 칸마다 (드론 있음 · 집어 든 칸 아님 · 오염 칸 아님) 타이머 Tick → Ready 면 Execute, 피해가 있으면 Consume + 표시.
         /// 냉각 3등급은 빙결 타이머가 Ready 이고 주 타겟이 있으면 SelectInRadius → ApplyFreeze.
         /// dt ≤ 0 (일시정지 · timeScale 0) 이면 아무것도 하지 않는다.
         /// </summary>
@@ -136,6 +137,7 @@ namespace QL.Game.Combat
                     ResetCell(i, cell.Type, cell.Grade);
 
                 if (_grid.IsDragging(i)) continue; // 집어 든 드론은 공격 · 타이머 진행 안 함
+                if (cell.IsContaminated) continue; // 오염 칸 드론은 공격 · 타이머(빙결 포함) 정지 (O02 · 기획서 「오염 · 청소」)
 
                 int lane = i % _laneCount;
                 // Ready 로 대기 중이면 더 쌓지 않는다 — 타겟이 늦게 들어와도 한 발씩 (밀린 공격 연사 없음)

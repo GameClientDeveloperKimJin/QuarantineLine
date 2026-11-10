@@ -5,7 +5,7 @@ using UnityEngine;
 namespace QL.Game.Combat
 {
     /// <summary>
-    /// 처치 보상 — 보상 지급은 이 한 곳만. GameEvents.SlimeKilled (직접 처치 · 잔열 처치 모두) → Wallet.Add(Reward) → CoinChanged.
+    /// 처치 보상 — 보상 지급은 이 한 곳만. GameEvents.SlimeKilled (직접 처치 · 잔열 처치 모두) → Wallet.Add(Reward) → KillRewarded(slime, reward) → CoinChanged (O02 · 보류함 21).
     /// 같은 점액에 두 번 주지 않는 것은 SlimeRegistry.Despawn 이 보장한다 (이미 반납한 점액은 SlimeKilled 를 내지 않음).
     /// </summary>
     public sealed class KillRewarder : MonoBehaviour
@@ -37,6 +37,7 @@ namespace QL.Game.Combat
             if (reward <= 0) return; // Wallet.Add 는 1 이상만
             bootstrap.Wallet.Add(reward);
             TotalRewarded += reward;
+            GameEvents.RaiseKillRewarded(slime, reward); // 어느 점액이 준 코인인지 (U05 코인 비행 출발점) — CoinChanged 직전
             GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, reward);
         }
     }

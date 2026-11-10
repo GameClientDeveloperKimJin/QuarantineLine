@@ -44,8 +44,27 @@ namespace QL.Game.Slimes
         }
 
         /// <summary>
-        /// 웨이브 시작 — 시간표를 새로 만든다 (웨이브 1회 할당).
+        /// 웨이브 시작 — GameFlow 가 준비 시간에 미리 만든 시간표(<c>GameFlow.CurrentSchedule</c>)를 그대로 커서에 넣는다 (O02).
+        /// 예보(<c>GameFlow.Forecast</c>)와 같은 배열이라 실제 스폰 = 예보. 배열은 읽기만 한다.
         /// 스폰 중이던 이전 웨이브 커서는 버린다. 이미 나온 점액은 그대로 걷는다.
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">index 가 웨이브 범위 밖</exception>
+        /// <exception cref="ArgumentNullException">schedule 이 null</exception>
+        public void StartWave(int index, SpawnEvent[] schedule)
+        {
+            if (!IsReady) return;
+            if (index < 0 || index >= _specs.Length)
+                throw new ArgumentOutOfRangeException(nameof(index), index, "웨이브 범위 밖");
+            if (schedule == null) throw new ArgumentNullException(nameof(schedule));
+
+            _cursor = new SpawnCursor(schedule);
+            WaveIndex = index;
+            LastSpawnCount = 0;
+        }
+
+        /// <summary>
+        /// GameFlow 없이 웨이브 하나만 돌릴 때 (스폰 테스트) — GameFlow 와 같은 웨이브 전용 시드
+        /// <c>WaveSchedule.BuildForWave</c> 로 만든다 (공용 IRandom 을 쓰지 않으므로 GameFlow.CurrentSchedule 과 같은 시간표, 웨이브 1회 할당).
         /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">index 가 웨이브 범위 밖</exception>
         public void StartWave(int index)
@@ -53,10 +72,7 @@ namespace QL.Game.Slimes
             if (!IsReady) return;
             if (index < 0 || index >= _specs.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), index, "웨이브 범위 밖");
-
-            _cursor = new SpawnCursor(WaveSchedule.Build(_specs[index], bootstrap.Config, bootstrap.Rng));
-            WaveIndex = index;
-            LastSpawnCount = 0;
+            StartWave(index, WaveSchedule.BuildForWave(_specs[index], bootstrap.Config, index));
         }
 
         /// <summary>커서 진행 → 시각이 된 것을 최대 spawnPerFrame 마리 Registry.Spawn.</summary>

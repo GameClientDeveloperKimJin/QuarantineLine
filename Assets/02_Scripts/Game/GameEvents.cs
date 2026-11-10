@@ -1,7 +1,9 @@
 using System;
 using QL.Core;
 using QL.Core.Economy;
+using QL.Core.Flow;
 using QL.Core.Grid;
+using QL.Core.Waves;
 using QL.Game.Flow;
 using QL.Game.Slimes;
 
@@ -57,6 +59,16 @@ namespace QL.Game
         public static event Action<int, DropOutcome, bool> DropPreviewChanged;
         /// <summary>block — 소환 요청이 코인 · 칸 때문에 막혔다 (요청 한 번에 한 번, 흐름 거부 CanAct 는 제외).</summary>
         public static event Action<SummonBlock> SummonRejected;
+        /// <summary>index(0 부터), forecast — 준비 시간 시작 (첫 웨이브 · 클리어 뒤 다음 준비). 그 준비의 PrepTick 보다 먼저 (O02).</summary>
+        public static event Action<int, WaveForecast> WavePrepStarted;
+        /// <summary>index(0 부터), pay — 웨이브를 막은 순간 (마지막 웨이브 포함). 수당 CoinChanged 바로 앞 (O02).</summary>
+        public static event Action<int, PayBreakdown> WaveCleared;
+        /// <summary>cell, lane, duration — 점액이 격리선을 뚫어 그 레인 칸이 오염됐다 (레인 전체가 이미 오염이면 없음, O02).</summary>
+        public static event Action<int, int, float> CellContaminated;
+        /// <summary>cell, byMerge — 오염 칸이 씻겼다 (true = 같은 드론 머지 MergeClean, false = 자연 청소, O02).</summary>
+        public static event Action<int, bool> CellCleaned;
+        /// <summary>slime, reward — 처치 보상 지급 (KillRewarder, 그 CoinChanged 바로 앞 · 보류함 21).</summary>
+        public static event Action<SlimeView, int> KillRewarded;
 
         internal static void RaiseDroneMoved(int from, int to) => DroneMoved?.Invoke(from, to);
         internal static void RaiseDroneSwapped(int a, int b) => DroneSwapped?.Invoke(a, b);
@@ -80,6 +92,11 @@ namespace QL.Game
         internal static void RaiseCellHoverChanged(int cell) => CellHoverChanged?.Invoke(cell);
         internal static void RaiseDropPreviewChanged(int cell, DropOutcome outcome, bool has) => DropPreviewChanged?.Invoke(cell, outcome, has);
         internal static void RaiseSummonRejected(SummonBlock block) => SummonRejected?.Invoke(block);
+        internal static void RaiseWavePrepStarted(int index, in WaveForecast forecast) => WavePrepStarted?.Invoke(index, forecast);
+        internal static void RaiseWaveCleared(int index, in PayBreakdown pay) => WaveCleared?.Invoke(index, pay);
+        internal static void RaiseCellContaminated(int cell, int lane, float duration) => CellContaminated?.Invoke(cell, lane, duration);
+        internal static void RaiseCellCleaned(int cell, bool byMerge) => CellCleaned?.Invoke(cell, byMerge);
+        internal static void RaiseKillRewarded(SlimeView slime, int reward) => KillRewarded?.Invoke(slime, reward);
 
         /// <summary>모든 구독 해제 (씬 재시작 대비 — GameBootstrap.OnDestroy).</summary>
         public static void ClearAll()
@@ -106,6 +123,11 @@ namespace QL.Game
             CellHoverChanged = null;
             DropPreviewChanged = null;
             SummonRejected = null;
+            WavePrepStarted = null;
+            WaveCleared = null;
+            CellContaminated = null;
+            CellCleaned = null;
+            KillRewarded = null;
         }
     }
 }

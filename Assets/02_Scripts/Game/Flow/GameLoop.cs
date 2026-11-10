@@ -1,5 +1,6 @@
 using QL.Core;
 using QL.Core.Flow;
+using QL.Core.Grid;
 using QL.Game.Bootstrap;
 using QL.Game.Combat;
 using QL.Game.Input;
@@ -15,6 +16,7 @@ namespace QL.Game.Flow
     /// 판정(웨이브 시작 · 클리어 · 승패)은 전부 GameFlow.Tick 결과 — 여기는 알림 전달 · 이벤트 발행 · timeScale 만.
     /// Esc 는 이 컴포넌트 한 곳에서만 읽는다 (드래그 중이면 드래그 취소가 우선). 결과 상태에서만 R = 다시 하기 · Esc = 타이틀로 (U11).
     /// 테스트는 <see cref="Step"/> 을 직접 부른다.
+    /// O02: 점액이 뚫은 레인 칸 오염 · 머지 청소 알림 · 자연 청소 · 준비 예보(WavePrepStarted) · 수당(WaveCleared → Pay.Total 지급)도 여기서 낸다.
     /// </summary>
     public sealed class GameLoop : MonoBehaviour
     {
@@ -31,6 +33,9 @@ namespace QL.Game.Flow
         // 결과 화면용 판 중 집계 (U11) — int 카운터만, 배열은 Start 에서 한 번
         private int _bonusEarned;
         private int[] _laneBreaches;
+
+        // 오염 이벤트를 낸 칸 (O02) — CellContaminated 를 낸 칸만 true, CellCleaned 를 내면 false. 같은 칸 청소 이벤트를 두 번 내지 않는다
+        private bool[] _contaminatedCells;
 
         /// <summary>값 읽기용 (U02 HUD). 상태를 바꾸는 호출은 GameLoop 를 거친다.</summary>
         public GameFlow Flow => _flow;
@@ -66,10 +71,12 @@ namespace QL.Game.Flow
             }
 
             _laneBreaches = new int[bootstrap.Grid.LaneCount];
+            _contaminatedCells = new bool[bootstrap.Grid.CellCount];
             _flow = new GameFlow(bootstrap.Config, bootstrap.Data.Waves.ToSpecs());
-            _flow.StartGame();
+            _flow.StartGame(); // 웨이브 0 시간표 · 예보 Build (잘못된 WaveSpec → ArgumentException, 데이터 버그)
             Time.timeScale = 1f;
             GameEvents.RaiseStateChanged(_flow.State); // StartGame 으로 바뀐 상태는 FlowStep 에 없다 (보류함 2번 ①)
+            GameEvents.RaiseWavePrepStarted(_flow.WaveIndex, _flow.Forecast); // 첫 준비 — 첫 PrepTick(다음 Step) 보다 먼저
         }
 
         private void OnDestroy()
@@ -91,14 +98,16 @@ namespace QL.Game.Flow
         }
 
         /// <summary>
-        /// 한 프레임: ① WaveRunner.Advance(스폰) ② SlimeRegistry.Advance(이동 · 잔열 · 도달 → 알림)
-        /// ③ DroneCombat.Advance(공격 · 처치 → 알림) ④ GameFlow.Tick 한 번 ⑤ FlowStep → 이벤트.
+        /// 한 프레임: ⓪ 자연 청소 알림(GameBootstrap.Update 의 Grid.Tick 결과) ① WaveRunner.Advance(스폰)
+        /// ② SlimeRegistry.Advance(이동 · 잔열 · 도달 → 알림 · 레인 칸 오염) ③ DroneCombat.Advance(공격 · 처치 → 알림)
+        /// ④ GameFlow.Tick 한 번 ⑤ FlowStep → 이벤트.
         /// 일시정지 · 결과 중이거나 dt ≤ 0 이면 아무것도 하지 않는다.
         /// </summary>
         public void Step(float dt)
         {
             if (!CanAct || !(dt > 0f)) return;
 
+            PublishNaturalCleans();
             waves.Advance(dt);
             registry.Advance(dt);
             combat.Advance(dt);
@@ -107,26 +116,41 @@ namespace QL.Game.Flow
             Publish(in step);
         }
 
-        /// <summary>FlowStep → 이벤트. 여러 개가 같이 오면 PrepTick → WaveStarted → WaveCleared 보너스 → StateChanged → GameEnded 순.</summary>
+        /// <summary>
+        /// FlowStep → 이벤트. 여러 개가 같이 오면 PrepTick → WaveStarted → RemainingSlimesChanged → WaveCleared → CoinChanged(수당)
+        /// → StateChanged → WavePrepStarted(다음 준비) | GameEnded 순 (O02).
+        /// </summary>
         private void Publish(in FlowStep step)
         {
             if (step.PrepSecondChanged) GameEvents.RaisePrepTick(step.PrepSecondsLeft);
 
             if (step.WaveStarted)
             {
-                waves.StartWave(step.WaveIndex);
+                // 준비 시간에 만든 그 시간표 그대로 — 실제 스폰 = WavePrepStarted 예보 (O02)
+                waves.StartWave(step.WaveIndex, _flow.CurrentSchedule);
                 GameEvents.RaiseWaveStarted(step.WaveIndex, step.WaveCount, step.BannerText);
                 GameEvents.RaiseRemainingSlimesChanged(_flow.RemainingInWave);
             }
 
-            if (step.WaveCleared && step.ClearBonus > 0)
+            if (step.WaveCleared)
             {
-                bootstrap.Wallet.Add(step.ClearBonus);
-                _bonusEarned += step.ClearBonus;
-                GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, step.ClearBonus);
+                // 수당 = 클리어 + 청소, 한 번에 (O01 PayBreakdown) — 영수증(U14)이 내역을 먼저 받고 코인이 뒤따른다
+                PayBreakdown pay = step.Pay;
+                GameEvents.RaiseWaveCleared(pay.WaveIndex, in pay);
+                if (pay.Total > 0) // Wallet.Add 는 1 이상만
+                {
+                    bootstrap.Wallet.Add(pay.Total);
+                    _bonusEarned += pay.Total;
+                    GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, pay.Total);
+                }
             }
 
-            if (step.StateChanged) GameEvents.RaiseStateChanged(step.State);
+            if (step.StateChanged)
+            {
+                GameEvents.RaiseStateChanged(step.State);
+                // 클리어 Tick 이 다음 웨이브 시간표 · 예보를 Build 했다 — 그 준비의 첫 PrepTick(다음 Step) 보다 먼저
+                if (step.State == GameState.Prep) GameEvents.RaiseWavePrepStarted(_flow.WaveIndex, _flow.Forecast);
+            }
 
             if (step.Outcome != GameOutcome.None)
             {
@@ -135,6 +159,40 @@ namespace QL.Game.Flow
                 GameEvents.RaiseGameEnded(LastResult);
                 Time.timeScale = 0f;
             }
+        }
+
+        // ── 오염 · 청소 (O02) ─────────────────────────────────
+
+        /// <summary>
+        /// 자연 청소(마름) → CellCleaned(cell, false). 출처는 GameBootstrap.Update 의 Grid.Tick 이 남긴 TickCleanedCell 목록.
+        /// 그 목록을 못 본 프레임(일시정지로 넘긴 프레임 · 다른 코드의 Grid.Clean)은 칸 상태와 비교해 따라잡는다. 할당 없음.
+        /// </summary>
+        private void PublishNaturalCleans()
+        {
+            GridModel grid = bootstrap.Grid;
+            int n = grid.TickCleanedCount;
+            for (int i = 0; i < n; i++) PublishNaturalClean(grid, grid.TickCleanedCell(i));
+            for (int c = 0; c < _contaminatedCells.Length; c++) PublishNaturalClean(grid, c);
+        }
+
+        private void PublishNaturalClean(GridModel grid, int cell)
+        {
+            // 오염 이벤트를 냈고 지금은 깨끗한 칸만 — 같은 목록을 두 Step 이 읽어도 · 다시 오염된 칸이어도 한 번
+            if (!_contaminatedCells[cell] || grid.Get(cell).IsContaminated) return;
+            _contaminatedCells[cell] = false;
+            GameEvents.RaiseCellCleaned(cell, false);
+        }
+
+        /// <summary>
+        /// DragController 의 드롭 결과가 MergeClean 일 때 — 청소 횟수를 이 웨이브 수당 내역에 쌓고 CellCleaned(cell, true).
+        /// 칸은 이미 Grid.Drop 이 씻었다 (판정은 Core).
+        /// </summary>
+        internal void NotifyMergeClean(int cell)
+        {
+            if (_flow == null) return;
+            _flow.NotifyMergeClean(); // Prep · Wave 만 센다 (Title · Result 는 false — 드래그 중 종료는 Cancel 되므로 오지 않는다)
+            if ((uint)cell < (uint)_contaminatedCells.Length) _contaminatedCells[cell] = false;
+            GameEvents.RaiseCellCleaned(cell, true);
         }
 
         /// <summary>
@@ -211,9 +269,17 @@ namespace QL.Game.Flow
             if (!AcceptsSlimeNotice) return;
             _flow.NotifySlimeReachedLine(slime.HatchDamage);
             int lane = slime.Lane;
-            if ((uint)lane < (uint)_laneBreaches.Length) _laneBreaches[lane]++;
+            bool inLanes = (uint)lane < (uint)_laneBreaches.Length;
+            if (inLanes) _laneBreaches[lane]++;
+            // 뚫린 레인의 아직 깨끗한 칸 하나 (공용 Rng — 소환 · 오염 전용, V01 8장). 레인 전체가 오염이면 -1 · 난수 안 뽑음
+            int cell = inLanes ? bootstrap.Grid.ContaminateInLane(lane, bootstrap.Rng) : -1;
             GameEvents.RaiseHatchHpChanged(_flow.Hatch.Hp, _flow.Hatch.MaxHp);
             GameEvents.RaiseRemainingSlimesChanged(_flow.RemainingInWave);
+            if (cell >= 0)
+            {
+                _contaminatedCells[cell] = true;
+                GameEvents.RaiseCellContaminated(cell, lane, bootstrap.Grid.ContaminationRemaining(cell));
+            }
         }
     }
 }

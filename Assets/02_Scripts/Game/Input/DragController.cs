@@ -12,6 +12,7 @@ namespace QL.Game.Input
     /// 마우스 → 드래그 흐름. 입력 읽기(Update)와 흐름 메서드(BeginAt · HoverAt · ReleaseAt · Cancel)를 나눈다.
     /// 흐름 메서드는 public — PlayMode 테스트가 마우스 없이 부른다. 판정은 GridModel · MergeRule 만.
     /// Esc 는 읽지 않는다 — GameLoop 가 받아 드래그 중이면 <see cref="Cancel"/> 을 부른다 (G06).
+    /// 드래그 중 원래 칸이 오염돼도 드롭 판정은 놓는 순간 칸 상태대로 (Core) — 복귀(Return)면 오염 칸으로 돌아가 공격이 멈춘다 (O02).
     /// </summary>
     public sealed class DragController : MonoBehaviour
     {
@@ -146,8 +147,13 @@ namespace QL.Game.Input
                     GameEvents.RaiseDroneSwapped(r.From, r.To);
                     break;
                 case DropOutcome.Merge:
+                    GameEvents.RaiseDroneMerged(r.From, r.To, r.Type, r.NewGrade);
+                    break;
                 case DropOutcome.MergeClean:
                     GameEvents.RaiseDroneMerged(r.From, r.To, r.Type, r.NewGrade);
+                    // 오염 칸 청소 — 수당 내역 · CellCleaned(true) 는 흐름(GameLoop) 한 곳에서 (O02)
+                    if (loop != null) loop.NotifyMergeClean(r.To);
+                    else GameEvents.RaiseCellCleaned(r.To, true);
                     break;
             }
 

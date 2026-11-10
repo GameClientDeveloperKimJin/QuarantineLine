@@ -242,6 +242,10 @@ namespace QL.Tests.PlayMode
         [UnityTest]
         public IEnumerator AllSlimesKilled_ClearBonusAdded_NextPrep()
         {
+            var pays = new List<PayBreakdown>();
+            var prepForecasts = new List<WaveForecast>();
+            GameEvents.WaveCleared += (i, p) => pays.Add(p);
+            GameEvents.WavePrepStarted += (i, f) => prepForecasts.Add(f);
             StepToWave();
             int wave = Flow.WaveIndex;
             Assert.Less(wave, _specs.Length - 1, "마지막 웨이브가 아니어야 다음 준비로 간다");
@@ -260,6 +264,14 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(wave + 1, Flow.WaveIndex);
             Assert.AreEqual(bonus, _bootstrap.Wallet.Coins - coinsBefore, "코인 증가 = ClearBonus");
             Assert.AreEqual(bonus, _coinDeltas[_coinDeltas.Count - 1], "CoinChanged delta = ClearBonus");
+            // O02: 지급 출처 = WaveCleared 의 Pay.Total (청소 없음 → ClearBonus 그대로) · 다음 준비 예보
+            Assert.AreEqual(1, pays.Count, "WaveCleared 1번");
+            Assert.AreEqual(wave, pays[0].WaveIndex);
+            Assert.AreEqual(0, pays[0].CleanCount);
+            Assert.AreEqual(bonus, pays[0].Total);
+            Assert.AreEqual(1, prepForecasts.Count, "다음 준비 WavePrepStarted 1번");
+            Assert.AreEqual(wave + 1, prepForecasts[0].WaveIndex);
+            Assert.AreEqual(Flow.Forecast.SlimeCount, prepForecasts[0].SlimeCount);
             Assert.AreEqual(SlimeCountOf(wave), _killed);
             Assert.AreEqual(0, _hatchNow.Count, "해치 피해 없음");
             yield return null;
@@ -383,6 +395,9 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(1, r.MaxGradeDrones, "최고 등급 드론 1대");
             Assert.AreEqual(Flow.Hatch.MaxHp, r.HatchHp);
             Assert.AreEqual(_specs.Length, _waveStartIndex.Count, "웨이브 전부 시작");
+            int bonusSum = 0;
+            for (int w = 0; w < _specs.Length; w++) bonusSum += _specs[w].ClearBonus;
+            Assert.AreEqual(bonusSum, r.BonusEarned, "BonusEarned = Pay.Total 합 (청소 없음 → ClearBonus 합, 마지막 웨이브 포함)");
             Assert.AreEqual(0f, Time.timeScale);
             yield return null;
         }

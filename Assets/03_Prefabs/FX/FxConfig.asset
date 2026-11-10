@@ -264,3 +264,27 @@ MonoBehaviour:
   hatchCriticalColor: {r: 1, g: 0.15, b: 0.1, a: 1}
   hatchCriticalAlpha: 0.6
   hatchCriticalPeriod: 1.2
+  breakDimColor: {r: 0, g: 0, b: 0, a: 0.85}
+  breakDimDuration: 0.2
+  breakCardDelay: 0.05
+  breakCardDuration: 0.25
+  breakCardScaleFrom: 0.9
+  breakCardEase: 27
+  breakCloseDuration: 0.15
+  breakCloseEase: 5
+  breakSteamRise: 12
+  breakSteamDuration: 1.2
+  breakSteamStagger: 0.3
+  breakSteamColor: {r: 0.62, g: 0.78, b: 0.84, a: 0.85}
+  breakTipInterval: 6
+  breakTipFadeDuration: 0.2
+  breakTipLabelColor: {r: 0.35, g: 0.92, b: 0.86, a: 1}
+  breakTipTextColor: {r: 0.8, g: 0.9, b: 0.95, a: 1}
+  breakTipFrameColor: {r: 0.35, g: 0.8, b: 0.8, a: 0.55}
+  breakTipFillColor: {r: 0.1, g: 0.3, b: 0.34, a: 0.35}
+  breakStatusFormat: "\uADFC\uBB34 \uC911 <n>{0:00}:{1:00}</n> \xB7 \uC6E8\uC774\uBE0C
+    {2} / {3} \xB7 \uD574\uCE58 <n>{4}/{5}</n>"
+  breakStatusLabelColor: {r: 0.62, g: 0.74, b: 0.84, a: 1}
+  breakStatusNumberColor: {r: 0.55, g: 0.95, b: 1, a: 1}
+  breakSecondaryTint: {r: 0.62, g: 0.68, b: 0.72, a: 1}
+  breakSecondaryTextColor: {r: 0.9, g: 0.94, b: 0.96, a: 1}

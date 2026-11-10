@@ -12,6 +12,7 @@ namespace QL.FX
     /// U11: 결과 화면 강조색(승 · 패) · 헤더 띠 · 진행 막대 칸 차오름.
     /// U05: 데미지 숫자 · 처치 대역 납작 · Splat/Puddle · 코인 비행 · 잔열 불꽃 · 풀 크기.
     /// U06: 웨이브 경고 배너 · 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
+    /// U12: 휴게 시간 카드 — 어둡게 · 카드 등장 / 닫힘 · 커피 김 루프 · 팁 교체 · 상태 줄 형식과 색.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -444,6 +445,55 @@ namespace QL.FX
         public Color hatchCriticalColor;
         [Range(0f, 1f)] public float hatchCriticalAlpha;
         [Min(0.01f)] public float hatchCriticalPeriod;
+
+        [Header("U12 휴게 시간 — 등장 · 닫힘 (실제 시간, SetUpdate(true))")]
+        [Tooltip("뒤 게임 화면을 덮는 색 (시안 1-5: 검정 60%) — 알파가 등장 끝값")]
+        public Color breakDimColor;
+        [Tooltip("어둡게 0 → 끝값 시간 (초, 원본 0.2)")]
+        [Min(0f)] public float breakDimDuration;
+        [Tooltip("카드가 어둡게보다 늦게 시작하는 시간 (초, 원본 0.05)")]
+        [Min(0f)] public float breakCardDelay;
+        [Tooltip("카드 크기 · 알파 등장 시간 (초, 원본 0.25)")]
+        [Min(0f)] public float breakCardDuration;
+        [Tooltip("카드 시작 크기 → 1 (원본 0.9)")]
+        public float breakCardScaleFrom;
+        public Ease breakCardEase;
+        [Tooltip("업무 복귀 — 카드 · 어둡게가 거꾸로 사라지는 시간 (초, 원본 0.15). 게임 재개는 기다리지 않는다")]
+        [Min(0f)] public float breakCloseDuration;
+        public Ease breakCloseEase;
+
+        [Header("U12 휴게 시간 — 커피 김 루프")]
+        [Tooltip("김 한 줄이 떠오르는 높이 (px, 원본 +12)")]
+        public float breakSteamRise;
+        [Tooltip("한 번 떠오르는 시간 (초, Yoyo — 원본 1.2)")]
+        [Min(0.01f)] public float breakSteamDuration;
+        [Tooltip("줄마다 어긋나는 시간 (초, 원본 0.3)")]
+        [Min(0f)] public float breakSteamStagger;
+        [Tooltip("김 색 (알파 = 가장 진할 때, 떠오르며 0 으로)")]
+        public Color breakSteamColor;
+
+        [Header("U12 휴게 시간 — 팁 줄")]
+        [Tooltip("다음 팁으로 넘어가는 간격 (초, 원본 6)")]
+        [Min(0.1f)] public float breakTipInterval;
+        [Tooltip("팁 두 줄 크로스페이드 시간 (초, 원본 0.2)")]
+        [Min(0f)] public float breakTipFadeDuration;
+        [Tooltip("「TIP」 머리말 색 · 본문 색 · 점선 테두리 색 · 안쪽 채움 색")]
+        public Color breakTipLabelColor;
+        public Color breakTipTextColor;
+        public Color breakTipFrameColor;
+        public Color breakTipFillColor;
+
+        [Header("U12 휴게 시간 — 상태 줄 · 버튼")]
+        [Tooltip("상태 줄 형식 — {0}:{1} = 근무 분:초 · {2} / {3} = 웨이브 · {4}/{5} = 해치 HP. <n>…</n> 안은 숫자 강조색 (열 때 1회 SetText)")]
+        public string breakStatusFormat;
+        [Tooltip("상태 줄 바탕 글자색 (근무 중 · 웨이브 · 해치)")]
+        public Color breakStatusLabelColor;
+        [Tooltip("상태 줄 숫자 강조색 (<n>…</n>)")]
+        public Color breakStatusNumberColor;
+        [Tooltip("보조 버튼 (처음부터 다시 · 퇴근하기) 그림 틴트 — 주 버튼(업무 복귀)은 청록 그대로")]
+        public Color breakSecondaryTint;
+        [Tooltip("보조 버튼 글자색")]
+        public Color breakSecondaryTextColor;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

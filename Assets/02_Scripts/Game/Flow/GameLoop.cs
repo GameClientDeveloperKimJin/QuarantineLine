@@ -168,6 +168,14 @@ namespace QL.Game.Flow
             }
         }
 
+        /// <summary>창이 포커스를 잃으면 (Alt+Tab) Prep · Wave 에서만 일시정지 — 드래그 취소 뒤 HandleEscape 의 Pause 길 (U12). 돌아와도 자동 재개하지 않는다.</summary>
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus || !CanAct) return;
+            drag.Cancel();
+            HandleEscape();
+        }
+
         /// <summary>다시 하기 — 씬을 다시 불러 모든 모델(GameFlow 포함)을 새로 만든다. 구독 해제는 GameBootstrap.OnDestroy.</summary>
         public void Restart()
         {

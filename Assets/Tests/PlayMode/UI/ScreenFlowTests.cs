@@ -13,7 +13,9 @@ using QL.Game.Drones;
 using QL.Game.Flow;
 using QL.Game.Input;
 using QL.Game.Slimes;
+using QL.Game.Summon;
 using QL.UI.Screens;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -24,6 +26,7 @@ namespace QL.Tests.PlayMode.UI
     /// <summary>
     /// U01 화면 흐름 — Game.unity(UIRoot 포함)를 열고 GameLoop.Step · HandleEscape 를 직접 불러 화면이 따라오는지 본다.
     /// U11: 결과 화면 와이어프레임 배치 — 헤더 · 진행 막대 · 지표 · 정보 줄 값, 결과 중 Esc → Title · R → 같은 씬, 두 버튼.
+    /// U12: 휴게 시간 카드 — Esc · 일시정지 버튼 · 포커스 잃음 세 길, 상태 줄 값, timeScale 0 에서 카드 · 김 · 팁 교체, 근무 시간 고정, 퇴근하기 · 처음부터 다시.
     /// 셋업 뒤 Time.timeScale = 0 (GameLoopTests 와 같음) — 화면 트윈은 SetUpdate(true) 라 실제 시간으로 움직인다.
     /// </summary>
     public sealed class ScreenFlowTests
@@ -42,6 +45,9 @@ namespace QL.Tests.PlayMode.UI
         private PauseScreen _pause;
         private ResultScreen _result;
         private InGameScreen _inGame;
+        private DragController _drag;
+        private SummonController _summon;
+        private int _stateEvents;
         private readonly List<ResultSummary> _ended = new List<ResultSummary>();
         private readonly int[] _reachedPerLane = new int[16];
 
@@ -81,7 +87,10 @@ namespace QL.Tests.PlayMode.UI
 
             GameEvents.GameEnded += r => _ended.Add(r);
             GameEvents.SlimeReachedHatch += OnReached;
+            GameEvents.StateChanged += OnStateChangedCount;
         }
+
+        private void OnStateChangedCount(GameState state) => _stateEvents++;
 
         // GameLoop 와 같은 조건(웨이브 중)으로 레인별 도달을 따로 센다 — ResultSummary.MostBreachedLane 비교용
         private void OnReached(SlimeView s)
@@ -120,8 +129,11 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsNotNull(_result, "UIRoot 에 ResultScreen 이 없다");
             Assert.IsNotNull(_inGame, "UIRoot 에 InGameScreen 이 없다");
 
-            DragController drag = Object.FindAnyObjectByType<DragController>();
-            drag.enabled = false; // 실제 마우스가 끼어들지 않게
+            _drag = Object.FindAnyObjectByType<DragController>();
+            _drag.enabled = false; // 실제 마우스가 끼어들지 않게
+            _summon = Object.FindAnyObjectByType<SummonController>();
+            Assert.IsNotNull(_summon, "씬에 SummonController 가 없다");
+            _summon.enabled = false; // 실제 Space 가 끼어들지 않게 (RequestSummon 은 직접 부른다)
             Time.timeScale = 0f;  // 시간은 테스트가 Step 으로
         }
 
@@ -158,6 +170,74 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsFalse(fader.IsShown, what + " 숨김");
             Assert.AreEqual(0f, fader.Alpha, 0.001f, what + " 알파 0");
             Assert.IsFalse(fader.Group.blocksRaycasts, what + " 클릭을 막지 않는다");
+        }
+
+        // ── U12 휴게 카드 도우미 ──
+
+        private const float PauseWaitSeconds = 2f;
+
+        // GameLoop.OnApplicationFocus 는 private (Unity 메시지) — 리플렉션으로 Alt+Tab 을 흉내 낸다
+        private void Focus(bool hasFocus)
+        {
+            MethodInfo m = typeof(GameLoop).GetMethod("OnApplicationFocus", BindingFlags.NonPublic | BindingFlags.Instance);
+            Assert.IsNotNull(m, "GameLoop.OnApplicationFocus 가 없다");
+            m.Invoke(_loop, new object[] { hasFocus });
+        }
+
+        private float DimFull
+        {
+            get
+            {
+                FieldInfo f = typeof(PauseScreen).GetField("fx", BindingFlags.NonPublic | BindingFlags.Instance);
+                return ((QL.FX.FxConfig)f.GetValue(_pause)).breakDimColor.a;
+            }
+        }
+
+        private IEnumerator WaitCard(float target)
+        {
+            float full = DimFull;
+            float until = Time.realtimeSinceStartup + PauseWaitSeconds;
+            // 등장은 OutBack 이라 알파가 1 이 된 뒤에도 크기가 잠깐 1 을 넘는다 — 크기까지 1 로 돌아올 때까지
+            while ((Mathf.Abs(_pause.CardAlpha - target) > 0.001f || Mathf.Abs(_pause.DimAlpha - target * full) > 0.001f
+                    || (target > 0f && Mathf.Abs(_pause.CardScale - 1f) > 0.001f))
+                   && Time.realtimeSinceStartup < until) yield return null;
+        }
+
+        private static IEnumerator WaitReal(float seconds)
+        {
+            float until = Time.realtimeSinceStartup + seconds;
+            while (Time.realtimeSinceStartup < until) yield return null;
+        }
+
+        private void AssertPauseShown(string what)
+        {
+            Assert.AreEqual(GameState.Paused, Flow.State, what + " → Paused");
+            Assert.AreEqual(0f, Time.timeScale, what + " → timeScale 0");
+            Assert.IsTrue(_pause.IsShown, what + " → 휴게 카드 켜짐");
+            Assert.IsTrue(_pause.Group.blocksRaycasts, what + " → 카드가 클릭을 받는다");
+        }
+
+        private void AssertPauseHidden(string what)
+        {
+            Assert.IsFalse(_pause.IsShown, what + " 숨김");
+            Assert.AreEqual(0f, _pause.CardAlpha, 0.001f, what + " 카드 알파 0");
+            Assert.AreEqual(0f, _pause.DimAlpha, 0.001f, what + " 어둡게 0");
+            Assert.IsFalse(_pause.Group.blocksRaycasts, what + " 클릭을 막지 않는다");
+        }
+
+        // 테스트 asmdef 가 DOTween 을 참조하지 않아 리플렉션으로 센다
+        private static int PlayingTweens()
+        {
+            Type t = Type.GetType("DG.Tweening.DOTween, DOTween");
+            Assert.IsNotNull(t, "DOTween 형식을 찾지 못했다");
+            return (int)t.GetMethod("TotalPlayingTweens", BindingFlags.Public | BindingFlags.Static).Invoke(null, null);
+        }
+
+        private int DroneCount()
+        {
+            int n = 0;
+            for (int i = 0; i < _bootstrap.Grid.CellCount; i++) if (_bootstrap.Grid.Get(i).HasDrone) n++;
+            return n;
         }
 
         private int TotalClearBonus()
@@ -228,7 +308,7 @@ namespace QL.Tests.PlayMode.UI
         public IEnumerator Start_PauseAndResultHidden()
         {
             Assert.AreEqual(GameState.Prep, Flow.State);
-            AssertHidden(_pause.Fader, "일시정지");
+            AssertPauseHidden("휴게 카드");
             AssertHidden(_result.Fader, "결과");
             Assert.IsTrue(_inGame.PauseButton.interactable, "준비 중 일시정지 버튼 누를 수 있음");
             yield return null;
@@ -241,13 +321,21 @@ namespace QL.Tests.PlayMode.UI
             _loop.HandleEscape();
             Assert.AreEqual(GameState.Paused, Flow.State);
             Assert.AreEqual(0f, Time.timeScale);
-            Assert.IsTrue(_pause.Fader.IsShown, "일시정지 화면 보임");
-            Assert.IsTrue(_pause.Fader.Group.blocksRaycasts);
+            AssertPauseShown("Esc");
             Assert.IsFalse(_inGame.PauseButton.interactable, "일시정지 중 일시정지 버튼 잠금");
 
-            yield return WaitAlpha(_pause.Fader, 1f);
-            Assert.AreEqual(1f, _pause.Fader.Alpha, 0.001f, "timeScale 0 에서도 페이드 완료");
+            yield return WaitCard(1f);
+            Assert.AreEqual(1f, _pause.CardAlpha, 0.001f, "timeScale 0 에서도 카드 등장 완료");
+            Assert.AreEqual(DimFull, _pause.DimAlpha, 0.001f, "어둡게 = breakDimColor 알파 (검정 60%)");
+            Assert.AreEqual(1f, _pause.CardScale, 0.001f, "카드 크기 0.9 → 1");
             Assert.IsFalse(_result.Fader.IsShown);
+
+            _loop.HandleEscape(); // Esc 로 닫힘
+            Assert.AreEqual(GameState.Wave, Flow.State);
+            Assert.IsFalse(_pause.IsShown);
+            Time.timeScale = 0f;
+            yield return WaitCard(0f);
+            AssertPauseHidden("Esc 로 닫은 뒤");
         }
 
         [UnityTest]
@@ -255,18 +343,18 @@ namespace QL.Tests.PlayMode.UI
         {
             StepToWave();
             _inGame.PauseButton.onClick.Invoke(); // 일시정지 버튼 = HandleEscape
-            Assert.AreEqual(GameState.Paused, Flow.State);
-            yield return WaitAlpha(_pause.Fader, 1f);
+            AssertPauseShown("일시정지 버튼");
+            yield return WaitCard(1f);
 
             _pause.ResumeButton.onClick.Invoke();
-            Assert.AreEqual(GameState.Wave, Flow.State, "계속하기 → 웨이브");
+            Assert.AreEqual(GameState.Wave, Flow.State, "업무 복귀 → 웨이브 (닫힘 연출을 기다리지 않는다)");
             Assert.AreEqual(1f, Time.timeScale, "재개 → 시간 흐름");
-            Assert.IsFalse(_pause.Fader.IsShown);
-            Assert.IsFalse(_pause.Fader.Group.blocksRaycasts);
+            Assert.IsFalse(_pause.IsShown);
+            Assert.IsFalse(_pause.Group.blocksRaycasts);
             Time.timeScale = 0f;
 
-            yield return WaitAlpha(_pause.Fader, 0f);
-            AssertHidden(_pause.Fader, "재개 뒤 일시정지");
+            yield return WaitCard(0f);
+            AssertPauseHidden("재개 뒤 휴게 카드");
             Assert.IsTrue(_inGame.PauseButton.interactable);
         }
 
@@ -393,14 +481,14 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(GameState.Prep, Flow.State);
             Assert.AreEqual(0, Flow.WaveIndex);
             Assert.AreEqual(Flow.Hatch.MaxHp, Flow.Hatch.Hp, "새 해치");
-            AssertHidden(_pause.Fader, "새 판 일시정지");
+            AssertPauseHidden("새 판 휴게 카드");
             AssertHidden(_result.Fader, "새 판 결과");
             Assert.IsTrue(_inGame.PauseButton.interactable);
 
             // 새 판에서도 구독이 살아 있다
             StepToWave();
             _loop.HandleEscape();
-            Assert.IsTrue(_pause.Fader.IsShown, "새 판 일시정지 화면");
+            Assert.IsTrue(_pause.IsShown, "새 판 휴게 카드");
         }
 
         [UnityTest]
@@ -452,6 +540,234 @@ namespace QL.Tests.PlayMode.UI
             _result.TitleButton.onClick.Invoke();
             Assert.AreEqual(1f, Time.timeScale);
             yield return WaitForScene(TitleSceneName);
+        }
+
+        // ── U12 휴게 시간 ─────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator FocusLost_InPrepAndWave_Pauses_NoAutoResume()
+        {
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Focus(false); // Alt+Tab (준비 중)
+            AssertPauseShown("준비 중 포커스 잃음");
+            Focus(true);
+            Assert.AreEqual(GameState.Paused, Flow.State, "포커스가 돌아와도 자동 재개하지 않는다");
+            Assert.IsTrue(_pause.IsShown, "카드 그대로");
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Prep, Flow.State, "Esc = 업무 복귀 → 준비로");
+            Assert.IsFalse(_pause.IsShown);
+            Time.timeScale = 0f;
+
+            StepToWave();
+            Focus(false); // Alt+Tab (웨이브 중)
+            AssertPauseShown("웨이브 중 포커스 잃음");
+            Focus(true);
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            yield return WaitCard(1f);
+            Assert.AreEqual(1f, _pause.CardAlpha, 0.001f);
+
+            _pause.ResumeButton.onClick.Invoke();
+            Assert.AreEqual(GameState.Wave, Flow.State, "업무 복귀를 눌러야 재개");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusLost_WhenPausedOrResult_NoStateChange()
+        {
+            StepToWave();
+            _loop.HandleEscape();
+            int before = _stateEvents;
+            Focus(false);
+            Assert.AreEqual(GameState.Paused, Flow.State, "이미 Paused — 그대로");
+            Assert.AreEqual(before, _stateEvents, "StateChanged 없음");
+            Assert.IsTrue(_pause.IsShown);
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+
+            PlayToDefeat();
+            before = _stateEvents;
+            Focus(false);
+            Assert.AreEqual(GameState.Result, Flow.State, "결과 중 — 그대로");
+            Assert.AreEqual(before, _stateEvents, "StateChanged 없음");
+            Assert.IsFalse(_pause.IsShown, "결과 중에는 휴게 카드가 안 열린다");
+            yield return null;
+            Assert.AreEqual(SceneName, SceneManager.GetActiveScene().name, "타이틀로 가지 않는다");
+        }
+
+        [UnityTest]
+        public IEnumerator FocusLost_WhileDragging_DroneBackToCell_ThenPause()
+        {
+            _bootstrap.Grid.Place(0, DroneType.Suction, 1);
+            _board.SyncCell(0);
+            Assert.IsTrue(_drag.BeginAt(0), "집기");
+            Assert.IsTrue(_drag.IsDragging);
+
+            Focus(false);
+            Assert.IsFalse(_drag.IsDragging, "드래그 취소");
+            Assert.IsTrue(_bootstrap.Grid.Get(0).HasDrone, "드론은 원래 칸");
+            AssertPauseShown("드래그 중 포커스 잃음");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Paused_SummonAndDragBlocked()
+        {
+            _bootstrap.Grid.Place(0, DroneType.Suction, 1);
+            _board.SyncCell(0);
+            int drones = DroneCount();
+            _loop.HandleEscape();
+            Assert.IsFalse(_loop.CanAct, "열려 있는 동안 CanAct false");
+            Assert.IsFalse(_summon.RequestSummon(), "Space · 소환 버튼 → 소환 없음");
+            Assert.AreEqual(drones, DroneCount());
+            Assert.IsFalse(_drag.BeginAt(0), "클릭 → 집기 없음");
+            Assert.IsFalse(_drag.IsDragging);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BreakCard_StatusLine_FilledOnOpen()
+        {
+            StepToWave();
+            _loop.HandleEscape();
+            int s = _pause.WorkSeconds;
+            string expected = string.Format(_pause.StatusFormat, s / 60, s % 60,
+                Flow.WaveIndex + 1, Flow.WaveCount, Flow.Hatch.Hp, Flow.Hatch.MaxHp);
+            Assert.AreEqual(expected, _pause.StatusText.text, "근무 시간 · 웨이브 · 해치");
+            StringAssert.Contains("<color=#", _pause.StatusText.text, "숫자 강조색");
+            Assert.AreEqual(Mathf.FloorToInt(Time.timeSinceLevelLoad), s, "근무 시간 = timeSinceLevelLoad");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator WorkTime_DoesNotGrowWhilePaused()
+        {
+            Time.timeScale = 1f; // 근무 시간이 흐르게 (준비 카운트다운도 실제로 흐른다)
+            yield return WaitReal(1.2f);
+            Assert.AreEqual(GameState.Prep, Flow.State, "아직 준비 중");
+
+            _loop.HandleEscape();
+            float t0 = Time.timeSinceLevelLoad;
+            int s0 = _pause.WorkSeconds;
+            Assert.GreaterOrEqual(s0, 1, "1초 넘게 근무");
+            string text0 = _pause.StatusText.text;
+
+            yield return WaitReal(3f);
+            Assert.AreEqual(t0, Time.timeSinceLevelLoad, 0.0001f, "일시정지 3초 동안 근무 시간이 안 늘어남");
+            Assert.AreEqual(text0, _pause.StatusText.text, "열려 있는 동안 상태 줄 갱신 없음");
+
+            // 다시 열어도 같은 값 (재개 직후 같은 프레임에 다시 멈춤)
+            _loop.HandleEscape();
+            _loop.HandleEscape();
+            Assert.AreEqual(s0, _pause.WorkSeconds, "다시 열어도 일시정지 시간이 더해지지 않는다");
+            Assert.AreEqual(text0, _pause.StatusText.text);
+        }
+
+        [UnityTest]
+        public IEnumerator BreakCard_AnimatesAtTimeScaleZero_TipRotatesEverySixSeconds()
+        {
+            StepToWave();
+            yield return null;
+            int playingBefore = PlayingTweens();
+            _loop.HandleEscape();
+            Assert.AreEqual(0f, Time.timeScale);
+            Assert.Less(_pause.CardAlpha, 1f, "막 열리기 시작");
+            Assert.AreEqual(0.9f, _pause.CardScale, 0.02f, "시작 크기 0.9");
+            yield return WaitCard(1f);
+            Assert.AreEqual(1f, _pause.CardAlpha, 0.001f, "timeScale 0 에서 카드 등장");
+
+            // 김 3줄 — 실제 시간으로 떠오르고 흐려진다, 줄마다 위상이 다르다
+            Assert.AreEqual(3, _pause.SteamLines);
+            float[] y0 = new float[3];
+            float[] a0 = new float[3];
+            for (int i = 0; i < 3; i++)
+            {
+                y0[i] = _pause.SteamLine(i).rectTransform.anchoredPosition.y;
+                a0[i] = _pause.SteamLine(i).color.a;
+            }
+            yield return WaitReal(0.4f);
+            for (int i = 0; i < 3; i++)
+            {
+                Assert.AreNotEqual(y0[i], _pause.SteamLine(i).rectTransform.anchoredPosition.y, "김 " + i + " 움직임");
+                Assert.AreNotEqual(a0[i], _pause.SteamLine(i).color.a, "김 " + i + " 알파 변화");
+            }
+            Assert.Greater(Mathf.Abs(y0[0] - y0[1]), 0.01f, "줄마다 위상이 어긋남");
+
+            // 팁 — 6초 뒤 다음 줄로 크로스페이드
+            Assert.Greater(_pause.Tips.Count, 1, "TipTable 에 팁이 2개 이상");
+            int first = _pause.TipIndex;
+            Assert.AreEqual(_pause.Tips.Get(first), _pause.TipFront.text);
+            yield return WaitReal(4.5f); // 연 뒤 약 5.2초
+            Assert.AreEqual(first, _pause.TipIndex, "6초 전에는 그대로");
+            float until = Time.realtimeSinceStartup + 2f;
+            while (Time.realtimeSinceStartup < until && _pause.TipIndex == first) yield return null;
+            int next = (first + 1) % _pause.Tips.Count;
+            Assert.AreEqual(next, _pause.TipIndex, "6초 뒤 다음 팁");
+            yield return WaitReal(0.5f);
+            Assert.AreEqual(_pause.Tips.Get(next), _pause.TipFront.text, "크로스페이드 뒤 앞 글자 = 다음 팁");
+            Assert.AreEqual(1f, _pause.TipFront.alpha, 0.001f);
+            Assert.AreEqual(0f, Time.timeScale, "내내 timeScale 0");
+
+            // 닫으면 루프가 멈춘다 — 대기 프레임에 도는 트윈이 열기 전보다 늘지 않는다
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+            yield return WaitCard(0f);
+            yield return null;
+            Assert.IsFalse(_pause.LoopsPlaying, "팁 타이머 멈춤");
+            Assert.LessOrEqual(PlayingTweens(), playingBefore, "닫힌 뒤 도는 트윈이 열기 전보다 많지 않다");
+        }
+
+        [UnityTest]
+        public IEnumerator BreakCard_TipsFitOneLine_AndDrawnAboveOtherCanvases()
+        {
+            _loop.HandleEscape();
+            TMP_Text t = _pause.TipFront;
+            float width = t.rectTransform.rect.width;
+            Assert.Greater(_pause.Tips.Count, 0);
+            for (int i = 0; i < _pause.Tips.Count; i++)
+                Assert.LessOrEqual(t.GetPreferredValues(_pause.Tips.Get(i)).x, width, "팁 " + i + " 이 24px 한 줄에 들어간다: " + _pause.Tips.Get(i));
+            Assert.GreaterOrEqual(t.fontSize, 24f, "글자 최소 24px");
+            Assert.GreaterOrEqual(_pause.StatusText.fontSize, 24f);
+            Assert.LessOrEqual(_pause.StatusText.preferredWidth, _pause.StatusText.rectTransform.rect.width, "상태 줄 한 줄");
+
+            // 코인 비행 · 데미지 숫자 캔버스(timeScale 0 에 멈춤)가 카드 위로 보이지 않는다
+            Canvas own = _pause.GetComponent<Canvas>();
+            Assert.IsNotNull(own, "휴게 카드 전용 Canvas");
+            Assert.IsTrue(own.overrideSorting);
+            Canvas[] all = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length; i++)
+                if (all[i].isRootCanvas && all[i].renderMode == RenderMode.ScreenSpaceOverlay)
+                    Assert.Greater(own.sortingOrder, all[i].sortingOrder, all[i].name + " 보다 위");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator BreakTitleButton_GoesToTitle_TimeScaleOne()
+        {
+            StepToWave();
+            _loop.HandleEscape();
+            yield return WaitCard(1f);
+            _pause.TitleButton.onClick.Invoke(); // 퇴근하기
+            Assert.AreEqual(1f, Time.timeScale, "퇴근하기는 시간을 되돌린다");
+            yield return WaitForScene(TitleSceneName);
+        }
+
+        [UnityTest]
+        public IEnumerator BreakRestartButton_ReloadsSameScene_TimeScaleOne()
+        {
+            StepToWave();
+            _loop.HandleEscape();
+            GameLoop old = _loop;
+            int buildIndex = old.gameObject.scene.buildIndex;
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            _pause.RestartButton.onClick.Invoke(); // 처음부터 다시
+            Assert.AreEqual(1f, Time.timeScale, "처음부터 다시는 시간을 되돌린다");
+            yield return WaitForLoop(old);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            Assert.AreNotSame(old, _loop);
+            Assert.AreEqual(buildIndex, _loop.gameObject.scene.buildIndex, "같은 씬");
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            AssertPauseHidden("새 판 휴게 카드");
+            Assert.Less(Time.timeSinceLevelLoad, 1f, "근무 시간 0 부터");
         }
     }
 }

@@ -1,0 +1,529 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using NUnit.Framework;
+using QL.Core;
+using QL.Core.Combat;
+using QL.Core.Flow;
+using QL.Core.Grid;
+using QL.Core.Stats;
+using QL.Core.Waves;
+using QL.Game;
+using QL.Game.Bootstrap;
+using QL.Game.Drones;
+using QL.Game.Flow;
+using QL.Game.Input;
+using QL.Game.Slimes;
+using QL.Game.Summon;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using UnityEngine.TestTools;
+using Object = UnityEngine.Object;
+
+namespace QL.Tests.PlayMode
+{
+    /// <summary>
+    /// Game.unity 를 열고 (DroneSeeder 끔) GameLoop.Step 을 직접 불러 시간을 넘긴다. 셋업 뒤 Time.timeScale = 0 이라
+    /// GameLoop.Update 의 Step(0) 은 아무것도 하지 않는다. 판정 기대값은 전부 GameFlow · 데이터(WaveSpec · Config · Catalog)에서.
+    /// </summary>
+    public sealed class GameLoopTests
+    {
+        private const string SceneName = "Game";
+        private const int MaxWaitFrames = 300;
+        private const int MaxSteps = 20000;
+        private const float Dt = 0.05f;
+
+        private GameBootstrap _bootstrap;
+        private GameLoop _loop;
+        private WaveRunner _runner;
+        private SlimeRegistry _registry;
+        private DragController _drag;
+        private DroneBoard _board;
+        private SummonController _summon;
+        private WaveSpec[] _specs;
+
+        private readonly List<GameState> _states = new List<GameState>();
+        private readonly List<int> _prepTicks = new List<int>();
+        private readonly List<int> _waveStartIndex = new List<int>();
+        private readonly List<int> _waveStartTotal = new List<int>();
+        private readonly List<string> _waveStartBanner = new List<string>();
+        private readonly List<int> _hatchNow = new List<int>();
+        private readonly List<int> _hatchMax = new List<int>();
+        private readonly List<int> _remaining = new List<int>();
+        private readonly List<int> _remainingFlowAtEvent = new List<int>();
+        private readonly List<ResultSummary> _ended = new List<ResultSummary>();
+        private readonly List<int> _coinDeltas = new List<int>();
+        private readonly List<int> _reachedDamage = new List<int>();
+        private int _killed;
+        private int _droneSpawned;
+
+        private GameFlow Flow => _loop.Flow;
+        private GridModel Grid => _bootstrap.Grid;
+
+        [UnitySetUp]
+        public IEnumerator SetUp()
+        {
+            GameEvents.ClearAll();
+            ClearRecords();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
+            yield return WaitForLoop(null);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        [UnityTearDown]
+        public IEnumerator TearDown()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Time.timeScale = 1f;
+            GameEvents.ClearAll();
+            yield return null;
+        }
+
+        // ── 셋업 도우미 ───────────────────────────────────────
+
+        /// <summary>새 씬의 OnEnable 뒤 · Start 전 — 시드 끄기 + 기록 구독 (GameLoop.Start 의 StateChanged 를 받으려고).</summary>
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            GameObject[] roots = scene.GetRootGameObjects();
+            for (int i = 0; i < roots.Length; i++)
+            {
+                DroneSeeder[] seeders = roots[i].GetComponentsInChildren<DroneSeeder>(true);
+                for (int j = 0; j < seeders.Length; j++) seeders[j].enabled = false;
+            }
+
+            GameEvents.StateChanged += s => _states.Add(s);
+            GameEvents.PrepTick += n => _prepTicks.Add(n);
+            GameEvents.WaveStarted += (i, t, b) =>
+            {
+                _waveStartIndex.Add(i);
+                _waveStartTotal.Add(t);
+                _waveStartBanner.Add(b);
+            };
+            GameEvents.HatchHpChanged += (now, max) =>
+            {
+                _hatchNow.Add(now);
+                _hatchMax.Add(max);
+            };
+            GameEvents.RemainingSlimesChanged += n =>
+            {
+                _remaining.Add(n);
+                _remainingFlowAtEvent.Add(_loop != null && _loop.Flow != null ? _loop.Flow.RemainingInWave : -1);
+            };
+            GameEvents.GameEnded += r => _ended.Add(r);
+            GameEvents.CoinChanged += (now, delta) => _coinDeltas.Add(delta);
+            GameEvents.SlimeKilled += s => _killed++;
+            GameEvents.SlimeReachedHatch += s => _reachedDamage.Add(s.HatchDamage);
+            GameEvents.DroneSpawned += (c, t, g) => _droneSpawned++;
+        }
+
+        private void ClearRecords()
+        {
+            _states.Clear();
+            _prepTicks.Clear();
+            _waveStartIndex.Clear();
+            _waveStartTotal.Clear();
+            _waveStartBanner.Clear();
+            _hatchNow.Clear();
+            _hatchMax.Clear();
+            _remaining.Clear();
+            _remainingFlowAtEvent.Clear();
+            _ended.Clear();
+            _coinDeltas.Clear();
+            _reachedDamage.Clear();
+            _killed = 0;
+            _droneSpawned = 0;
+        }
+
+        /// <summary>old 가 아닌 준비된 GameLoop 가 나올 때까지 → 참조 잡기 → 시간 정지.</summary>
+        private IEnumerator WaitForLoop(GameLoop old)
+        {
+            GameLoop found = null;
+            for (int i = 0; i < MaxWaitFrames; i++)
+            {
+                yield return null;
+                found = Object.FindAnyObjectByType<GameLoop>();
+                if (found != null && found != old && found.IsReady) break;
+            }
+
+            Assert.IsNotNull(found, "씬에 GameLoop 가 없다");
+            Assert.IsTrue(found.IsReady, "GameLoop 가 준비되지 않았다");
+            _loop = found;
+            _bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
+            _runner = Object.FindAnyObjectByType<WaveRunner>();
+            _registry = Object.FindAnyObjectByType<SlimeRegistry>();
+            _drag = Object.FindAnyObjectByType<DragController>();
+            _board = Object.FindAnyObjectByType<DroneBoard>();
+            _summon = Object.FindAnyObjectByType<SummonController>();
+            Assert.IsNotNull(_bootstrap);
+            Assert.IsNotNull(_runner);
+            Assert.IsNotNull(_registry);
+            Assert.IsNotNull(_drag);
+            Assert.IsNotNull(_board);
+            Assert.IsNotNull(_summon);
+
+            _drag.enabled = false; // 실제 마우스가 끼어들지 않게
+            Time.timeScale = 0f;   // GameLoop.Update 의 Step(0) 은 아무것도 하지 않는다 — 시간은 테스트가 Step 으로
+            _specs = _bootstrap.Data.Waves.ToSpecs();
+            for (int i = 0; i < Grid.CellCount; i++)
+                Assert.IsFalse(Grid.Get(i).HasDrone, "시드 배치가 꺼지지 않았다 (칸 " + i + ")");
+        }
+
+        // ── 진행 도우미 ───────────────────────────────────────
+
+        private void StepUntil(Func<bool> done, string what)
+        {
+            for (int i = 0; i < MaxSteps && !done(); i++) _loop.Step(Dt);
+            Assert.IsTrue(done(), what + " 에 이르지 못했다");
+        }
+
+        private void StepToWave() => StepUntil(() => Flow.State == GameState.Wave, "웨이브");
+
+        /// <summary>마지막 스냅샷의 살아 있는 점액을 전부 처치로 반납.</summary>
+        private void KillAllAlive()
+        {
+            SlimeTarget[] targets = _registry.Targets;
+            int n = _registry.TargetCount;
+            for (int k = 0; k < n; k++)
+                if (_registry.TryGet(targets[k].Id, out SlimeView s)) _registry.Despawn(s, DespawnReason.Killed);
+        }
+
+        private int SlimeCountOf(int wave) => WaveSchedule.Summarize(_specs[wave], _registry.AllStats()).SlimeCount;
+
+        private int PlaceDrone(int cell, DroneType type, int grade)
+        {
+            Grid.Place(cell, type, grade);
+            _board.SyncCell(cell);
+            return cell;
+        }
+
+        // ── 테스트 ────────────────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator Start_EntersPrep_RaisesStateChangedAndPrepTick()
+        {
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.AreEqual(0, Flow.WaveIndex);
+            Assert.GreaterOrEqual(_states.Count, 1, "StartGame 직후 StateChanged");
+            Assert.AreEqual(GameState.Prep, _states[0]);
+
+            // 첫 Prep Tick 은 항상 PrepTick — 셋업 프레임에서 이미 왔으면 그것이 올림 초
+            if (_prepTicks.Count == 0) _loop.Step(Dt);
+            Assert.AreEqual(Mathf.CeilToInt(_specs[0].PrepTime), _prepTicks[0], "첫 PrepTick = 준비 시간 올림");
+
+            int before = _prepTicks.Count;
+            StepUntil(() => _prepTicks.Count > before, "다음 PrepTick");
+            Assert.AreEqual(_prepTicks[before - 1] - 1, _prepTicks[before], "1초씩 줄어든다");
+            Assert.AreEqual(Mathf.CeilToInt(Flow.PrepRemaining), _prepTicks[before]);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator PrepElapsed_StartsWave_SpawnsAndRaisesWaveStarted()
+        {
+            int spawned = 0;
+            GameEvents.SlimeSpawned += s => spawned++;
+
+            StepToWave();
+            Assert.AreEqual(1, _waveStartIndex.Count, "WaveStarted 1번");
+            Assert.AreEqual(0, _waveStartIndex[0]);
+            Assert.AreEqual(_specs.Length, _waveStartTotal[0]);
+            Assert.AreEqual(_specs[0].BannerText, _waveStartBanner[0]);
+            Assert.AreEqual(GameState.Wave, _states[_states.Count - 1]);
+            Assert.AreEqual(0, _runner.WaveIndex, "WaveRunner 가 웨이브 0 을 시작");
+            Assert.AreEqual(SlimeCountOf(0), _remaining[_remaining.Count - 1], "웨이브 시작 남은 수");
+
+            _loop.Step(Dt);
+            Assert.Greater(spawned, 0, "다음 Step 에 스폰");
+            Assert.AreEqual(spawned, _registry.AliveCount);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator AllSlimesKilled_ClearBonusAdded_NextPrep()
+        {
+            StepToWave();
+            int wave = Flow.WaveIndex;
+            Assert.Less(wave, _specs.Length - 1, "마지막 웨이브가 아니어야 다음 준비로 간다");
+            int bonus = _specs[wave].ClearBonus;
+
+            int coinsBefore = _bootstrap.Wallet.Coins;
+            for (int i = 0; i < MaxSteps; i++)
+            {
+                coinsBefore = _bootstrap.Wallet.Coins;
+                _loop.Step(Dt);
+                if (Flow.State != GameState.Wave) break;
+                KillAllAlive();
+            }
+
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.AreEqual(wave + 1, Flow.WaveIndex);
+            Assert.AreEqual(bonus, _bootstrap.Wallet.Coins - coinsBefore, "코인 증가 = ClearBonus");
+            Assert.AreEqual(bonus, _coinDeltas[_coinDeltas.Count - 1], "CoinChanged delta = ClearBonus");
+            Assert.AreEqual(SlimeCountOf(wave), _killed);
+            Assert.AreEqual(0, _hatchNow.Count, "해치 피해 없음");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SlimeReachesLine_HatchHpDown_EventRaised()
+        {
+            StepToWave();
+            int max = Flow.Hatch.MaxHp;
+            StepUntil(() => _hatchNow.Count > 0, "격리선 도달");
+
+            Assert.AreEqual(1, _reachedDamage.Count);
+            int damage = _reachedDamage[0];
+            Assert.AreEqual(max - damage, Flow.Hatch.Hp, "감소 = HatchDamage");
+            Assert.AreEqual(max - damage, _hatchNow[0]);
+            Assert.AreEqual(max, _hatchMax[0]);
+            Assert.AreEqual(SlimeCountOf(0) - 1, Flow.RemainingInWave);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator HatchZero_Defeat_GameEnded_TimeScaleZero()
+        {
+            StepUntil(() => Flow.State == GameState.Result, "결과");
+
+            Assert.AreEqual(GameOutcome.Defeat, Flow.Outcome);
+            Assert.AreEqual(0, Flow.Hatch.Hp);
+            Assert.AreEqual(1, _ended.Count, "GameEnded 1번");
+            Assert.AreEqual(GameOutcome.Defeat, _ended[0].Outcome);
+            Assert.AreEqual(0, _ended[0].HatchHp);
+            Assert.AreEqual(Flow.Hatch.MaxHp, _ended[0].HatchMaxHp);
+            Assert.AreEqual(GameState.Result, _states[_states.Count - 1]);
+            Assert.AreEqual(0f, Time.timeScale);
+
+            // 결과 뒤 Step 은 아무것도 하지 않는다
+            int ended = _ended.Count;
+            int alive = _registry.AliveCount;
+            for (int i = 0; i < 20; i++) _loop.Step(Dt);
+            Assert.AreEqual(ended, _ended.Count);
+            Assert.AreEqual(alive, _registry.AliveCount);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SameFrame_LastKillAndHatchZero_Defeat()
+        {
+            StepToWave();
+            int wave = Flow.WaveIndex;
+            Assert.GreaterOrEqual(SlimeCountOf(wave), 2, "두 마리 이상 필요");
+
+            // 스폰이 끝날 때까지 가장 먼(새) 두 마리만 남기고 처치
+            SlimeView a = null, b = null;
+            for (int i = 0; i < MaxSteps; i++)
+            {
+                _loop.Step(Dt);
+                a = b = null;
+                SlimeTarget[] targets = _registry.Targets;
+                int n = _registry.TargetCount;
+                for (int k = 0; k < n; k++)
+                {
+                    if (!_registry.TryGet(targets[k].Id, out SlimeView s)) continue;
+                    if (a == null || s.Dist > a.Dist) { b = a; a = s; }
+                    else if (b == null || s.Dist > b.Dist) b = s;
+                }
+                for (int k = 0; k < n; k++)
+                    if (_registry.TryGet(targets[k].Id, out SlimeView s) && s != a && s != b)
+                        _registry.Despawn(s, DespawnReason.Killed);
+                if (!_runner.IsSpawning) break;
+            }
+
+            Assert.IsFalse(_runner.IsSpawning);
+            Assert.IsNotNull(a);
+            Assert.IsNotNull(b);
+            Assert.AreEqual(2, Flow.RemainingInWave, "두 마리 남음");
+            Assert.AreEqual(GameState.Wave, Flow.State);
+
+            // 해치 HP 1 → 같은 Step 에서 a 는 잔열 처치, b 는 격리선 도달 (b 가 닿을 만큼 큰 dt)
+            Flow.Hatch.TakeDamage(Flow.Hatch.Hp - 1);
+            float bigDt = b.Dist / b.MoveSpeed + 1f;
+            int maxHp = _registry.StatsOf(a.Type).MaxHp;
+            a.Combat.ApplyBurn(maxHp / bigDt * 2f, bigDt * 4f);
+            int killedBefore = _killed;
+
+            _loop.Step(bigDt);
+
+            Assert.AreEqual(killedBefore + 1, _killed, "마지막 처치가 같은 Step 에");
+            Assert.AreEqual(0, Flow.RemainingInWave, "남은 점액 0 (클리어 조건도 참)");
+            Assert.AreEqual(GameOutcome.Defeat, Flow.Outcome, "패배 우선");
+            Assert.AreEqual(GameState.Result, Flow.State);
+            Assert.AreEqual(1, _ended.Count);
+            Assert.AreEqual(GameOutcome.Defeat, _ended[0].Outcome);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator AllWavesCleared_Victory_SummaryCorrect()
+        {
+            DroneType type = DroneType.Suction;
+            int maxGrade = _bootstrap.Catalog.MaxGrade(type);
+            Assert.Greater(maxGrade, 1);
+            PlaceDrone(0, type, maxGrade);
+            PlaceDrone(1, type, 1);
+
+            int total = 0;
+            for (int w = 0; w < _specs.Length; w++) total += SlimeCountOf(w);
+
+            for (int i = 0; i < MaxSteps; i++)
+            {
+                _loop.Step(Dt);
+                if (Flow.State == GameState.Result) break;
+                KillAllAlive();
+            }
+
+            Assert.AreEqual(GameOutcome.Victory, Flow.Outcome);
+            Assert.AreEqual(1, _ended.Count);
+            ResultSummary r = _ended[0];
+            Assert.AreEqual(GameOutcome.Victory, r.Outcome);
+            Assert.AreEqual(total, r.SlimesKilled, "SlimesKilled = 모든 웨이브 마리 합");
+            Assert.AreEqual(Flow.SlimesKilled, r.SlimesKilled);
+            Assert.AreEqual(1, r.MaxGradeDrones, "최고 등급 드론 1대");
+            Assert.AreEqual(Flow.Hatch.MaxHp, r.HatchHp);
+            Assert.AreEqual(_specs.Length, _waveStartIndex.Count, "웨이브 전부 시작");
+            Assert.AreEqual(0f, Time.timeScale);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Pause_InWave_TimeStops_ResumeRestores()
+        {
+            StepToWave();
+            _loop.Step(Dt);
+            Assert.Greater(_registry.AliveCount, 0);
+            Assert.IsTrue(_registry.TryGet(_registry.Targets[0].Id, out SlimeView s));
+            Time.timeScale = 1f;
+
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            Assert.AreEqual(GameState.Paused, _states[_states.Count - 1]);
+            Assert.AreEqual(0f, Time.timeScale);
+
+            float dist = s.Dist;
+            int alive = _registry.AliveCount;
+            for (int i = 0; i < 20; i++) _loop.Step(Dt);
+            Assert.AreEqual(dist, s.Dist, "일시정지 중 이동 없음");
+            Assert.AreEqual(alive, _registry.AliveCount, "일시정지 중 스폰 없음");
+
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Wave, Flow.State);
+            Assert.AreEqual(GameState.Wave, _states[_states.Count - 1]);
+            Assert.AreEqual(1f, Time.timeScale);
+            Time.timeScale = 0f;
+
+            _loop.Step(Dt);
+            Assert.Less(s.Dist, dist, "재개 뒤 다시 움직인다");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator Esc_WhileDragging_CancelsDragNotPause()
+        {
+            int cell = PlaceDrone(0, DroneType.Suction, 1);
+            Assert.IsTrue(_drag.BeginAt(cell));
+            Assert.IsTrue(_drag.IsDragging);
+            int states = _states.Count;
+
+            _loop.HandleEscape();
+            Assert.IsFalse(_drag.IsDragging, "드래그 취소");
+            Assert.AreEqual(GameState.Prep, Flow.State, "일시정지 안 함");
+            Assert.AreEqual(states, _states.Count, "StateChanged 없음");
+            Assert.IsTrue(Grid.Get(cell).HasDrone, "원위치");
+
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State, "드래그가 없으면 일시정지");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator NotCanAct_SummonAndDragRejected()
+        {
+            _bootstrap.Wallet.Add(_bootstrap.Config.SummonBaseCost * 10);
+            int cell = PlaceDrone(0, DroneType.Suction, 1);
+            Assert.IsTrue(_loop.CanAct);
+
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            Assert.IsFalse(_loop.CanAct);
+            int coins = _bootstrap.Wallet.Coins;
+            Assert.IsFalse(_summon.RequestSummon(), "일시정지 중 소환 거부");
+            Assert.IsFalse(_drag.BeginAt(cell), "일시정지 중 집기 거부");
+            Assert.AreEqual(0, _droneSpawned);
+            Assert.AreEqual(coins, _bootstrap.Wallet.Coins);
+
+            _loop.HandleEscape();
+            Assert.IsTrue(_loop.CanAct);
+            Assert.IsTrue(_summon.RequestSummon(), "재개 뒤 소환 가능");
+            Assert.AreEqual(1, _droneSpawned);
+            Time.timeScale = 0f;
+
+            StepToWave();
+            Flow.Hatch.TakeDamage(Flow.Hatch.Hp);
+            _loop.Step(Dt);
+            Assert.AreEqual(GameState.Result, Flow.State);
+            Assert.IsFalse(_loop.CanAct);
+            yield return null; // 한 프레임 1회 가드를 넘긴다
+            Assert.IsFalse(_summon.RequestSummon(), "결과 중 소환 거부");
+            Assert.IsFalse(_drag.BeginAt(cell), "결과 중 집기 거부");
+            Assert.AreEqual(1, _droneSpawned);
+        }
+
+        [UnityTest]
+        public IEnumerator Restart_ReloadsScene_FreshCoinsAndHatch()
+        {
+            int startCoin = _bootstrap.Config.StartCoin;
+            _bootstrap.Wallet.Add(startCoin);
+            StepToWave();
+            Flow.Hatch.TakeDamage(1);
+            Assert.AreNotEqual(startCoin, _bootstrap.Wallet.Coins);
+            Assert.Less(Flow.Hatch.Hp, Flow.Hatch.MaxHp);
+
+            GameLoop old = _loop;
+            ClearRecords();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            _loop.Restart();
+            Assert.AreEqual(1f, Time.timeScale, "Restart 는 시간을 되돌린다");
+            yield return WaitForLoop(old);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
+            Assert.AreNotSame(old, _loop);
+            Assert.AreEqual(startCoin, _bootstrap.Wallet.Coins, "새 Wallet");
+            Assert.AreEqual(Flow.Hatch.MaxHp, Flow.Hatch.Hp, "새 해치");
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.AreEqual(0, Flow.WaveIndex);
+            Assert.AreEqual(0, _registry.AliveCount);
+            Assert.AreEqual(GameState.Prep, _states[0], "새 판 StateChanged");
+        }
+
+        [UnityTest]
+        public IEnumerator RemainingSlimes_SingleSource_MatchesFlow()
+        {
+            StepToWave();
+            int wave = Flow.WaveIndex;
+            int startEvents = _remaining.Count;
+            Assert.AreEqual(SlimeCountOf(wave), _remaining[startEvents - 1]);
+
+            // 스폰 순서 짝수 번째는 처치, 홀수 번째는 격리선까지 — 두 경로 모두 남은 수를 깎는다
+            int spawnOrder = 0;
+            var toKill = new List<SlimeView>();
+            GameEvents.SlimeSpawned += s => { if (spawnOrder++ % 2 == 0) toKill.Add(s); };
+            for (int i = 0; i < MaxSteps; i++)
+            {
+                _loop.Step(Dt);
+                if (Flow.State != GameState.Wave) break;
+                for (int k = 0; k < toKill.Count; k++) _registry.Despawn(toKill[k], DespawnReason.Killed);
+                toKill.Clear();
+            }
+
+            Assert.Greater(_killed, 0);
+            Assert.Greater(_reachedDamage.Count, 0);
+            Assert.AreEqual(SlimeCountOf(wave), _remaining.Count - startEvents, "처치 · 도달마다 1번");
+            for (int i = 0; i < _remaining.Count; i++)
+                Assert.AreEqual(_remainingFlowAtEvent[i], _remaining[i], "이벤트 " + i + " 값 = GameFlow.RemainingInWave");
+            Assert.AreEqual(0, _remaining[_remaining.Count - 1]);
+            yield return null;
+        }
+    }
+}

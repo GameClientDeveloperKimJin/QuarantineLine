@@ -7,6 +7,7 @@ using QL.Core.Stats;
 using QL.Core.Waves;
 using QL.Game;
 using QL.Game.Bootstrap;
+using QL.Game.Flow;
 using QL.Game.Slimes;
 using QL.Game.Stage;
 using UnityEngine;
@@ -30,6 +31,7 @@ namespace QL.Tests.PlayMode
         private GameBootstrap _bootstrap;
         private SlimeRegistry _registry;
         private WaveRunner _runner;
+        private GameLoop _loop;
         private WaveSpec[] _specs;
         private SlimeStats[] _stats;
 
@@ -60,9 +62,10 @@ namespace QL.Tests.PlayMode
             Assert.IsTrue(_runner.IsReady, "WaveRunner 가 준비되지 않았다");
             _bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
             Assert.IsNotNull(_bootstrap);
+            _loop = Object.FindAnyObjectByType<GameLoop>();
+            Assert.IsNotNull(_loop, "씬에 GameLoop 가 없다");
 
-            // Update 를 끄고 Advance 를 직접 부른다 (OnDisable 이 Despawned 구독을 풀므로 WaveRunner 는 enabled 로 두고 시간만 막는다)
-            _registry.enabled = false;
+            // 시간을 막고 Advance 를 직접 부른다 (GameLoop.Step 은 dt 0 이면 아무것도 하지 않는다)
             Time.timeScale = 0f;
 
             _specs = _bootstrap.Data.Waves.ToSpecs();
@@ -136,7 +139,6 @@ namespace QL.Tests.PlayMode
                 int before = _spawned;
                 RunWaveToEnd(w);
                 Assert.AreEqual(SlimeCountOf(w), _spawned - before, "웨이브 " + (w + 1) + " 스폰 수");
-                Assert.AreEqual(0, _runner.RemainingInWave, "웨이브 " + (w + 1) + " 남은 수");
             }
             yield return null;
         }
@@ -217,7 +219,10 @@ namespace QL.Tests.PlayMode
         [UnityTest]
         public IEnumerator Slime_ReachesLine_DespawnsOnce_RaisesReachedAndRemaining()
         {
-            _runner.StartWave(0);
+            // 남은 수의 출처는 GameFlow (G06) — 준비 시간을 GameLoop.Step 으로 넘겨 웨이브 1 을 흐름이 시작하게 한다
+            for (int i = 0; i < MaxWaitFrames * 10 && _loop.Flow.State == GameState.Prep; i++) _loop.Step(Dt);
+            Assert.AreEqual(GameState.Wave, _loop.Flow.State);
+            Assert.AreEqual(0, _runner.WaveIndex);
             int total = SlimeCountOf(0);
             Assert.AreEqual(total, _remaining[_remaining.Count - 1], "웨이브 시작 때 남은 수");
 

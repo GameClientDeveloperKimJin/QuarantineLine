@@ -14,11 +14,11 @@ namespace QL.Game.Combat
 {
     /// <summary>
     /// 칸별 공격 타이머 · 공격 진행. 누구를 때릴지 · 감속 겹침은 Core(TargetRule · SlimeCombat) — 여기는 타이머 · 호출 · 표시만.
-    /// 실행 순서: WaveRunner(-20) → SlimeRegistry(-10, 이동 · 스냅샷) → DroneCombat(10).
-    /// 흐름은 Advance(dt) — Update 는 Time.deltaTime 을 넘기기만 한다 (테스트는 Advance 를 직접 부른다).
+    /// 실행 순서는 GameLoop.Step 이 고정한다: WaveRunner → SlimeRegistry(이동 · 스냅샷) → DroneCombat → GameFlow.Tick.
+    /// 흐름은 Advance(dt) — 자체 Update 없음 (테스트는 Advance 를 직접 부른다).
     /// 공격 표시는 Pool&lt;AttackFxView&gt; (크기 = 칸 수 × fxPoolPerCell).
     /// </summary>
-    [DefaultExecutionOrder(10)]
+    [DefaultExecutionOrder(10)] // Awake 준비 순서만 — SlimeRegistry.Awake 뒤 (프레임 순서는 GameLoop)
     public sealed class DroneCombat : MonoBehaviour
     {
         [SerializeField] private GameBootstrap bootstrap;
@@ -104,11 +104,6 @@ namespace QL.Game.Combat
             GameEvents.DroneMoved -= OnDroneMoved;
             GameEvents.DroneSwapped -= OnDroneSwapped;
             GameEvents.DroneMerged -= OnDroneMerged;
-        }
-
-        private void Update()
-        {
-            Advance(Time.deltaTime);
         }
 
         /// <summary>

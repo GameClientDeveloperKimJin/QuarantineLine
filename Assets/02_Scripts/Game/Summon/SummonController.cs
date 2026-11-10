@@ -2,6 +2,7 @@ using QL.Core;
 using QL.Core.Economy;
 using QL.Game.Bootstrap;
 using QL.Game.Drones;
+using QL.Game.Flow;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -17,6 +18,8 @@ namespace QL.Game.Summon
 
         [SerializeField] private GameBootstrap bootstrap;
         [SerializeField] private DroneBoard board;
+        [Tooltip("소환 허용 여부(CanAct)를 묻는 흐름 — 일시정지 · 결과 중 소환 금지")]
+        [SerializeField] private GameLoop loop;
 
         private Summoner _summoner;
         private int _lastRequestFrame = NoFrame;
@@ -69,11 +72,12 @@ namespace QL.Game.Summon
 
         /// <summary>
         /// 한 프레임 1회. 성공하면 뷰 → CoinChanged → SummonCostChanged → DroneSpawned → (바뀌었으면) SummonAvailabilityChanged.
-        /// 실패(같은 프레임 · 코인 부족 · 칸 없음)면 아무것도 바꾸지 않고 false.
+        /// 실패(흐름이 막음 · 같은 프레임 · 코인 부족 · 칸 없음)면 아무것도 바꾸지 않고 false.
         /// </summary>
         public bool RequestSummon()
         {
             if (_summoner == null) return false;
+            if (loop != null && !loop.CanAct) return false; // 일시정지 · 결과 중 (이벤트 없음)
 
             int frame = Time.frameCount;
             if (frame == _lastRequestFrame) return false; // 연타 가드

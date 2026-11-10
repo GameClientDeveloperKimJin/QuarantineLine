@@ -23,9 +23,9 @@ namespace QL.Game.Slimes
     /// <summary>
     /// 살아 있는 점액 목록 · 이동 · 타겟 스냅샷. 판정은 Core(SlimeCombat) 값만 쓴다.
     /// 풀은 프리팹마다 하나, 미리 만드는 수 = 모든 웨이브 Summarize().SlimeCount 의 최댓값.
-    /// 흐름은 Advance(dt) — Update 는 Time.deltaTime 을 넘기기만 한다 (테스트는 Advance 를 직접 부른다).
+    /// 흐름은 Advance(dt) — GameLoop.Step 이 WaveRunner 다음, DroneCombat 앞에서 부른다 (테스트는 Advance 를 직접 부른다).
     /// </summary>
-    [DefaultExecutionOrder(-10)] // WaveRunner(-20) 다음
+    [DefaultExecutionOrder(-10)] // Awake 준비 순서만 — DroneCombat.Awake 가 IsReady 를 본다 (프레임 순서는 GameLoop)
     public sealed class SlimeRegistry : MonoBehaviour
     {
         [SerializeField] private GameBootstrap bootstrap;
@@ -42,7 +42,7 @@ namespace QL.Game.Slimes
         private readonly List<SlimeView> _alive = new List<SlimeView>();
         private SlimeTarget[] _targets = Array.Empty<SlimeTarget>();
 
-        /// <summary>점액이 반납될 때 (GameEvents.SlimeKilled / SlimeReachedHatch 바로 다음). WaveRunner 가 남은 수를 깎는다.</summary>
+        /// <summary>점액이 반납될 때 (GameEvents.SlimeKilled / SlimeReachedHatch 바로 다음). 남은 수는 GameLoop 가 GameEvents 로 센다.</summary>
         public event Action<SlimeView, DespawnReason> Despawned;
 
         public bool IsReady { get; private set; }
@@ -149,11 +149,6 @@ namespace QL.Game.Slimes
             return list.ToArray();
         }
 
-        private void Update()
-        {
-            Advance(Time.deltaTime);
-        }
-
         /// <summary>풀에서 꺼내 스폰선(dist = PathLength)에 놓는다 → SlimeSpawned.</summary>
         /// <exception cref="ArgumentOutOfRangeException">lane 이 레인 범위 밖</exception>
         public SlimeView Spawn(SlimeType type, int lane)
@@ -183,7 +178,7 @@ namespace QL.Game.Slimes
         }
 
         /// <summary>
-        /// Killed → SlimeKilled, ReachedLine → SlimeReachedHatch, 그다음 Despawned (WaveRunner 가 RemainingSlimesChanged).
+        /// Killed → SlimeKilled, ReachedLine → SlimeReachedHatch (GameLoop → GameFlow 알림 · RemainingSlimesChanged), 그다음 Despawned.
         /// 목록에서 먼저 빼고(swap-remove, 탐색 없음) 이벤트를 낸다 — 구독자가 보는 AliveCount 는 반납 후 값.
         /// 이미 반납한 점액이면 무시.
         /// </summary>

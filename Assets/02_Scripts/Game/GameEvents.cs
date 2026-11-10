@@ -2,13 +2,14 @@ using System;
 using QL.Core;
 using QL.Core.Economy;
 using QL.Core.Grid;
+using QL.Game.Flow;
 using QL.Game.Slimes;
 
 namespace QL.Game
 {
     /// <summary>
     /// 시스템 사이 정적 이벤트 (V01 5장). 발행은 QL.Game 안에서만, UI · FX · Audio 는 구독만.
-    /// 지금 쓰는 것만 선언한다 — 해치 · 웨이브 흐름은 G06 이 추가.
+    /// 흐름 이벤트(해치 · 준비 · 웨이브 · 상태 · 결과)와 RemainingSlimesChanged 는 GameLoop 한 곳에서만 낸다 (G06).
     /// </summary>
     public static class GameEvents
     {
@@ -38,8 +39,18 @@ namespace QL.Game
         public static event Action<SlimeView> SlimeKilled;
         /// <summary>점액이 격리선에 닿았다 (반납 직전). 해치 피해는 G06.</summary>
         public static event Action<SlimeView> SlimeReachedHatch;
-        /// <summary>이번 웨이브 남은 점액 (웨이브 시작 · 처치 · 도달).</summary>
+        /// <summary>이번 웨이브 남은 점액 (웨이브 시작 · 처치 · 도달). 출처는 GameFlow.RemainingInWave 하나.</summary>
         public static event Action<int> RemainingSlimesChanged;
+        /// <summary>now, max — 점액이 격리선에 닿아 해치 HP 가 바뀌었다.</summary>
+        public static event Action<int, int> HatchHpChanged;
+        /// <summary>secondsLeft — 준비 중 남은 올림 초가 바뀌었다 (준비 진입 후 첫 프레임 포함).</summary>
+        public static event Action<int> PrepTick;
+        /// <summary>index(0 부터), total, banner — 웨이브 시작.</summary>
+        public static event Action<int, int, string> WaveStarted;
+        /// <summary>새 상태 (Prep · Wave · Paused · Result).</summary>
+        public static event Action<GameState> StateChanged;
+        /// <summary>판 끝 — 승패 · 남은 HP · 처치 수 · 최고 등급 드론 수.</summary>
+        public static event Action<ResultSummary> GameEnded;
 
         internal static void RaiseDroneMoved(int from, int to) => DroneMoved?.Invoke(from, to);
         internal static void RaiseDroneSwapped(int a, int b) => DroneSwapped?.Invoke(a, b);
@@ -55,6 +66,11 @@ namespace QL.Game
         internal static void RaiseSlimeKilled(SlimeView slime) => SlimeKilled?.Invoke(slime);
         internal static void RaiseSlimeReachedHatch(SlimeView slime) => SlimeReachedHatch?.Invoke(slime);
         internal static void RaiseRemainingSlimesChanged(int remaining) => RemainingSlimesChanged?.Invoke(remaining);
+        internal static void RaiseHatchHpChanged(int now, int max) => HatchHpChanged?.Invoke(now, max);
+        internal static void RaisePrepTick(int secondsLeft) => PrepTick?.Invoke(secondsLeft);
+        internal static void RaiseWaveStarted(int index, int total, string banner) => WaveStarted?.Invoke(index, total, banner);
+        internal static void RaiseStateChanged(GameState state) => StateChanged?.Invoke(state);
+        internal static void RaiseGameEnded(ResultSummary summary) => GameEnded?.Invoke(summary);
 
         /// <summary>모든 구독 해제 (씬 재시작 대비 — GameBootstrap.OnDestroy).</summary>
         public static void ClearAll()
@@ -73,6 +89,11 @@ namespace QL.Game
             SlimeKilled = null;
             SlimeReachedHatch = null;
             RemainingSlimesChanged = null;
+            HatchHpChanged = null;
+            PrepTick = null;
+            WaveStarted = null;
+            StateChanged = null;
+            GameEnded = null;
         }
     }
 }

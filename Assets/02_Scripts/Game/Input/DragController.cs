@@ -1,6 +1,7 @@
 using QL.Core.Grid;
 using QL.Game.Bootstrap;
 using QL.Game.Drones;
+using QL.Game.Flow;
 using QL.Game.Stage;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -10,6 +11,7 @@ namespace QL.Game.Input
     /// <summary>
     /// 마우스 → 드래그 흐름. 입력 읽기(Update)와 흐름 메서드(BeginAt · HoverAt · ReleaseAt · Cancel)를 나눈다.
     /// 흐름 메서드는 public — PlayMode 테스트가 마우스 없이 부른다. 판정은 GridModel · MergeRule 만.
+    /// Esc 는 읽지 않는다 — GameLoop 가 받아 드래그 중이면 <see cref="Cancel"/> 을 부른다 (G06).
     /// </summary>
     public sealed class DragController : MonoBehaviour
     {
@@ -20,6 +22,8 @@ namespace QL.Game.Input
         [SerializeField] private CellHighlighter highlighter;
         [Tooltip("마우스 레이를 쏘는 카메라 (Camera.main 안 씀)")]
         [SerializeField] private Camera viewCamera;
+        [Tooltip("집기 허용 여부(CanAct)를 묻는 흐름 — 일시정지 · 결과 중 집기 금지")]
+        [SerializeField] private GameLoop loop;
 
         private GridModel _grid;
         private GridSpace _space;
@@ -63,15 +67,11 @@ namespace QL.Game.Input
                 cell = _space.WorldToCell(hit);
             }
 
-            // 취소가 먼저 (Esc 는 G06 일시정지와 겹친다 — 드래그 중이면 드래그 취소가 우선)
-            if (IsDragging)
+            // 취소가 먼저 — 오른쪽 버튼 (Esc 취소는 GameLoop)
+            if (IsDragging && mouse.rightButton.wasPressedThisFrame)
             {
-                Keyboard keyboard = Keyboard.current;
-                if (mouse.rightButton.wasPressedThisFrame || (keyboard != null && keyboard.escapeKey.wasPressedThisFrame))
-                {
-                    Cancel();
-                    return;
-                }
+                Cancel();
+                return;
             }
 
             if (mouse.leftButton.wasPressedThisFrame && !IsDragging) BeginAt(cell);
@@ -88,9 +88,10 @@ namespace QL.Game.Input
 
         // ── 흐름 메서드 ───────────────────────────────────────
 
-        /// <summary>집기. 칸 밖 · 빈 칸 · 잠긴 칸 · 이미 드래그 중이면 false.</summary>
+        /// <summary>집기. 흐름이 막음(일시정지 · 결과) · 칸 밖 · 빈 칸 · 잠긴 칸 · 이미 드래그 중이면 false.</summary>
         public bool BeginAt(int cell)
         {
+            if (loop != null && !loop.CanAct) return false;
             if (!EnsureModel() || cell < 0) return false;
             if (!_grid.BeginDrag(cell)) return false;
 

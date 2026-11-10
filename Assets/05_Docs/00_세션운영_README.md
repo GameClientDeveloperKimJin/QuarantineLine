@@ -166,6 +166,8 @@ R5    A01→A07 첫날부터 상시. 에셋 완료 시마다 R1 에 보고. 가�
 | `Assets/02_Scripts/Debug/**` · `Assets/02_Scripts/Editor/**` · `ProfilerCaptures/**` · `Build/`                                                                                     | R6                                |
 | `ProjectSettings/**`                                                                                                                                                                | R2 (L01 에서만). 이후 변경은 R1 승인 후 지시서로 |
 | `Assets/Plugins/**` (DOTween)                                                                                                                                                       | 아무도 안 고침                          |
+| `_Verify/<ID>/` (저장소 루트, 검증 캡처) | 그 ID 작업 세션 |
+| `Assets/Tests/Game/**` | R3 |
 | 아트 전달 폴더 `D:\UnityProject\3D\QuarantineLine\_ArtDelivery\`                                                                                                                          | R5 (쓰기) / R3 (읽기만)                |
 
 

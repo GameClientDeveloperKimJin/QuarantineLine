@@ -146,6 +146,30 @@ namespace QL.Tests.EditMode
             };
         }
 
+        // ── 전투 (L06) ──
+
+        // 이진수로 정확한 값 — 누적 · 경계 비교가 오차 없이 맞게. 게임 값과 다르게 둔다
+        public const float CombatRange = 3.5f;
+        public const int PierceCount = 3;
+        public const float FreezeRadius = 1.75f;
+        public const int CombatHp = 29;
+        public const int HitDamage = 7;
+        public const float SlowStrong = 0.375f;
+        public const float SlowWeak = 0.25f;
+        public const float SlowDuration = 1.25f;
+        public const float FreezeDuration = 0.75f;
+        public const float BurnDps = 1.5f;
+        public const float BurnDuration = 2.5f;
+        public const float AttackInterval = 0.625f;
+        /// <summary>전투 Tick 한 번의 dt.</summary>
+        public const float CombatDt = 0.25f;
+
+        /// <summary>판정용 점액 스냅샷. Id 는 호출 쪽 값이라 아무 수나 넣는다.</summary>
+        public static QL.Core.Combat.SlimeTarget Target(int id, int lane, float dist, bool alive = true)
+        {
+            return new QL.Core.Combat.SlimeTarget(id, lane, dist, alive);
+        }
+
         // ── Cell 스냅샷 ──
 
         public static Cell Drone(DroneType type, int grade, bool contaminated = false, bool locked = false)

@@ -13,7 +13,7 @@ namespace QL.Game.Flow
     /// <summary>
     /// 한 판의 프레임 순서를 한 곳에서 고정한다 (G06 · R1 결정): 스폰 → 이동 → 공격 → GameFlow.Tick → FlowStep 을 이벤트로.
     /// 판정(웨이브 시작 · 클리어 · 승패)은 전부 GameFlow.Tick 결과 — 여기는 알림 전달 · 이벤트 발행 · timeScale 만.
-    /// Esc 는 이 컴포넌트 한 곳에서만 읽는다 (드래그 중이면 드래그 취소가 우선).
+    /// Esc 는 이 컴포넌트 한 곳에서만 읽는다 (드래그 중이면 드래그 취소가 우선). 결과 상태에서만 R = 다시 하기 · Esc = 타이틀로 (U11).
     /// 테스트는 <see cref="Step"/> 을 직접 부른다.
     /// </summary>
     public sealed class GameLoop : MonoBehaviour
@@ -23,8 +23,14 @@ namespace QL.Game.Flow
         [SerializeField] private SlimeRegistry registry;
         [SerializeField] private DroneCombat combat;
         [SerializeField] private DragController drag;
+        [Tooltip("결과 화면 「타이틀로」 · Esc 가 불러올 씬 (Build Settings 에 있어야 한다)")]
+        [SerializeField] private string titleSceneName = "Title";
 
         private GameFlow _flow;
+
+        // 결과 화면용 판 중 집계 (U11) — int 카운터만, 배열은 Start 에서 한 번
+        private int _bonusEarned;
+        private int[] _laneBreaches;
 
         /// <summary>값 읽기용 (U02 HUD). 상태를 바꾸는 호출은 GameLoop 를 거친다.</summary>
         public GameFlow Flow => _flow;
@@ -59,6 +65,7 @@ namespace QL.Game.Flow
                 return;
             }
 
+            _laneBreaches = new int[bootstrap.Grid.LaneCount];
             _flow = new GameFlow(bootstrap.Config, bootstrap.Data.Waves.ToSpecs());
             _flow.StartGame();
             Time.timeScale = 1f;
@@ -74,7 +81,11 @@ namespace QL.Game.Flow
         private void Update()
         {
             Keyboard kb = Keyboard.current;
-            if (kb != null && kb.escapeKey.wasPressedThisFrame) HandleEscape();
+            if (kb != null)
+            {
+                if (kb.escapeKey.wasPressedThisFrame) HandleEscape();
+                else if (kb.rKey.wasPressedThisFrame) HandleRestartKey();
+            }
 
             Step(Time.deltaTime);
         }
@@ -111,6 +122,7 @@ namespace QL.Game.Flow
             if (step.WaveCleared && step.ClearBonus > 0)
             {
                 bootstrap.Wallet.Add(step.ClearBonus);
+                _bonusEarned += step.ClearBonus;
                 GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, step.ClearBonus);
             }
 
@@ -119,14 +131,14 @@ namespace QL.Game.Flow
             if (step.Outcome != GameOutcome.None)
             {
                 drag.Cancel(); // 드래그 중 게임 종료 — 시스템 기획서 예외 표 (드래그 중이 아니면 아무 일 없음)
-                LastResult = ResultSummary.Collect(_flow, bootstrap.Grid, bootstrap.Catalog);
+                LastResult = ResultSummary.Collect(_flow, bootstrap.Grid, bootstrap.Catalog, _bonusEarned, _laneBreaches);
                 GameEvents.RaiseGameEnded(LastResult);
                 Time.timeScale = 0f;
             }
         }
 
         /// <summary>
-        /// Esc 한 번: 드래그 중이면 드래그 취소만. 아니면 Prep · Wave → 일시정지, Paused → 재개.
+        /// Esc 한 번: 드래그 중이면 드래그 취소만. 아니면 Prep · Wave → 일시정지, Paused → 재개, Result → 타이틀로 (U11).
         /// Pause · Resume 으로 바뀐 상태는 FlowStep 에 없으므로 여기서 StateChanged 를 낸다 (보류함 2번 ①).
         /// </summary>
         public void HandleEscape()
@@ -139,7 +151,11 @@ namespace QL.Game.Flow
                 return;
             }
 
-            if (_flow.State == GameState.Paused)
+            if (_flow.State == GameState.Result)
+            {
+                GoToTitle();
+            }
+            else if (_flow.State == GameState.Paused)
             {
                 if (!_flow.Resume()) return;
                 Time.timeScale = 1f;
@@ -159,6 +175,19 @@ namespace QL.Game.Flow
             SceneManager.LoadScene(gameObject.scene.buildIndex);
         }
 
+        /// <summary>R 한 번: 결과 상태에서만 다시 하기. 그 밖에는 아무것도 하지 않는다 (U11).</summary>
+        public void HandleRestartKey()
+        {
+            if (_flow != null && _flow.State == GameState.Result) Restart();
+        }
+
+        /// <summary>타이틀로 — 시간을 되돌리고 Title 씬을 불러온다 (결과 화면 「타이틀로」 · 결과 중 Esc).</summary>
+        public void GoToTitle()
+        {
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(titleSceneName);
+        }
+
         // 웨이브 중 · 남은 점액이 있을 때만 GameFlow 에 알린다 — 그 밖의 점액(테스트 직접 스폰 등)은 이 판의 점액이 아니다.
         private bool AcceptsSlimeNotice => _flow != null && _flow.State == GameState.Wave && _flow.RemainingInWave > 0;
 
@@ -173,6 +202,8 @@ namespace QL.Game.Flow
         {
             if (!AcceptsSlimeNotice) return;
             _flow.NotifySlimeReachedLine(slime.HatchDamage);
+            int lane = slime.Lane;
+            if ((uint)lane < (uint)_laneBreaches.Length) _laneBreaches[lane]++;
             GameEvents.RaiseHatchHpChanged(_flow.Hatch.Hp, _flow.Hatch.MaxHp);
             GameEvents.RaiseRemainingSlimesChanged(_flow.RemainingInWave);
         }

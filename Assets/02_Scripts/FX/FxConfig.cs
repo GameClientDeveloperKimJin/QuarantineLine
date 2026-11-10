@@ -9,6 +9,7 @@ namespace QL.FX
     /// U02: HUD 숫자 튐 · 코인 굴림 · 카운트다운 크기 · 해치 게이지 색 · 남은 점액 막대 색.
     /// U03: 버튼 호버 크기 · 소환 버튼 3상태(비용 빨강 · 흔들림) · 칸 호버 외곽선 · 사거리 미리보기.
     /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
+    /// U11: 결과 화면 강조색(승 · 패) · 헤더 띠 · 진행 막대 칸 차오름.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -187,6 +188,29 @@ namespace QL.FX
         [Min(0f)] public float spawnRingSizeTo;
         [Min(0.01f)] public float spawnRingDuration;
         [Range(0f, 1f)] public float spawnRingAlpha;
+
+        [Header("결과 화면 개편 (U11) — 초록 · 빨강은 헤더 띠 · 진행 막대 · 강조 테두리에만")]
+        [Tooltip("승리 강조색 (헤더 띠 · 막대 채움 · 강조 테두리)")]
+        public Color resultVictoryAccent;
+        [Tooltip("패배 강조색")]
+        public Color resultDefeatAccent;
+        [Tooltip("헤더 띠 = 강조색 × 이 알파 (어두운 패널 위에 은은하게)")]
+        [Range(0f, 1f)] public float resultHeaderBandAlpha;
+        [Tooltip("강조 칸(첫 지표 · 정보 줄) 안쪽 = 강조색 × 이 알파")]
+        [Range(0f, 1f)] public float resultAccentFillAlpha;
+        [Tooltip("헤더 아이콘(엠블럼) 한 변 (px)")]
+        [Min(0f)] public float resultHeaderIconSize;
+        [Tooltip("진행 막대 빈 칸 색")]
+        public Color resultSegmentEmptyColor;
+        [Tooltip("진행 막대 칸이 차례로 차오를 때 칸 사이 간격 (초, 실제 시간)")]
+        [Min(0f)] public float resultSegmentFillInterval;
+        [Tooltip("칸 하나가 차오르는 시간 (초)")]
+        [Min(0f)] public float resultSegmentFillDuration;
+        [Tooltip("결과 패널이 다 나타난 뒤 칸 차오름 시작까지 (초) — 0 이면 패널 페이드와 함께")]
+        [Min(0f)] public float resultSegmentFillDelay;
+        public Ease resultSegmentFillEase;
+        [Tooltip("키 안내 「R 다시 하기 · Esc 타이틀로」 · 보조 문구 색")]
+        public Color resultHintColor;
 
         [Header("이펙트 공통 (U04)")]
         [Tooltip("크기 · 이동 이징 / 사라짐(알파) 이징 — t 0→1")]

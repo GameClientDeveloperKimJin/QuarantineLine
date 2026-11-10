@@ -1,0 +1,43 @@
+using QL.Game.Bootstrap;
+using QL.Game.Slimes;
+using UnityEngine;
+
+namespace QL.Game.Combat
+{
+    /// <summary>
+    /// 처치 보상 — 보상 지급은 이 한 곳만. GameEvents.SlimeKilled (직접 처치 · 잔열 처치 모두) → Wallet.Add(Reward) → CoinChanged.
+    /// 같은 점액에 두 번 주지 않는 것은 SlimeRegistry.Despawn 이 보장한다 (이미 반납한 점액은 SlimeKilled 를 내지 않음).
+    /// </summary>
+    public sealed class KillRewarder : MonoBehaviour
+    {
+        [SerializeField] private GameBootstrap bootstrap;
+
+        /// <summary>지금까지 지급한 처치 보상 합 (확인용).</summary>
+        public int TotalRewarded { get; private set; }
+
+        private void OnEnable()
+        {
+            if (bootstrap == null || !bootstrap.IsReady)
+            {
+                Debug.LogError("[KillRewarder] GameBootstrap 이 없거나 준비되지 않았다", this);
+                enabled = false;
+                return;
+            }
+            GameEvents.SlimeKilled += OnSlimeKilled;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.SlimeKilled -= OnSlimeKilled;
+        }
+
+        private void OnSlimeKilled(SlimeView slime)
+        {
+            int reward = slime.Reward;
+            if (reward <= 0) return; // Wallet.Add 는 1 이상만
+            bootstrap.Wallet.Add(reward);
+            TotalRewarded += reward;
+            GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, reward);
+        }
+    }
+}

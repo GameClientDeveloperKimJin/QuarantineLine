@@ -8,7 +8,7 @@ namespace QL.Game
 {
     /// <summary>
     /// 시스템 사이 정적 이벤트 (V01 5장). 발행은 QL.Game 안에서만, UI · FX · Audio 는 구독만.
-    /// 지금 쓰는 것만 선언한다 — SlimeDamaged 는 G05, 해치 · 웨이브 흐름은 G06 이 추가.
+    /// 지금 쓰는 것만 선언한다 — 해치 · 웨이브 흐름은 G06 이 추가.
     /// </summary>
     public static class GameEvents
     {
@@ -32,6 +32,8 @@ namespace QL.Game
         public static event Action<int, DroneType, int> DroneSpawned;
         /// <summary>점액이 스폰선에 나왔다.</summary>
         public static event Action<SlimeView> SlimeSpawned;
+        /// <summary>slime, damage, source — 드론 공격이 맞혔다 (G05, 처치 반납 전). source = 데미지 숫자 종류색.</summary>
+        public static event Action<SlimeView, int, DroneType> SlimeDamaged;
         /// <summary>점액 체력 0 (반납 직전 — 위치 · 종류를 읽을 수 있다).</summary>
         public static event Action<SlimeView> SlimeKilled;
         /// <summary>점액이 격리선에 닿았다 (반납 직전). 해치 피해는 G06.</summary>
@@ -49,6 +51,7 @@ namespace QL.Game
         internal static void RaiseSummonAvailabilityChanged(SummonBlock reason) => SummonAvailabilityChanged?.Invoke(reason);
         internal static void RaiseDroneSpawned(int cell, DroneType type, int grade) => DroneSpawned?.Invoke(cell, type, grade);
         internal static void RaiseSlimeSpawned(SlimeView slime) => SlimeSpawned?.Invoke(slime);
+        internal static void RaiseSlimeDamaged(SlimeView slime, int damage, DroneType source) => SlimeDamaged?.Invoke(slime, damage, source);
         internal static void RaiseSlimeKilled(SlimeView slime) => SlimeKilled?.Invoke(slime);
         internal static void RaiseSlimeReachedHatch(SlimeView slime) => SlimeReachedHatch?.Invoke(slime);
         internal static void RaiseRemainingSlimesChanged(int remaining) => RemainingSlimesChanged?.Invoke(remaining);
@@ -66,6 +69,7 @@ namespace QL.Game
             SummonAvailabilityChanged = null;
             DroneSpawned = null;
             SlimeSpawned = null;
+            SlimeDamaged = null;
             SlimeKilled = null;
             SlimeReachedHatch = null;
             RemainingSlimesChanged = null;

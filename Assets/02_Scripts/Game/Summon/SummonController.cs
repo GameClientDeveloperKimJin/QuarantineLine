@@ -73,6 +73,7 @@ namespace QL.Game.Summon
         /// <summary>
         /// 한 프레임 1회. 성공하면 뷰 → CoinChanged → SummonCostChanged → DroneSpawned → (바뀌었으면) SummonAvailabilityChanged.
         /// 실패(흐름이 막음 · 같은 프레임 · 코인 부족 · 칸 없음)면 아무것도 바꾸지 않고 false.
+        /// 코인 부족 · 칸 없음으로 막혔을 때만 SummonRejected 한 번 (U03 버튼 흔들림 · 말풍선 — 버튼 · Space 둘 다 이 길).
         /// </summary>
         public bool RequestSummon()
         {
@@ -84,7 +85,11 @@ namespace QL.Game.Summon
             _lastRequestFrame = frame;
 
             SummonResult r = _summoner.TrySummon(bootstrap.Grid, bootstrap.Wallet, bootstrap.Rng);
-            if (!r.Success) return false;
+            if (!r.Success)
+            {
+                GameEvents.RaiseSummonRejected(r.Block); // = CurrentBlock (같은 Summoner.Check), 방금 계산한 값
+                return false;
+            }
 
             board.SyncCell(r.Cell);
 

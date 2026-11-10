@@ -266,10 +266,10 @@ namespace QL.Tests.PlayMode.UI
         }
 
         [UnityTest]
-        public IEnumerator SummonAvailability_NotNone_ButtonNotInteractable()
+        public IEnumerator SummonAvailability_NoCellOnly_ButtonNotInteractable()
         {
             Raise("RaiseSummonAvailabilityChanged", SummonBlock.NoCoin);
-            Assert.IsFalse(_button.Button.interactable, "NoCoin → 못 누름");
+            Assert.IsTrue(_button.Button.interactable, "NoCoin → 눌림 가능 (U03 — 누르면 흔들림)");
             Raise("RaiseSummonAvailabilityChanged", SummonBlock.NoCell);
             Assert.IsFalse(_button.Button.interactable, "NoCell → 못 누름");
             Raise("RaiseSummonAvailabilityChanged", SummonBlock.None);

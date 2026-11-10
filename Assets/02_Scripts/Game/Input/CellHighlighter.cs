@@ -7,6 +7,8 @@ namespace QL.Game.Input
     /// <summary>
     /// 칸 색. StageBuilder.CellRenderers 에 MaterialPropertyBlock 하나를 재사용해 칠한다 (재질 복제 없음).
     /// 상태 세 칸(집은 칸 · 미리보기 칸 · 호버 칸)만 들고, 바뀐 칸만 다시 칠한다. 판정 없음 — 미리보기 결과는 호출 쪽이 MergeRule 로 받아 넘긴다.
+    /// 호버 · 미리보기가 바뀌면 GameEvents.CellHoverChanged · DropPreviewChanged 를 낸다 (U03 연출이 받음, 같은 값이면 안 냄).
+    /// 칸은 Mat_Cell(UI_Cell_Outline 흰 테두리 · 투명) — 아래 색이 테두리 색 그대로 된다.
     /// </summary>
     public sealed class CellHighlighter : MonoBehaviour
     {
@@ -16,16 +18,16 @@ namespace QL.Game.Input
         [SerializeField] private StageBuilder stage;
 
         [Header("연출값 (U03 이 다듬음)")]
-        [Tooltip("Mat_Cell 기본색과 같게")]
-        [SerializeField] private Color normal = new Color(0.62f, 0.7f, 0.78f, 1f);
-        [SerializeField] private Color move = new Color(0.95f, 0.95f, 0.95f, 1f);
-        [SerializeField] private Color merge = new Color(0.30f, 0.85f, 0.35f, 1f);
-        [SerializeField] private Color swap = new Color(0.95f, 0.85f, 0.25f, 1f);
-        [SerializeField] private Color reject = new Color(0.90f, 0.25f, 0.25f, 1f);
-        [Tooltip("집은 칸")]
-        [SerializeField] private Color origin = new Color(0.30f, 0.34f, 0.40f, 1f);
+        [Tooltip("Mat_Cell 기본색과 같게 (청록 테두리)")]
+        [SerializeField] private Color normal = new Color(0.15f, 0.85f, 0.85f, 0.75f);
+        [SerializeField] private Color move = new Color(1f, 1f, 1f, 1f);
+        [SerializeField] private Color merge = new Color(0.25f, 1f, 0.3f, 1f);
+        [SerializeField] private Color swap = new Color(1f, 0.85f, 0.1f, 1f);
+        [SerializeField] private Color reject = new Color(1f, 0.15f, 0.15f, 1f);
+        [Tooltip("집은 칸 — 반투명 (테두리가 흐려 보이게)")]
+        [SerializeField] private Color origin = new Color(0.15f, 0.85f, 0.85f, 0.25f);
         [Tooltip("드론 위 마우스")]
-        [SerializeField] private Color hover = new Color(0.78f, 0.86f, 0.94f, 1f);
+        [SerializeField] private Color hover = new Color(0.45f, 1f, 1f, 1f);
 
         private MaterialPropertyBlock _block;
         private Renderer[] _renderers;
@@ -34,6 +36,7 @@ namespace QL.Game.Input
 
         private int _origin = None;
         private int _preview = None;
+        private DropOutcome _previewOutcome;
         private Color _previewColor;
         private int _hover = None;
 
@@ -54,14 +57,16 @@ namespace QL.Game.Input
             if (!EnsureReady()) return;
             if (index < 0 || index >= _renderers.Length || !preview.HasValue) index = None;
 
-            Color c = index == None ? normal : ColorOf(preview.Value);
-            if (index == _preview && (index == None || c == _previewColor)) return;
+            DropOutcome outcome = index == None ? default : preview.Value;
+            if (index == _preview && (index == None || outcome == _previewOutcome)) return;
 
             int old = _preview;
             _preview = index;
-            _previewColor = c;
+            _previewOutcome = outcome;
+            _previewColor = index == None ? normal : ColorOf(outcome);
             Refresh(old);
             Refresh(index);
+            GameEvents.RaiseDropPreviewChanged(index, outcome, index != None);
         }
 
         /// <summary>집은 칸. -1 = 없음.</summary>
@@ -86,6 +91,7 @@ namespace QL.Game.Input
             _hover = index;
             Refresh(old);
             Refresh(index);
+            GameEvents.RaiseCellHoverChanged(index);
         }
 
         /// <summary>모든 상태 해제, 칠한 칸만 normal 로.</summary>

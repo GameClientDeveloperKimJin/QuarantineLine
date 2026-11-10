@@ -65,3 +65,16 @@ MonoBehaviour:
   hatchSegmentOffAlpha: 0.12
   hatchSegmentFadeDuration: 0.2
   remainingBarColor: {r: 0.45, g: 1, b: 0.35, a: 1}
+  buttonHoverScale: 1.03
+  buttonHoverDuration: 0.08
+  summonNoCoinCostColor: {r: 1, g: 0.3, b: 0.27, a: 1}
+  summonShakeDuration: 0.25
+  summonShakeStrength: 10
+  summonShakeVibrato: 20
+  hoverOutlineSize: 1.04
+  hoverOutlineColor: {r: 0.35, g: 1, b: 1, a: 1}
+  hoverOutlinePunch: 0.12
+  hoverOutlinePunchDuration: 0.15
+  rangePreviewAlpha: 0.85
+  rangePreviewWidthRatio: 0.9
+  worldFxHeight: 0.02

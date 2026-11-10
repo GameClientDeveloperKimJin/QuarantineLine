@@ -51,6 +51,12 @@ namespace QL.Game
         public static event Action<GameState> StateChanged;
         /// <summary>판 끝 — 승패 · 남은 HP · 처치 수 · 최고 등급 드론 수.</summary>
         public static event Action<ResultSummary> GameEnded;
+        /// <summary>cell — 드래그가 아닐 때 마우스 아래 드론 칸 (-1 = 없음), 바뀔 때만 (U03 호버 외곽선 · 사거리 미리보기).</summary>
+        public static event Action<int> CellHoverChanged;
+        /// <summary>cell, outcome, has — 드래그 중 대상 칸과 그 결과, 바뀔 때만. has = false 면 미리보기 없음 (cell -1).</summary>
+        public static event Action<int, DropOutcome, bool> DropPreviewChanged;
+        /// <summary>block — 소환 요청이 코인 · 칸 때문에 막혔다 (요청 한 번에 한 번, 흐름 거부 CanAct 는 제외).</summary>
+        public static event Action<SummonBlock> SummonRejected;
 
         internal static void RaiseDroneMoved(int from, int to) => DroneMoved?.Invoke(from, to);
         internal static void RaiseDroneSwapped(int a, int b) => DroneSwapped?.Invoke(a, b);
@@ -71,6 +77,9 @@ namespace QL.Game
         internal static void RaiseWaveStarted(int index, int total, string banner) => WaveStarted?.Invoke(index, total, banner);
         internal static void RaiseStateChanged(GameState state) => StateChanged?.Invoke(state);
         internal static void RaiseGameEnded(ResultSummary summary) => GameEnded?.Invoke(summary);
+        internal static void RaiseCellHoverChanged(int cell) => CellHoverChanged?.Invoke(cell);
+        internal static void RaiseDropPreviewChanged(int cell, DropOutcome outcome, bool has) => DropPreviewChanged?.Invoke(cell, outcome, has);
+        internal static void RaiseSummonRejected(SummonBlock block) => SummonRejected?.Invoke(block);
 
         /// <summary>모든 구독 해제 (씬 재시작 대비 — GameBootstrap.OnDestroy).</summary>
         public static void ClearAll()
@@ -94,6 +103,9 @@ namespace QL.Game
             WaveStarted = null;
             StateChanged = null;
             GameEnded = null;
+            CellHoverChanged = null;
+            DropPreviewChanged = null;
+            SummonRejected = null;
         }
     }
 }

@@ -140,3 +140,77 @@ MonoBehaviour:
   fxPoolGlowDot: 4
   tweenerCapacity: 500
   sequenceCapacity: 100
+  damagePoolSize: 24
+  damageDuration: 0.5
+  damageFontSize: 32
+  damageBigFontSize: 46
+  damageBigThreshold: 20
+  damageColor: {r: 1, g: 1, b: 1, a: 1}
+  damageHeadHeight: 0.55
+  damageRise: 60
+  damageJump: 34
+  damageJumpRatio: 0.45
+  damageSpreadX: 26
+  damageSeparationX: 74
+  damageSeparationY: 100
+  damageMergeWindow: 0.12
+  damagePunch: 0.25
+  damagePunchDuration: 0.16
+  damageFadeStart: 0.55
+  deathPoolSize: 12
+  deathSquashDuration: 0.18
+  deathSquashY: 0.15
+  deathSquashXZ: 1.5
+  deathSquashEase: 9
+  deathFadeDelay: 0.12
+  deathFadeDuration: 0.14
+  splatSizeFrom: 0.35
+  splatSizeTo: 1.15
+  splatDuration: 0.25
+  splatAlpha: 1
+  puddleDelay: 0.16
+  puddleSize: 1.1
+  puddleDuration: 0.6
+  puddleAlpha: 0.9
+  deathSparkCount: 5
+  deathSparkColor: {r: 0.45, g: 1, b: 0.35, a: 1}
+  deathSparkSize: 0.2
+  deathSparkSizeEnd: 0.06
+  deathSparkDistance: 0.45
+  deathSparkRise: 0.35
+  deathSparkDuration: 0.35
+  coinFlyMax: 16
+  coinSizeFrom: 52
+  coinSizeTo: 40
+  coinPopHeight: 70
+  coinPopDuration: 0.14
+  coinFlyMinDuration: 0.45
+  coinFlyMaxDuration: 0.6
+  coinFlyRefDistance: 1400
+  coinFlyBend: 0.22
+  coinFlyEase: 2
+  coinBonusCount: 8
+  coinBonusScatter: 170
+  coinBonusInterval: 0.06
+  coinArrivePunch: 0.35
+  coinArrivePunchDuration: 0.2
+  burnPoolSize: 16
+  burnTrackCapacity: 128
+  burnColor: {r: 1.5, g: 0.3, b: 0.05, a: 1}
+  burnHeight: 0.42
+  burnGlowSize: 0.55
+  burnGlowAlpha: 0.55
+  burnFlickerAmp: 0.25
+  burnFlickerSpeed: 16
+  burnSparkSize: 0.3
+  burnSparkRise: 0.45
+  burnSparkPeriod: 0.5
+  burnSparkSpread: 0.14
+  burnSparkAlpha: 1
+  burnSparkColor: {r: 1.6, g: 0.22, b: 0.04, a: 1}
+  burnFloorSize: 0.82
+  burnFloorColor: {r: 1.6, g: 0.4, b: 0.05, a: 1}
+  burnFloorAlpha: 0.9
+  burnCameraOffset: 0.35
+  fxPoolSplat: 12
+  fxPoolPuddle: 12

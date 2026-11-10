@@ -52,4 +52,8 @@ MonoBehaviour:
     prefab: {fileID: 6382581763919080603, guid: 7c1c691798aff8c4d9d66761979e1bfd, type: 3}
   - kind: 2
     prefab: {fileID: 7109809148315635107, guid: bb4466b12598df3498e6343979b91346, type: 3}
+  - kind: 3
+    prefab: {fileID: 8564087156807506271, guid: cd175510ddb488c49a49a576e4e20209, type: 3}
+  - kind: 4
+    prefab: {fileID: 8564087156807506271, guid: f225b6b527c161446887c821d2ed7f1f, type: 3}
   viewCamera: {fileID: 0}

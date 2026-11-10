@@ -1,7 +1,7 @@
 {
     "name": "QL.FX",
     "rootNamespace": "QL.FX",
-    "references": ["QL.Game", "QL.Core", "QL.Data", "DOTween.Modules"],
+    "references": ["QL.Game", "QL.Core", "QL.Data", "DOTween.Modules", "Unity.TextMeshPro", "UnityEngine.UI"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

@@ -26,6 +26,7 @@ namespace QL.Core.Combat
         public float SlowRate { get; private set; }
 
         public bool Frozen => _freezeRemaining > 0f;
+        public bool Burning => _burnRemaining > 0f;
 
         /// <summary>풀에서 꺼낼 때. 체력을 채우고 상태이상을 전부 해제한다.</summary>
         /// <exception cref="ArgumentOutOfRangeException">maxHp 가 0 이하</exception>

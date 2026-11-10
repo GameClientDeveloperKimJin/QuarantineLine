@@ -228,13 +228,14 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(lit, _hatch.GetSegment(0).color.a, 0.001f, "켜진 칸 그대로");
         }
 
+        /// <summary>U05 부터 코인 획득(delta &gt; 0)은 코인이 도착할 때 굴린다 (CombatFxTests). 여기선 바로 굴리는 지출(delta &lt; 0).</summary>
         [UnityTest]
-        public IEnumerator CoinChanged_RollsToFinalValue()
+        public IEnumerator CoinSpent_RollsToFinalValue()
         {
             int before = _bootstrap.Wallet.Coins;
-            _bootstrap.Wallet.Add(50);
+            Assert.IsTrue(_bootstrap.Wallet.TrySpend(50), "시작 코인으로 50 지출");
             int now = _bootstrap.Wallet.Coins;
-            Raise("RaiseCoinChanged", now, 50);
+            Raise("RaiseCoinChanged", now, -50);
 
             Assert.AreEqual(now, _coin.Target);
             Assert.AreEqual(before, _coin.Shown, "굴러가기 전 = 이전 값");

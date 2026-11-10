@@ -10,6 +10,7 @@ namespace QL.FX
     /// U03: 버튼 호버 크기 · 소환 버튼 3상태(비용 빨강 · 흔들림) · 칸 호버 외곽선 · 사거리 미리보기.
     /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
     /// U11: 결과 화면 강조색(승 · 패) · 헤더 띠 · 진행 막대 칸 차오름.
+    /// U05: 데미지 숫자 · 처치 대역 납작 · Splat/Puddle · 코인 비행 · 잔열 불꽃 · 풀 크기.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -227,6 +228,126 @@ namespace QL.FX
         [Min(200)] public int tweenerCapacity;
         [Min(50)] public int sequenceCapacity;
 
+        [Header("U05 데미지 숫자 — 오버레이 캔버스 TMP 풀 (게임 시간, 일시정지 중 멈춤)")]
+        [Tooltip("숫자 풀 크기 — 모자라면 가장 오래된 것 재사용")]
+        [Min(1)] public int damagePoolSize;
+        [Tooltip("숫자 하나 수명 (초)")]
+        [Min(0.01f)] public float damageDuration;
+        [Tooltip("글자 크기 (px, 1920×1080 기준 — S3 규칙 8 최소 24)")]
+        [Min(24f)] public float damageFontSize;
+        [Tooltip("큰 피해 글자 크기 (px)")]
+        [Min(24f)] public float damageBigFontSize;
+        [Tooltip("합산 피해가 이 값 이상이면 큰 숫자 + 종류색 (UnitData.tintColor 1등급)")]
+        [Min(1)] public int damageBigThreshold;
+        [Tooltip("보통 숫자 색")]
+        public Color damageColor;
+        [Tooltip("점액 발 위치에서 숫자 시작 높이 (칸 × 점액 크기)")]
+        [Min(0f)] public float damageHeadHeight;
+        [Tooltip("수명 동안 위로 오르는 거리 (px)")]
+        public float damageRise;
+        [Tooltip("처음 톡 튀는 높이 (px) — 수명 앞쪽 damageJumpRatio 동안 올라갔다 내려옴")]
+        [Min(0f)] public float damageJump;
+        [Range(0.05f, 1f)] public float damageJumpRatio;
+        [Tooltip("서로 다른 점액 숫자 겹침 방지 — x 무작위 ± 이 값 (px)")]
+        [Min(0f)] public float damageSpreadX;
+        [Tooltip("떠 있는 숫자와 시작 높이 차가 damageSeparationY(px) 안이고 가로 거리가 damageSeparationX(px) 보다 가까우면 옆으로 민다")]
+        [Min(0f)] public float damageSeparationX;
+        [Min(0f)] public float damageSeparationY;
+        [Tooltip("같은 점액이 이 시간 안에 또 맞으면 새 숫자 대신 떠 있는 숫자에 합산 (초)")]
+        [Min(0f)] public float damageMergeWindow;
+        [Tooltip("나타날 때 · 합산될 때 Punch Scale 세기 · 시간")]
+        [Min(0f)] public float damagePunch;
+        [Min(0.01f)] public float damagePunchDuration;
+        [Tooltip("이 비율부터 사라지기 시작 (수명 0~1)")]
+        [Range(0f, 1f)] public float damageFadeStart;
+
+        [Header("U05 처치 — 대역 납작 · Splat · Puddle · 초록 반짝임")]
+        [Tooltip("대역 풀 크기 (죽은 점액 대신 납작해지는 복제)")]
+        [Min(1)] public int deathPoolSize;
+        [Tooltip("납작해지는 시간 (초) — 세로 1 → deathSquashY, 가로 1 → deathSquashXZ")]
+        [Min(0.01f)] public float deathSquashDuration;
+        [Min(0f)] public float deathSquashY;
+        [Min(0f)] public float deathSquashXZ;
+        public Ease deathSquashEase;
+        [Tooltip("페이드 시작 (처치 뒤 초) · 페이드 시간 (초) → 꺼짐")]
+        [Min(0f)] public float deathFadeDelay;
+        [Min(0.01f)] public float deathFadeDuration;
+        [Tooltip("FX_Slime_Splat 지름 시작 → 끝 (칸 × 점액 크기) · 수명 (초) · 알파")]
+        [Min(0f)] public float splatSizeFrom;
+        [Min(0f)] public float splatSizeTo;
+        [Min(0.01f)] public float splatDuration;
+        [Range(0f, 1f)] public float splatAlpha;
+        [Tooltip("FX_Slime_Puddle 시작 (처치 뒤 초 — Splat 이 다 퍼지기 전 겹쳐 이어짐) · 지름 (칸 × 점액 크기) · 수명 (초) · 알파")]
+        [Min(0f)] public float puddleDelay;
+        [Min(0f)] public float puddleSize;
+        [Min(0.01f)] public float puddleDuration;
+        [Range(0f, 1f)] public float puddleAlpha;
+        [Tooltip("초록 반짝임 (FX_Spark) 개수 · 색 · 크기 시작 → 끝 (칸) · 퍼짐 (칸) · 솟음 (칸) · 수명 (초)")]
+        [Min(0)] public int deathSparkCount;
+        public Color deathSparkColor;
+        [Min(0f)] public float deathSparkSize;
+        [Min(0f)] public float deathSparkSizeEnd;
+        [Min(0f)] public float deathSparkDistance;
+        public float deathSparkRise;
+        [Min(0.01f)] public float deathSparkDuration;
+
+        [Header("U05 코인 비행 — 처치 위치 · 화면 가운데(보너스) → HUD 코인 아이콘 (게임 시간)")]
+        [Tooltip("동시에 나는 코인 최대 수 = 코인 풀 크기. 넘치면 날리지 않고 그 몫을 바로 표시에 더한다")]
+        [Min(1)] public int coinFlyMax;
+        [Tooltip("코인 그림 크기 시작 → 도착 (px)")]
+        [Min(1f)] public float coinSizeFrom;
+        [Min(1f)] public float coinSizeTo;
+        [Tooltip("처치 위치에서 톡 튀어 오르는 높이 (px) · 시간 (초)")]
+        public float coinPopHeight;
+        [Min(0.01f)] public float coinPopDuration;
+        [Tooltip("비행 시간 — 거리 0 이면 최소, coinFlyRefDistance(px) 이상이면 최대 (초)")]
+        [Min(0.01f)] public float coinFlyMinDuration;
+        [Min(0.01f)] public float coinFlyMaxDuration;
+        [Min(1f)] public float coinFlyRefDistance;
+        [Tooltip("곡선 휘는 정도 — 조절점을 진행 방향 옆으로 거리 × 이 값")]
+        public float coinFlyBend;
+        public Ease coinFlyEase;
+        [Tooltip("웨이브 클리어 보너스 — 화면 가운데에서 흩뿌리는 코인 수 · 흩뿌림 반지름 (px) · 차례로 날아가는 간격 (초)")]
+        [Min(1)] public int coinBonusCount;
+        [Min(0f)] public float coinBonusScatter;
+        [Min(0f)] public float coinBonusInterval;
+        [Tooltip("도착 순간 HUD 코인 아이콘 Punch Scale 세기 · 시간")]
+        [Min(0f)] public float coinArrivePunch;
+        [Min(0.01f)] public float coinArrivePunchDuration;
+
+        [Header("U05 잔열 불꽃 — SlimeCombat.Burning 인 점액 위 (가산, LateUpdate 위치만 따라감)")]
+        [Tooltip("불꽃 풀 크기 (동시에 불꽃 붙는 점액 최대)")]
+        [Min(1)] public int burnPoolSize;
+        [Tooltip("추적할 점액 최대 수 (미리 만든 배열)")]
+        [Min(1)] public int burnTrackCapacity;
+        [Tooltip("불꽃 색 (FX_Glow_Dot · FX_Spark 틴트)")]
+        public Color burnColor;
+        [Tooltip("점액 발 위치에서 불꽃 중심 높이 (칸 × 점액 크기)")]
+        [Min(0f)] public float burnHeight;
+        [Tooltip("빛 지름 (칸 × 점액 크기) · 알파 · 깜빡임 세기 (비율) · 깜빡임 속도 (rad/s)")]
+        [Min(0f)] public float burnGlowSize;
+        [Range(0f, 1f)] public float burnGlowAlpha;
+        [Range(0f, 1f)] public float burnFlickerAmp;
+        [Min(0f)] public float burnFlickerSpeed;
+        [Tooltip("솟는 반짝임 크기 (칸) · 솟는 높이 (칸) · 한 번 솟는 시간 (초) · 좌우 퍼짐 (칸) · 알파")]
+        [Min(0f)] public float burnSparkSize;
+        [Min(0f)] public float burnSparkRise;
+        [Min(0.01f)] public float burnSparkPeriod;
+        [Min(0f)] public float burnSparkSpread;
+        [Range(0f, 1f)] public float burnSparkAlpha;
+        [Tooltip("불꽃 혀 색 — 부채꼴(주황)보다 붉게 해 「잔열」 로 구분")]
+        public Color burnSparkColor;
+        [Tooltip("발밑 링 (FX_Ring) 쿼드 한 변 (칸 × 점액 크기 — 링 반지름 104/256 이라 보이는 지름 ≈ 0.81 × 이 값) · 색 · 알파")]
+        [Min(0f)] public float burnFloorSize;
+        public Color burnFloorColor;
+        [Range(0f, 1f)] public float burnFloorAlpha;
+        [Tooltip("섬광 · 반짝임을 카메라 쪽으로 당겨 그리는 거리 (칸) — 점액 몸체에 가리지 않게")]
+        [Min(0f)] public float burnCameraOffset;
+
+        [Header("U05 이펙트 풀 크기 (FxPool)")]
+        [Min(1)] public int fxPoolSplat;
+        [Min(1)] public int fxPoolPuddle;
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {
@@ -235,6 +356,8 @@ namespace QL.FX
                 case FxKind.Ring: return fxPoolRing;
                 case FxKind.Spark: return fxPoolSpark;
                 case FxKind.GlowDot: return fxPoolGlowDot;
+                case FxKind.Splat: return fxPoolSplat;
+                case FxKind.Puddle: return fxPoolPuddle;
                 default: return 1;
             }
         }
@@ -249,5 +372,9 @@ namespace QL.FX
         Ring = 0,
         Spark = 1,
         GlowDot = 2,
+        /// <summary>U05 처치 — FX_Slime_Splat (알파, 초록 채색 그대로 · 바닥에 눕힘).</summary>
+        Splat = 3,
+        /// <summary>U05 처치 — FX_Slime_Puddle (알파, 바닥에 눕힘).</summary>
+        Puddle = 4,
     }
 }

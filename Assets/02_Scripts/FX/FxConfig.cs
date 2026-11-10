@@ -5,7 +5,7 @@ namespace QL.FX
 {
     /// <summary>
     /// 연출 수치 (S3 규칙 6) — 색 · 크기 · 시간은 코드가 아니라 이 에셋(<c>Assets/03_Prefabs/FX/FxConfig.asset</c>)에 둔다.
-    /// U01: 화면 전환 페이드 · 일시정지 / 결과 어둡게 · 엠블럼 크기 · 버튼 눌림 깊이.
+    /// U01: 일시정지 / 결과 어둡게 · 엠블럼 크기 · 버튼 눌림 깊이.
     /// U02: HUD 숫자 튐 · 코인 굴림 · 카운트다운 크기 · 해치 게이지 색 · 남은 점액 막대 색.
     /// U03: 버튼 호버 크기 · 소환 버튼 3상태(비용 빨강 · 흔들림) · 칸 호버 외곽선 · 사거리 미리보기.
     /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
@@ -13,17 +13,11 @@ namespace QL.FX
     /// U05: 데미지 숫자 · 처치 대역 납작 · Splat/Puddle · 코인 비행 · 잔열 불꽃 · 풀 크기.
     /// U06: 웨이브 경고 배너 · 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
     /// U12: 휴게 시간 카드 — 어둡게 · 카드 등장 / 닫힘 · 커피 김 루프 · 팁 교체 · 상태 줄 형식과 색.
+    /// U13: 결재 도장 결과 — 어둡게 · 패널 부팅 · 스캔라인 띠 · 숫자 올라감 · 도장 · Punch · 버튼 잠금 해제 시점.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
     {
-        [Header("화면 전환 (U01)")]
-        [Tooltip("패널 페이드 시간 (초, 실제 시간 — timeScale 0 에서도 움직인다)")]
-        [Min(0f)] public float screenFadeDuration;
-        [Tooltip("나타날 때 시작 크기 → 1")]
-        public float screenScaleFrom;
-        public Ease screenEase;
-
         [Header("일시정지 · 결과 배경")]
         [Tooltip("뒤 게임 화면을 어둡게 덮는 색")]
         public Color pauseDimColor;
@@ -201,15 +195,13 @@ namespace QL.FX
         [Range(0f, 1f)] public float resultHeaderBandAlpha;
         [Tooltip("강조 칸(첫 지표 · 정보 줄) 안쪽 = 강조색 × 이 알파")]
         [Range(0f, 1f)] public float resultAccentFillAlpha;
-        [Tooltip("헤더 아이콘(엠블럼) 한 변 (px)")]
-        [Min(0f)] public float resultHeaderIconSize;
         [Tooltip("진행 막대 빈 칸 색")]
         public Color resultSegmentEmptyColor;
         [Tooltip("진행 막대 칸이 차례로 차오를 때 칸 사이 간격 (초, 실제 시간)")]
         [Min(0f)] public float resultSegmentFillInterval;
         [Tooltip("칸 하나가 차오르는 시간 (초)")]
         [Min(0f)] public float resultSegmentFillDuration;
-        [Tooltip("결과 패널이 다 나타난 뒤 칸 차오름 시작까지 (초) — 0 이면 패널 페이드와 함께")]
+        [Tooltip("U13: 숫자 올라가기 시작(resultIntroCountAt) 뒤 첫 칸 차오름까지 (초) — 0 이면 숫자와 함께")]
         [Min(0f)] public float resultSegmentFillDelay;
         public Ease resultSegmentFillEase;
         [Tooltip("키 안내 「R 다시 하기 · Esc 타이틀로」 · 보조 문구 색")]
@@ -494,6 +486,50 @@ namespace QL.FX
         public Color breakSecondaryTint;
         [Tooltip("보조 버튼 글자색")]
         public Color breakSecondaryTextColor;
+
+        [Header("U13 결재 도장 결과 — 시퀀스 시점 (초, 실제 시간 SetUpdate(true) · GameEnded 기준)")]
+        [Tooltip("어둡게 끝 알파 (Linear — 시안 55~60% 느낌 = 0.85, 결정기록). 색은 resultDimColor 의 RGB")]
+        [Range(0f, 1f)] public float resultIntroDimAlpha;
+        [Tooltip("어둡게 0 → 끝 알파 시간 (원본 0.25)")]
+        [Min(0f)] public float resultIntroDimDuration;
+        [Tooltip("패널 부팅 시작 (원본 0.30)")]
+        [Min(0f)] public float resultIntroPanelAt;
+        [Tooltip("패널 Scale · Fade 시간 (원본 0.2)")]
+        [Min(0f)] public float resultIntroPanelDuration;
+        [Tooltip("패널 시작 크기 → 1 (원본 0.96)")]
+        public float resultIntroPanelScaleFrom;
+        public Ease resultIntroPanelEase;
+        [Tooltip("숫자 0 → 값 시작 (원본 0.40) — 진행 막대 칸 차오름도 이때부터 (칸 간격 · 시간 = U11 값)")]
+        [Min(0f)] public float resultIntroCountAt;
+        [Tooltip("숫자가 올라가는 시간 (원본 0.5)")]
+        [Min(0f)] public float resultIntroCountDuration;
+        public Ease resultIntroCountEase;
+        [Tooltip("도장 내려찍기 시작 (원본 0.90)")]
+        [Min(0f)] public float resultIntroStampAt;
+        [Tooltip("도장 Scale · Fade 시간 (원본 0.2)")]
+        [Min(0f)] public float resultIntroStampDuration;
+        [Tooltip("도장 시작 크기 → 1 (원본 1.8)")]
+        public float resultIntroStampScaleFrom;
+        [Tooltip("도장 크기 이징 (원본 InBack)")]
+        public Ease resultIntroStampEase;
+        [Tooltip("도장 충격 — 패널 DOPunchScale 시작 (원본 1.10)")]
+        [Min(0f)] public float resultIntroPunchAt;
+        [Tooltip("패널 Punch 세기 (원본 0.03) · 시간 · 진동 수 · 탄성")]
+        public float resultIntroPunch;
+        [Min(0.01f)] public float resultIntroPunchDuration;
+        [Min(0)] public int resultIntroPunchVibrato;
+        [Range(0f, 1f)] public float resultIntroPunchElasticity;
+        [Tooltip("버튼 interactable = true (원본 1.20). 이 전 화면 클릭 = 끝 상태로 건너뜀")]
+        [Min(0f)] public float resultIntroUnlockAt;
+
+        [Header("U13 결재 도장 결과 — 스캔라인 부팅 띠 (UI_FX_Scanline · 패널 위 → 아래)")]
+        [Tooltip("띠가 패널 위에서 아래로 훑는 시간 (패널 부팅과 같이 시작)")]
+        [Min(0.01f)] public float resultScanDuration;
+        [Tooltip("띠 높이 (px)")]
+        [Min(0f)] public float resultScanHeight;
+        [Tooltip("띠 (스캔라인 무늬) 색 · 가장자리 밝은 선 색 — 알파는 훑는 가운데에서 최대")]
+        public Color resultScanColor;
+        public Color resultScanEdgeColor;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

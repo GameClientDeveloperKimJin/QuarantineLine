@@ -56,8 +56,20 @@ namespace QL.FX.Combat
             }
         }
 
-        private void OnEnable() => GameEvents.SlimeDamaged += OnDamaged;
-        private void OnDisable() => GameEvents.SlimeDamaged -= OnDamaged;
+        private void OnEnable()
+        {
+            GameEvents.SlimeDamaged += OnDamaged;
+            GameEvents.GameEnded += OnGameEnded;
+        }
+
+        private void OnDisable()
+        {
+            GameEvents.SlimeDamaged -= OnDamaged;
+            GameEvents.GameEnded -= OnGameEnded;
+        }
+
+        /// <summary>판 끝 — 떠 있는 숫자를 즉시 전부 끈다 (timeScale 0 으로 결과 화면 뒤에 얼어붙지 않게, U13). 휴게(Paused)는 그대로 멈춰 둔다.</summary>
+        private void OnGameEnded(QL.Game.Flow.ResultSummary r) => StopAll();
 
         /// <summary>지금 보이는 숫자 수.</summary>
         public int ActiveCount()

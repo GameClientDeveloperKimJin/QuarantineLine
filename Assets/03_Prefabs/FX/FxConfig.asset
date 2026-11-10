@@ -12,9 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 503af87986f069e4bb222ad03780c986, type: 3}
   m_Name: FxConfig
   m_EditorClassIdentifier: QL.FX::QL.FX.FxConfig
-  screenFadeDuration: 0.2
-  screenScaleFrom: 0.95
-  screenEase: 6
   pauseDimColor: {r: 0.008, g: 0.03, b: 0.04, a: 0.72}
   resultDimColor: {r: 0.008, g: 0.03, b: 0.04, a: 0.8}
   emblemSize: 340
@@ -126,11 +123,10 @@ MonoBehaviour:
   resultDefeatAccent: {r: 1, g: 0.32, b: 0.3, a: 1}
   resultHeaderBandAlpha: 0.08
   resultAccentFillAlpha: 0.05
-  resultHeaderIconSize: 112
   resultSegmentEmptyColor: {r: 0.8, g: 1, b: 1, a: 1}
   resultSegmentFillInterval: 0.08
   resultSegmentFillDuration: 0.18
-  resultSegmentFillDelay: 0.15
+  resultSegmentFillDelay: 0
   resultSegmentFillEase: 6
   resultHintColor: {r: 0.62, g: 0.8, b: 0.8, a: 1}
   fxGrowEase: 6
@@ -288,3 +284,26 @@ MonoBehaviour:
   breakStatusNumberColor: {r: 0.55, g: 0.95, b: 1, a: 1}
   breakSecondaryTint: {r: 0.62, g: 0.68, b: 0.72, a: 1}
   breakSecondaryTextColor: {r: 0.9, g: 0.94, b: 0.96, a: 1}
+  resultIntroDimAlpha: 0.85
+  resultIntroDimDuration: 0.25
+  resultIntroPanelAt: 0.3
+  resultIntroPanelDuration: 0.2
+  resultIntroPanelScaleFrom: 0.96
+  resultIntroPanelEase: 6
+  resultIntroCountAt: 0.4
+  resultIntroCountDuration: 0.5
+  resultIntroCountEase: 6
+  resultIntroStampAt: 0.9
+  resultIntroStampDuration: 0.2
+  resultIntroStampScaleFrom: 1.8
+  resultIntroStampEase: 26
+  resultIntroPunchAt: 1.1
+  resultIntroPunch: 0.03
+  resultIntroPunchDuration: 0.2
+  resultIntroPunchVibrato: 6
+  resultIntroPunchElasticity: 0.6
+  resultIntroUnlockAt: 1.2
+  resultScanDuration: 0.3
+  resultScanHeight: 120
+  resultScanColor: {r: 0.55, g: 1, b: 0.95, a: 1}
+  resultScanEdgeColor: {r: 0.6, g: 1, b: 0.95, a: 0.9}

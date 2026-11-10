@@ -82,6 +82,7 @@ namespace QL.FX.Combat
         {
             if (_move != null && _move.IsActive()) _move.Pause();
             if (_punch != null && _punch.IsActive()) _punch.Pause();
+            text.transform.localScale = Vector3.one; // Punch 중간에 멈췄으면 원복 (다음 Play 는 Restart 로 처음부터)
             Finish();
         }
 

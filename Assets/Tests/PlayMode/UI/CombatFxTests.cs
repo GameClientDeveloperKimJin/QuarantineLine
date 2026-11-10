@@ -288,6 +288,64 @@ namespace QL.Tests.PlayMode.UI
         }
 
         [UnityTest]
+        public IEnumerator GameEnded_DamageNumbersOff_PausedKeepsThem_NewRoundShowsAgain()
+        {
+            var views = new SlimeView[3];
+            for (int i = 0; i < views.Length; i++) views[i] = _slimes.Spawn(SlimeType.Blob, i);
+            yield return null;
+            for (int i = 0; i < views.Length; i++) Raise("RaiseSlimeDamaged", views[i], 10, DroneType.Suction);
+            Assert.AreEqual(3, _numbers.ActiveCount(), "숫자 3개 뜸");
+            yield return Wait(0.2f);
+
+            // 휴게 (Paused · timeScale 0) — 숫자는 그대로 멈춰 있다
+            GameLoop loop = Object.FindAnyObjectByType<GameLoop>();
+            loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, loop.Flow.State);
+            float p0 = _numbers.ActiveFor(views[0]).Progress;
+            for (int i = 0; i < 5; i++) yield return null;
+            Assert.AreEqual(3, _numbers.ActiveCount(), "휴게 중에는 숫자를 끄지 않는다");
+            Assert.AreEqual(p0, _numbers.ActiveFor(views[0]).Progress, 1e-5f, "휴게 중 숫자는 멈춤 (게임 시간)");
+            loop.HandleEscape();
+            Assert.AreEqual(1f, Time.timeScale);
+
+            // 판 끝 — 떠 있는 숫자를 즉시 전부 끈다 (결과 화면 뒤에 얼어붙지 않게, U13)
+            Raise("RaiseGameEnded", default(ResultSummary));
+            Assert.AreEqual(0, _numbers.ActiveCount(), "판 끝 → 숫자 0");
+            for (int i = 0; i < _numbers.PoolSize; i++)
+            {
+                DamageNumber n = _numbers.ItemAt(i);
+                Assert.IsFalse(n.gameObject.activeSelf, "숫자 " + i + " 비활성");
+                Assert.IsNull(n.View, "숫자 " + i + " 점액 연결 끊김");
+                Assert.AreEqual(Vector3.one, n.Text.transform.localScale, "숫자 " + i + " Punch 원복");
+            }
+
+            // 다시 하기 → 새 판에서 숫자가 정상으로 뜬다
+            Time.timeScale = 1f;
+            loop.Restart();
+            DamageNumberFx fresh = null;
+            SlimeRegistry slimes = null;
+            for (int i = 0; i < MaxWaitFrames; i++)
+            {
+                yield return null;
+                GameLoop l = Object.FindAnyObjectByType<GameLoop>();
+                if (l != null && l != loop && l.IsReady)
+                {
+                    fresh = Object.FindAnyObjectByType<DamageNumberFx>();
+                    slimes = Object.FindAnyObjectByType<SlimeRegistry>();
+                    break;
+                }
+            }
+            Assert.IsNotNull(fresh, "새 판 DamageNumberFx");
+            Assert.AreEqual(0, fresh.ActiveCount());
+            SlimeView v = slimes.Spawn(SlimeType.Blob, 1);
+            yield return null;
+            Raise("RaiseSlimeDamaged", v, 10, DroneType.Suction);
+            Assert.AreEqual(1, fresh.ActiveCount(), "새 판 숫자 뜸");
+            yield return Wait(0.2f);
+            Assert.Greater(fresh.ActiveFor(v).Progress, 0f, "새 판 숫자가 움직인다");
+        }
+
+        [UnityTest]
         public IEnumerator Spend_RollsImmediately_EvenWhileCoinsFly()
         {
             yield return WaitCoinsSettled();
@@ -346,6 +404,32 @@ namespace QL.Tests.PlayMode.UI
 
         // ── 5. 풀 재사용 ─────────────────────────────────────
 
+        /// <summary>
+        /// 풀이 만든 오브젝트 수 — TMP 하위 메시(TMP_SubMeshUI · TMP_SubMesh)는 뺀다.
+        /// Dynamic 폰트 아틀라스가 2장째로 넘어가면 TMP 가 글자마다 「TMP SubMeshUI [… Atlas 1]」 자식을 만든다 (보류함 25 실측) — 풀 누수가 아니라
+        /// 앞 테스트들이 채운 아틀라스 상태에 따라 생겨 개수가 191 ↔ 192 로 흔들렸다. 풀 재사용 확인은 그대로 (풀 오브젝트 · CreatedCount).
+        /// </summary>
+        private static int CountObjects(Transform root)
+        {
+            int n = 0;
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                if (t.GetComponent<TMPro.TMP_SubMeshUI>() == null && t.GetComponent<TMPro.TMP_SubMesh>() == null) n++;
+            return n;
+        }
+
+        /// <summary>실패 메시지용 — before 에 없던 자식 (이름 · 부모 · 컴포넌트 형식).</summary>
+        private static string NewObjects(Transform root, System.Collections.Generic.HashSet<Transform> before)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+            {
+                if (before.Contains(t)) continue;
+                sb.Append(" | 새 오브젝트 ").Append(t.name).Append(" (부모 ").Append(t.parent != null ? t.parent.name : "-").Append(") :");
+                foreach (Component c in t.GetComponents<Component>()) sb.Append(' ').Append(c.GetType().FullName);
+            }
+            return sb.ToString();
+        }
+
         [UnityTest]
         public IEnumerator TwoHundredPlays_NoObjectGrowth()
         {
@@ -354,8 +438,10 @@ namespace QL.Tests.PlayMode.UI
             int coins = _coins.CreatedCount;
             int flames = _burn.CreatedCount;
             int fxItems = _pool.CreatedCount;
-            int childCount = _numbers.transform.GetComponentsInChildren<Transform>(true).Length;
-            int poolChildren = _pool.transform.GetComponentsInChildren<Transform>(true).Length;
+            int childCount = CountObjects(_numbers.transform);
+            var beforeSet = new System.Collections.Generic.HashSet<Transform>(_numbers.transform.GetComponentsInChildren<Transform>(true));
+            var poolBefore = new System.Collections.Generic.HashSet<Transform>(_pool.transform.GetComponentsInChildren<Transform>(true));
+            int poolChildren = CountObjects(_pool.transform);
 
             for (int i = 0; i < 200; i++)
             {
@@ -372,8 +458,8 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(coins, _coins.CreatedCount);
             Assert.AreEqual(flames, _burn.CreatedCount);
             Assert.AreEqual(fxItems, _pool.CreatedCount);
-            Assert.AreEqual(childCount, _numbers.transform.GetComponentsInChildren<Transform>(true).Length, "CombatFx 아래 오브젝트 수 그대로");
-            Assert.AreEqual(poolChildren, _pool.transform.GetComponentsInChildren<Transform>(true).Length, "FxPool 아래 오브젝트 수 그대로");
+            Assert.AreEqual(childCount, CountObjects(_numbers.transform), "CombatFx 아래 오브젝트 수 그대로" + NewObjects(_numbers.transform, beforeSet));
+            Assert.AreEqual(poolChildren, CountObjects(_pool.transform), "FxPool 아래 오브젝트 수 그대로" + NewObjects(_pool.transform, poolBefore));
             Assert.GreaterOrEqual(_death.PlayCount, 200);
             Assert.LessOrEqual(_numbers.ActiveCount(), _numbers.PoolSize);
             Assert.LessOrEqual(_coins.FlyingCount, Fx.coinFlyMax);

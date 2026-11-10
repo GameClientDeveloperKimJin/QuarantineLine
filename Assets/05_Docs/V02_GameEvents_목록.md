@@ -45,6 +45,15 @@
 - 진짜 소환 버튼은 `SummonController.RequestSummon()` 을 부른다 (G03)
 - R4 슬롯: `Game.unity` 루트 빈 오브젝트 `[UI]` · `[FX]` · `[Audio]` (컴포넌트 없음)
 
+## Core 읽기 API (O01 — O02 · U14~U16 용)
+- `GridModel`: `int Tick(dt)` (이번 Tick 자연 청소 칸 수) · `TickCleanedCount` / `TickCleanedCell(i)` · `int ContaminateInLane(lane, rng)` (후보 없으면 −1, 난수 안 뽑음) · `float ContaminationRemaining(i)` · `Contaminate` = 남은 시간 `ContaminateDuration` (≤0 이면 자연 청소 없음) · `Clean` / MergeClean = 0
+- `Contamination.PickCell(grid, lane, rng, buffer)` (static)
+- `WaveSchedule.ScheduleSeed(baseSeed, waveIndex)` · `BuildForWave(spec, config, waveIndex)`
+- `WaveForecast` {`WaveIndex` · `SlimeCount` · `MutantCount` · `CautionLane` (0부터, `NoCautionLane` = −1)} · `From(...)`
+- `PayBreakdown` {`WaveIndex` · `ClearBonus` · `CleanCount` · `CleanReward` · `Total`}
+- `FlowStep.Pay` (`ClearBonus` 필드는 `Pay.ClearBonus` 로 유지)
+- `GameFlow`: `NotifyMergeClean()` · `CleanCountInWave` · `CurrentSchedule` (Title 에선 null) · `Forecast`. StartGame · 클리어 Tick 이 시간표를 Build (잘못된 WaveSpec → ArgumentException)
+
 ## 시간
 - 결과 · 일시정지 중 `Time.timeScale = 0` → UI 트윈은 `SetUpdate(true)` (V01 7장)
 - `GameLoop.OnDestroy` 가 `timeScale = 1` 로 되돌린다 (Play 를 멈출 때 `TimeManager.asset` 에 0 이 저장되는 것 방지)

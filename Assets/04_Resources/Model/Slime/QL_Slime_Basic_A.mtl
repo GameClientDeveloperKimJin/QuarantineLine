@@ -1,0 +1,8 @@
+newmtl QL_Slime_Basic_A_Mat
+Ka 1 1 1
+Kd 1 1 1
+Ks 0 0 0
+Ns 10
+d 1
+illum 1
+map_Kd QL_Slime_Basic_A_BaseColor.png

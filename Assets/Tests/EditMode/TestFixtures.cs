@@ -110,6 +110,42 @@ namespace QL.Tests.EditMode
 
         public static DroneType[] DroneTypes() => (DroneType[])Enum.GetValues(typeof(DroneType));
 
+        // ── 웨이브 (L05) ──
+
+        // 이진수로 정확한 간격 · 비율 — 공식 계산값과 시간표 값이 오차 없이 맞게. 게임 값과 다르게 둔다
+        public const float ShortInterval = 0.75f;
+        public const float LongInterval = 1.25f;
+        public const float StartRatioMid = 0.375f;
+        public const int SmallCount = 3;
+        public const int LargeCount = 5;
+        public const int WaveClearBonus = 31;
+        public const float WavePrepTime = 2.5f;
+        public const int BlobHp = 13;
+        public const int BlobReward = 2;
+        public const int MutantHp = 41;
+        public const int MutantReward = 6;
+        /// <summary>부동소수 비교 허용 오차.</summary>
+        public const float TimeTolerance = 1e-4f;
+
+        /// <summary>항목 (점액 · 마리 수 · 간격 · 시작 비율) 로 웨이브 하나. 준비 시간 · 클리어 보너스는 픽스처 값.</summary>
+        public static WaveSpec Wave(params (SlimeType slime, int count, float interval, float startRatio)[] entries)
+        {
+            var specs = new WaveEntrySpec[entries.Length];
+            for (int i = 0; i < entries.Length; i++)
+                specs[i] = new WaveEntrySpec(entries[i].slime, entries[i].count, entries[i].interval, entries[i].startRatio);
+            return new WaveSpec(specs, WavePrepTime, WaveClearBonus, string.Empty);
+        }
+
+        /// <summary>모든 SlimeType 의 테스트용 수치 (HP · 보상만 의미 있음).</summary>
+        public static SlimeStats[] Slimes()
+        {
+            return new[]
+            {
+                new SlimeStats(SlimeType.Blob, BlobHp, 0f, 0, BlobReward),
+                new SlimeStats(SlimeType.Mutant, MutantHp, 0f, 0, MutantReward),
+            };
+        }
+
         // ── Cell 스냅샷 ──
 
         public static Cell Drone(DroneType type, int grade, bool contaminated = false, bool locked = false)

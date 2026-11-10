@@ -169,6 +169,7 @@ R5    A01→A07 첫날부터 상시. 에셋 완료 시마다 R1 에 보고. 가�
 | `ProjectSettings/**`                                                                                                                                                                | R2 (L01 에서만). 이후 변경은 R1 승인 후 지시서로 |
 | `Assets/Plugins/**` (DOTween)                                                                                                                                                       | 아무도 안 고침                          |
 | `_Verify/<ID>/` (저장소 루트, 검증 캡처) | 그 ID 작업 세션 |
+| `Assets/04_Resources/UI/*.png` (A08 그림, 사람 지시로 직접 납품) | R5 아트_UI 가 쓰고 R1 이 납품 커밋. **`.meta` import 설정은 R4 (U01)** |
 | `Assets/Tests/Game/**` · `Assets/Tests/PlayMode/**` | R3 |
 | 아트 전달 폴더 `D:\UnityProject\3D\QuarantineLine\_ArtDelivery\`                                                                                                                          | R5 (쓰기) / R3 (읽기만)                |
 

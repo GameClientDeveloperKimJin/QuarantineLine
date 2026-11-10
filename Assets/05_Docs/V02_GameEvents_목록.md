@@ -25,6 +25,9 @@
 | `WaveStarted` | `int index (0부터), int total, string banner` | `GameLoop.cs:107` | U02 웨이브 표시 · U06 배너 · U08 웨이브 소리 |
 | `StateChanged` | `GameState` | `GameLoop.cs:65` (시작 → Prep) · `:117` (Tick 전환) · `:146` (재개) · `:151` (Paused) | U01 일시정지 화면 |
 | `GameEnded` | `ResultSummary` (`Outcome` · `HatchHp` · `HatchMaxHp` · `SlimesKilled` · `MaxGradeDrones`) | `GameLoop.cs:123` (바로 뒤 `Time.timeScale = 0`) | U01 결과 화면 |
+| `CellHoverChanged` | `int cell` (-1 = 없음, 드래그 아닐 때 드론 칸 위) | `Game/Input/CellHighlighter.cs:94` (`SetHover`, 값 바뀔 때만) | U03 호버 외곽선 · 사거리 미리보기 |
+| `DropPreviewChanged` | `int cell, DropOutcome, bool has` (`has=false` = 미리보기 없음) | `CellHighlighter.cs:69` (`Set`, 값 바뀔 때만) | U03 드래그 대상 사거리 |
+| `SummonRejected` | `SummonBlock` | `Game/Summon/SummonController.cs:90` (`RequestSummon` 막힘 — 버튼 · Space 공통. `CanAct` 거부엔 없음) | U03 버튼 흔들림 · 말풍선 |
 
 ## 같은 프레임 순서
 `PrepTick` → `WaveStarted` → `RemainingSlimesChanged` → `CoinChanged`(보너스) → `StateChanged` → `GameEnded`

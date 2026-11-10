@@ -199,5 +199,6 @@ R5    아트 3세션(3D · UI · 맵) 첫날부터 상시. 에셋 완료 시마�
 ### ⚠ 공유 파일
 
 - `Assets/01_Scenes/Game.unity` — R3 소유. R4 는 Canvas 프리팹을 **R3 가 만들어 둔 빈 슬롯 오브젝트 아래**에 끼우는 한 줄만 허용 (지시서에 범위를 괄호로 적는다)
+- **씬 저장 주의 (U03 실측):** `Game.unity` 를 에디터에서 저장하면 UIRoot 프리팹 인스턴스에 TMP `m_fontColor32` · `m_TextStyleHashCode` · RectTransform 앵커 같은 **가짜 오버라이드가 수백 줄** 붙는다. 씬을 저장한 세션은 diff 를 보고 그 덩어리는 빼고 커밋한다 (원인 조사는 R6, 보류함 15)
 - `Assets/02_Scripts/Game/GameEvents.cs` — R3 소유. 다른 세션이 이벤트를 추가하려면 전달 요청
 

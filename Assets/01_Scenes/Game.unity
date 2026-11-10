@@ -467,12 +467,15 @@ MonoBehaviour:
   laneMaterial: {fileID: 2100000, guid: b104a8f8379c27944984d017ea6c2245, type: 2}
   hatchMaterial: {fileID: 2100000, guid: 71395de71ca8c9143a3de6ada1e15dce, type: 2}
   spawnLineMaterial: {fileID: 2100000, guid: da7dc1277d88df2438a6a8f3e48a7086, type: 2}
+  laserMaterial: {fileID: 2100000, guid: a7c926b6da2c55947b6d51cb7ed46fd3, type: 2}
   cellTileRatio: 0.9
   laneWidthRatio: 0.9
   floorMarginCells: 1
   floorThicknessCells: 0.1
-  hatchHeightCells: 0.8
-  hatchDepthCells: 0.3
+  hatchHeightCells: 0.25
+  hatchDepthCells: 0.2
+  laserHeightCells: 0.35
+  laserThicknessCells: 0.03
   spawnLineThicknessCells: 0.1
   laneYOffset: 0.005
   cellYOffset: 0.01

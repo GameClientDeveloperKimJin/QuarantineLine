@@ -6,7 +6,7 @@ using UnityEngine;
 namespace QL.Tests.Game
 {
     /// <summary>
-    /// GridSpace 공식 (V01 3장). 설정값은 일부러 게임 기본값(5 × 3, 경로 10, 칸 1)과 다르게 둔다 —
+    /// GridSpace 공식 (V01 3장, 2026-11-10 개정 — 칸은 격리선 z = 0 뒤, z 음수). 설정값은 일부러 게임 기본값(5 × 3, 경로 10, 칸 1)과 다르게 둔다 —
     /// 코드가 숫자를 박아 두었으면 테스트가 깨지게. 기대값은 아래 상수에서 계산한다.
     /// </summary>
     public sealed class GridSpaceTests
@@ -82,12 +82,12 @@ namespace QL.Tests.Game
         }
 
         [Test]
-        public void CellToWorld_RowZero_IsOneCellFromHatch()
+        public void CellToWorld_RowZero_IsOneCellBehindLine()
         {
             for (int lane = 0; lane < LaneCount; lane++)
-                Assert.AreEqual(CellSize, _space.CellToWorld(lane, 0).z, Eps);
+                Assert.AreEqual(-CellSize, _space.CellToWorld(lane, 0).z, Eps);
 
-            Assert.AreEqual(RowCount * CellSize, _space.CellToWorld(0, RowCount - 1).z, Eps);
+            Assert.AreEqual(-RowCount * CellSize, _space.CellToWorld(0, RowCount - 1).z, Eps);
         }
 
         [Test]
@@ -99,12 +99,13 @@ namespace QL.Tests.Game
             // 레인 밖 (좌 · 우)
             Assert.AreEqual(-1, _space.WorldToCell(new Vector3(-laneEdge - CellSize * 0.1f, 0f, z)));
             Assert.AreEqual(-1, _space.WorldToCell(new Vector3(laneEdge + CellSize * 0.1f, 0f, z)));
-            // row 0 앞 (해치 쪽) — z 가 반 칸보다 작다
-            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, CellSize * 0.2f)));
-            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, -CellSize)));
-            // row 끝 뒤 (스폰선 쪽)
-            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, (RowCount + 0.6f) * CellSize)));
+            // 격리선 앞 (점액 길 위, z > 0) · row 0 과 격리선 사이 (반 칸 안쪽)
+            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, -CellSize * 0.2f)));
+            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, CellSize)));
             Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, PathLength * CellSize)));
+            // 마지막 줄 뒤 (카메라 쪽)
+            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, -(RowCount + 0.6f) * CellSize)));
+            Assert.AreEqual(-1, _space.WorldToCell(new Vector3(0f, 0f, -(RowCount + 2f) * CellSize)));
         }
 
         [Test]
@@ -118,7 +119,8 @@ namespace QL.Tests.Game
                 Assert.AreEqual(_space.CellToWorld(lane, 0).x, p.x, Eps, "레인 x 는 칸과 같다");
             }
 
-            Assert.AreEqual(0f, _space.StageBounds.min.z, Eps, "StageBounds 앞쪽 = 해치");
+            Assert.AreEqual(-(RowCount + 0.5f) * CellSize, _space.StageBounds.min.z, Eps,
+                "StageBounds 앞쪽 = 마지막 칸 줄 뒤 끝");
         }
 
         [Test]
@@ -131,6 +133,25 @@ namespace QL.Tests.Game
             Assert.AreEqual(PathLength * CellSize, b.max.z, Eps, "StageBounds 뒤쪽 = 스폰선");
             Assert.AreEqual(LaneCount * CellSize, b.size.x, Eps, "StageBounds 폭 = 레인 폭 전체");
             Assert.AreEqual(0f, b.center.x, Eps);
+        }
+
+        [Test]
+        public void StageBounds_ContainsAllCellsAndSpawnLine()
+        {
+            Bounds b = _space.StageBounds;
+            int count = LaneCount * RowCount;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 c = _space.CellToWorld(i);
+                Assert.That(c.z, Is.LessThan(0f), $"칸 {i} 는 격리선 뒤");
+                Assert.IsTrue(b.Contains(c), $"칸 {i} {c}");
+            }
+
+            for (int lane = 0; lane < LaneCount; lane++)
+            {
+                Assert.IsTrue(b.Contains(_space.PathToWorld(lane, PathLength)), $"스폰선 레인 {lane}");
+                Assert.IsTrue(b.Contains(_space.PathToWorld(lane, 0f)), $"격리선 레인 {lane}");
+            }
         }
 
         [Test]

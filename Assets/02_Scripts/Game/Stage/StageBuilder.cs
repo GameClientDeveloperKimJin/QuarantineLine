@@ -4,7 +4,7 @@ using UnityEngine;
 namespace QL.Game.Stage
 {
     /// <summary>
-    /// 바닥 · 레인 · 칸 · 해치 · 스폰선을 런타임에 만든다 (씬에 타일을 두지 않는다 — 수치가 바뀌면 따라온다).
+    /// 바닥 · 레인 · 칸 · 격리선(해치 턱 + 레이저) · 스폰선을 런타임에 만든다 (씬에 타일을 두지 않는다 — 수치가 바뀌면 따라온다).
     /// 크기 · 위치는 전부 GridSpace / RuleConfig. 아래 직렬화 기본값은 표시용 비율 · 연출값만.
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
@@ -17,18 +17,25 @@ namespace QL.Game.Stage
         [SerializeField] private Material laneMaterial;
         [SerializeField] private Material hatchMaterial;
         [SerializeField] private Material spawnLineMaterial;
+        [Tooltip("격리선 레이저 — URP Unlit (블룸은 U07)")]
+        [SerializeField] private Material laserMaterial;
 
         [Header("표시용 비율 (칸 단위)")]
         [Tooltip("칸 타일 한 변 = cellSize × 이 값")]
         [SerializeField] private float cellTileRatio = 0.9f;
         [Tooltip("레인 띠 폭 = 레인 하나 폭 × 이 값")]
         [SerializeField] private float laneWidthRatio = 0.9f;
-        [Tooltip("바닥이 레인 폭 · 경로 바깥으로 나가는 여백")]
+        [Tooltip("바닥이 레인 폭 · StageBounds 앞뒤 바깥으로 나가는 여백")]
         [SerializeField] private float floorMarginCells = 1f;
         [SerializeField] private float floorThicknessCells = 0.1f;
-        [SerializeField] private float hatchHeightCells = 0.8f;
-        [Tooltip("해치가 z = 0 뒤쪽으로 차지하는 두께")]
-        [SerializeField] private float hatchDepthCells = 0.3f;
+        [Tooltip("격리선 턱 높이")]
+        [SerializeField] private float hatchHeightCells = 0.25f;
+        [Tooltip("격리선 턱 두께 (z 방향, 중심 z = 0)")]
+        [SerializeField] private float hatchDepthCells = 0.2f;
+        [Tooltip("레이저 막대 중심 높이 (바닥 기준) — 턱 위에 뜬다")]
+        [SerializeField] private float laserHeightCells = 0.35f;
+        [Tooltip("레이저 막대 굵기 (y · z)")]
+        [SerializeField] private float laserThicknessCells = 0.03f;
         [Tooltip("스폰선 띠 두께 (z 방향)")]
         [SerializeField] private float spawnLineThicknessCells = 0.1f;
 
@@ -55,7 +62,7 @@ namespace QL.Game.Stage
             }
 
             if (cellPrefab == null || floorMaterial == null || laneMaterial == null ||
-                hatchMaterial == null || spawnLineMaterial == null)
+                hatchMaterial == null || spawnLineMaterial == null || laserMaterial == null)
             {
                 Debug.LogError("[StageBuilder] 칸 프리팹 또는 재질이 비어 있다", this);
                 enabled = false;
@@ -72,16 +79,17 @@ namespace QL.Game.Stage
             float pathSpan = space.PathLength * cs;
             Transform root = transform;
 
-            // 바닥 — 윗면이 y = 0
-            float floorZMin = -floorMarginCells * cs;
-            float floorZMax = pathSpan + floorMarginCells * cs;
+            // 바닥 — 윗면이 y = 0, StageBounds(칸 3줄 뒤 끝 ~ 스폰선) 앞뒤로 여백
+            Bounds stage = space.StageBounds;
+            float floorZMin = stage.min.z - floorMarginCells * cs;
+            float floorZMax = stage.max.z + floorMarginCells * cs;
             float floorThickness = floorThicknessCells * cs;
             CreatePrimitive(PrimitiveType.Cube, "Floor", root, floorMaterial,
                 new Vector3(0f, -floorThickness * 0.5f, (floorZMin + floorZMax) * 0.5f),
                 Quaternion.identity,
                 new Vector3(laneSpan + 2f * floorMarginCells * cs, floorThickness, floorZMax - floorZMin));
 
-            // 레인 — z 0 ~ pathLength
+            // 레인 — 점액 길 z 0 ~ pathLength 만. 칸 영역(z < 0)은 칸이 레인을 대신 보여 준다
             Transform lanes = CreateGroup("Lanes", root);
             Quaternion flat = Quaternion.Euler(90f, 0f, 0f);
             for (int lane = 0; lane < space.LaneCount; lane++)
@@ -111,15 +119,24 @@ namespace QL.Game.Stage
                 CellRenderers[i] = cell;
             }
 
-            // 격리 해치 — z = 0 뒤쪽, 레인 폭 전체
+            // 격리선 턱 (Hatch) — 중심 z = 0 (칸과 점액 길 사이), 레인 폭 전체
             float hatchHeight = hatchHeightCells * cs;
             float hatchDepth = hatchDepthCells * cs;
             MeshRenderer hatch = CreatePrimitive(PrimitiveType.Cube, "Hatch", root, hatchMaterial,
-                new Vector3(0f, hatchHeight * 0.5f, -hatchDepth * 0.5f),
+                new Vector3(0f, hatchHeight * 0.5f, 0f),
                 Quaternion.identity,
                 new Vector3(laneSpan, hatchHeight, hatchDepth));
-            // 첫 줄 칸이 해치 그림자로 어두워져 하이라이트 색이 달라 보이지 않게 (조명 · 그림자 전체는 U07)
+            // 첫 줄 칸이 턱 그림자로 어두워져 하이라이트 색이 달라 보이지 않게 (조명 · 그림자 전체는 U07)
             hatch.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            // 레이저 — 턱 위에 뜬 가로 막대, 레인 폭 전체
+            float laserThickness = laserThicknessCells * cs;
+            MeshRenderer laser = CreatePrimitive(PrimitiveType.Cube, "Laser", root, laserMaterial,
+                new Vector3(0f, laserHeightCells * cs, 0f),
+                Quaternion.identity,
+                new Vector3(laneSpan, laserThickness, laserThickness));
+            laser.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            laser.receiveShadows = false;
 
             // 스폰선 — z = pathLength, 가는 띠
             CreatePrimitive(PrimitiveType.Quad, "SpawnLine", root, spawnLineMaterial,

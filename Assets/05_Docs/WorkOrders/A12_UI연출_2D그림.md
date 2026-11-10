@@ -3,7 +3,7 @@
 
 | | |
 |---|---|
-| 역할 | R5 아트 — **2D UI 담당** (`R5 아트_UI 세션` 이 없으면 `R5 아트_맵 세션` 이 맡는다) |
+| 역할 | R5 아트 — **`R5 아트 세션`** (사람 지시 2026-11-10 인계. 맵 세션 배정 취소) |
 | 기준 그림 | `Assets/05_Docs/Reference/ui_fx_1-1_작업지시서출력.png` ~ `ui_fx_1-5_휴게시간.png` (**읽기 허용 — 이 5장 · 이 지시서 · `WorkOrders/A08_UI_키트.md` 만 예외**) |
 | 산출 위치 | `Assets/04_Resources/UI/` (S5 규칙 6-1) · 미리보기 `_ArtDelivery/UI/A12/_preview.png` · 백업 `_ArtDelivery/UI/A12/` |
 | 쓰는 곳 | U12 휴게(Cup · Steam) → U13 결재(도장 2) → U14 영수증(Paper · Torn · Barcode · 지급) → U15 지시서(Paper · Slot · 접수) → U16 메신저(Avatar · Bubble) |

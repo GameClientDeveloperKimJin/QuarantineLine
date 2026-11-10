@@ -150,6 +150,74 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &178884831
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 178884834}
+  - component: {fileID: 178884833}
+  - component: {fileID: 178884832}
+  m_Layer: 0
+  m_Name: '[Summon]'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &178884832
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178884831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8bd3779c08180f548a543bc5383bfc90, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Summon.TempHud
+  bootstrap: {fileID: 916952042}
+  summon: {fileID: 178884833}
+  debugCoinAmount: 100
+  area:
+    serializedVersion: 2
+    x: 10
+    y: 10
+    width: 260
+    height: 92
+--- !u!114 &178884833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178884831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d39038a3b675c2844ab03a65206078f6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.Game::QL.Game.Summon.SummonController
+  bootstrap: {fileID: 916952042}
+  board: {fileID: 1560824565}
+--- !u!4 &178884834
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178884831}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &472742585
 GameObject:
   m_ObjectHideFlags: 0
@@ -566,7 +634,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1560824564}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bb1b980b6e623444bb2677ae34ae3f08, type: 3}
   m_Name: 
@@ -734,3 +802,4 @@ SceneRoots:
   - {fileID: 1282938886}
   - {fileID: 1560824567}
   - {fileID: 1741833817}
+  - {fileID: 178884834}

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 503af87986f069e4bb222ad03780c986, type: 3}
+  m_Name: FxConfig
+  m_EditorClassIdentifier: QL.FX::QL.FX.FxConfig
+  screenFadeDuration: 0.2
+  screenScaleFrom: 0.95
+  screenEase: 6
+  pauseDimColor: {r: 0.008, g: 0.03, b: 0.04, a: 0.72}
+  resultDimColor: {r: 0.008, g: 0.03, b: 0.04, a: 0.8}
+  emblemSize: 340
+  victoryTitleColor: {r: 0.3, g: 0.95, b: 0.92, a: 1}
+  defeatTitleColor: {r: 1, g: 0.35, b: 0.3, a: 1}
+  buttonPressOffset: 3
+  scanlineTint: {r: 0.55, g: 1, b: 0.98, a: 0.35}

@@ -5,6 +5,9 @@
         "QL.Game",
         "QL.Core",
         "QL.Data",
+        "QL.UI",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI",
         "Unity.InputSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"

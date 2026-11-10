@@ -170,6 +170,68 @@ namespace QL.Tests.EditMode
             return new QL.Core.Combat.SlimeTarget(id, lane, dist, alive);
         }
 
+        // ── 흐름 · 해치 (L07) ──
+
+        // 게임 값과 다르게 둔다. HatchHit 은 HatchMaxHp 의 약수가 아니다 — 0 아래로 내려가지 않는지 드러나게
+        public const int HatchMaxHp = 23;
+        public const int HatchCriticalHp = 7;
+        public const int HatchHit = 4;
+        // 이진수로 정확한 준비 시간 · dt — 올림 초 경계가 오차 없이 맞게. 첫 준비와 이후 준비를 다르게
+        public const float FirstPrepTime = 3.5f;
+        public const float NextPrepTime = 1.75f;
+        public const float FlowDt = 0.25f;
+        public static readonly int[] FlowClearBonuses = { 19, 29, 37 };
+        public static readonly string[] FlowBanners = { "TEST WAVE A", "TEST WAVE B", "TEST WAVE C" };
+
+        /// <summary><see cref="Config()"/> 에 해치 값만 넣은 설정.</summary>
+        public static RuleConfig FlowConfig()
+        {
+            return new RuleConfig(
+                laneCount: LaneCount,
+                rowCount: RowCount,
+                pathLength: 0f,
+                cellSize: 0f,
+                hatchMaxHp: HatchMaxHp,
+                hatchCriticalHp: HatchCriticalHp,
+                startCoin: 0,
+                summonBaseCost: 0,
+                summonCostStep: 0,
+                mergeLockDuration: MergeLockDuration,
+                contaminateDuration: 0f,
+                cleanReward: 0,
+                randomSeed: 0);
+        }
+
+        /// <summary>
+        /// 웨이브 3개 — 마리 수 · 준비 시간 · 보너스 · 배너가 웨이브마다 다르다.
+        /// 0: Blob×SmallCount · 1: Blob×SmallCount + Mutant×LargeCount · 2: Mutant×LargeCount.
+        /// 준비 시간은 첫 웨이브 FirstPrepTime, 이후 NextPrepTime.
+        /// </summary>
+        public static WaveSpec[] FlowWaves()
+        {
+            var e0 = new[] { new WaveEntrySpec(SlimeType.Blob, SmallCount, ShortInterval, 0f) };
+            var e1 = new[]
+            {
+                new WaveEntrySpec(SlimeType.Blob, SmallCount, ShortInterval, 0f),
+                new WaveEntrySpec(SlimeType.Mutant, LargeCount, LongInterval, StartRatioMid),
+            };
+            var e2 = new[] { new WaveEntrySpec(SlimeType.Mutant, LargeCount, LongInterval, 0f) };
+            return new[]
+            {
+                new WaveSpec(e0, FirstPrepTime, FlowClearBonuses[0], FlowBanners[0]),
+                new WaveSpec(e1, NextPrepTime, FlowClearBonuses[1], FlowBanners[1]),
+                new WaveSpec(e2, NextPrepTime, FlowClearBonuses[2], FlowBanners[2]),
+            };
+        }
+
+        /// <summary>Σ entries.Count — 웨이브 시작 시 남은 점액 기대값.</summary>
+        public static int SlimeCountOf(WaveSpec wave)
+        {
+            int sum = 0;
+            foreach (WaveEntrySpec e in wave.Entries) sum += e.Count;
+            return sum;
+        }
+
         // ── Cell 스냅샷 ──
 
         public static Cell Drone(DroneType type, int grade, bool contaminated = false, bool locked = false)

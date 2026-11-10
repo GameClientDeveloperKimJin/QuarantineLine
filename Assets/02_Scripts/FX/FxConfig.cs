@@ -14,6 +14,7 @@ namespace QL.FX
     /// U06: 웨이브 경고 배너 · 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
     /// U12: 휴게 시간 카드 — 어둡게 · 카드 등장 / 닫힘 · 커피 김 루프 · 팁 교체 · 상태 줄 형식과 색.
     /// U13: 결재 도장 결과 — 어둡게 · 패널 부팅 · 스캔라인 띠 · 숫자 올라감 · 도장 · Punch · 버튼 잠금 해제 시점.
+    /// U14: 수당 영수증 — 시퀀스 시점 · 문구 (팀 · 항목 이름) · 종이 색 · 클리어 배너 · HUD 코인 「+합계」.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -285,7 +286,7 @@ namespace QL.FX
         public float deathSparkRise;
         [Min(0.01f)] public float deathSparkDuration;
 
-        [Header("U05 코인 비행 — 처치 위치 · 화면 가운데(보너스) → HUD 코인 아이콘 (게임 시간)")]
+        [Header("U05 코인 비행 — 처치 위치 → HUD 코인 아이콘 (게임 시간 · U14: KillRewarded 로 출발, 웨이브 수당은 영수증)")]
         [Tooltip("동시에 나는 코인 최대 수 = 코인 풀 크기. 넘치면 날리지 않고 그 몫을 바로 표시에 더한다")]
         [Min(1)] public int coinFlyMax;
         [Tooltip("코인 그림 크기 시작 → 도착 (px)")]
@@ -301,10 +302,6 @@ namespace QL.FX
         [Tooltip("곡선 휘는 정도 — 조절점을 진행 방향 옆으로 거리 × 이 값")]
         public float coinFlyBend;
         public Ease coinFlyEase;
-        [Tooltip("웨이브 클리어 보너스 — 화면 가운데에서 흩뿌리는 코인 수 · 흩뿌림 반지름 (px) · 차례로 날아가는 간격 (초)")]
-        [Min(1)] public int coinBonusCount;
-        [Min(0f)] public float coinBonusScatter;
-        [Min(0f)] public float coinBonusInterval;
         [Tooltip("도착 순간 HUD 코인 아이콘 Punch Scale 세기 · 시간")]
         [Min(0f)] public float coinArrivePunch;
         [Min(0.01f)] public float coinArrivePunchDuration;
@@ -530,6 +527,68 @@ namespace QL.FX
         [Tooltip("띠 (스캔라인 무늬) 색 · 가장자리 밝은 선 색 — 알파는 훑는 가운데에서 최대")]
         public Color resultScanColor;
         public Color resultScanEdgeColor;
+
+        [Header("U14 수당 영수증 — 시퀀스 시점 (초, 게임 시간 — 일시정지 때 같이 멈춤 · WaveCleared 기준)")]
+        [Tooltip("종이 출력 (높이 0 → 끝) 시간 (원본 0.4)")]
+        [Min(0.01f)] public float payslipPrintDuration;
+        public Ease payslipPrintEase;
+        [Tooltip("항목 줄 찍힘 시작 (원본 0.40) · 줄 간격 (0.15) · 한 줄 Fade + X 시간 · X 시작 오프셋 (px, 8 → 0)")]
+        [Min(0f)] public float payslipRowsAt;
+        [Min(0f)] public float payslipRowInterval;
+        [Min(0.01f)] public float payslipRowDuration;
+        public float payslipRowOffsetX;
+        [Tooltip("합계 0 → 값 시작 (원본 0.80) · 시간 (0.3)")]
+        [Min(0f)] public float payslipTotalAt;
+        [Min(0.01f)] public float payslipTotalDuration;
+        public Ease payslipTotalEase;
+        [Tooltip("「지급」 도장 시작 (원본 1.10) · 시간 (0.15) · 시작 크기 (1.6 → 1) · 이징 (InBack) · 각도 범위 (도, −14 ~ −8)")]
+        [Min(0f)] public float payslipStampAt;
+        [Min(0.01f)] public float payslipStampDuration;
+        public float payslipStampScaleFrom;
+        public Ease payslipStampEase;
+        public float payslipStampAngleMin;
+        public float payslipStampAngleMax;
+        [Tooltip("말려 올라감 시작 (원본 1.60) · 시간 (0.3) · 이징 (InQuad) — ScaleY 1 → 0 + 코인 패널 가운데 쪽으로 이동")]
+        [Min(0f)] public float payslipRollUpAt;
+        [Min(0.01f)] public float payslipRollUpDuration;
+        public Ease payslipRollUpEase;
+        [Tooltip("HUD 코인 표시값을 실제값으로 굴리기 시작 (원본 1.90) · 영수증 끝 = 끝남 알림 (2.0)")]
+        [Min(0f)] public float payslipCoinAt;
+        [Min(0f)] public float payslipEndAt;
+        [Header("U14 수당 영수증 — 문구 (형식 {0} = 숫자) · 색")]
+        public string payslipTitle;
+        public string payslipTeam;
+        [Tooltip("{0} = 막은 웨이브 번호 (1부터)")]
+        public string payslipWaveFormat;
+        public string payslipClearLabel;
+        [Tooltip("{0} = 청소 횟수")]
+        public string payslipCleanFormat;
+        [Tooltip("항목 · 합계 금액 형식 — {0} = 금액")]
+        public string payslipValueFormat;
+        public string payslipTotalLabel;
+        [Tooltip("{0} = 다음 웨이브 번호 (1부터)")]
+        public string payslipNextFormat;
+        [Tooltip("글자색 — 진한 글씨 (제목 · 항목 · 합계) · 흐린 글씨 (팀 · 근무 · 다음 근무) · 구분선")]
+        public Color payslipInkColor;
+        public Color payslipMutedColor;
+        public Color payslipRuleColor;
+        [Header("U14 웨이브 클리어 배너 — 화면 위 가운데 (게임 시간)")]
+        [Tooltip("{0} = 막은 웨이브 번호 (1부터)")]
+        public string clearBannerFormat;
+        [Tooltip("등장 Scale 시작 (0.6 → 1) · 등장 시간 (0.3) · 이징 (OutBack) · 사라지기 시작 (등장 기준 초, 원본 「1.2초 뒤」) · 사라지는 시간")]
+        public float clearBannerScaleFrom;
+        [Min(0.01f)] public float clearBannerInDuration;
+        public Ease clearBannerInEase;
+        [Min(0f)] public float clearBannerOutAt;
+        [Min(0.01f)] public float clearBannerOutDuration;
+        [Header("U14 HUD 코인 「+합계」 — 영수증이 끝날 때 코인 패널 오른쪽 (게임 시간)")]
+        [Tooltip("{0} = 수당 합계")]
+        public string coinGainFormat;
+        public Color coinGainColor;
+        [Tooltip("나타남 · 머무름 · 사라짐 (초)")]
+        [Min(0.01f)] public float coinGainInDuration;
+        [Min(0f)] public float coinGainHoldDuration;
+        [Min(0.01f)] public float coinGainOutDuration;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

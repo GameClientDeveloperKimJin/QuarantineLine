@@ -11,25 +11,16 @@ namespace QL.FX.Combat
     /// 코인 비행 (CombatFx.prefab — 오버레이 캔버스 한 장, HUD 보다 위). 진짜 지갑(Wallet)은 이미 바뀌어 있고, HUD 숫자만 코인이
     /// 도착할 때 따라간다 — HUD(QL.UI HudCoin)가 <see cref="Target"/> 에 코인 아이콘을 넣고 <see cref="Delivered"/> 를 듣는다.
     /// <list type="bullet">
-    /// <item>CoinChanged(delta &gt; 0) 는 그 프레임 LateUpdate 에서 짝을 찾는다: 같은 프레임 SlimeKilled 중 보상이 같은 처치가 있으면
-    /// 그 점액 자리에서 코인 1개, 없으면 웨이브 클리어 보너스 → 화면 가운데에서 coinBonusCount 개 흩뿌려 차례로 (이벤트 구독 순서와 무관).</item>
+    /// <item>U14: <c>KillRewarded(slime, reward)</c> 를 받는 그 자리에서 그 점액 위치 → 코인 1개 (O02 — 바로 뒤 같은 값 CoinChanged).
+    /// 처치 · CoinChanged 짝짓기(보상액 추정)는 없앴다 (보류함 21). CoinChanged 는 듣지 않는다.</item>
+    /// <item>웨이브 클리어 수당은 날리지 않는다 — 영수증(U14 PayslipReceipt)이 보여 주고 HUD 표시를 붙잡는다. 흩뿌림 없음.</item>
     /// <item>겹침 방지: 동시에 나는 코인 ≤ coinFlyMax (= 풀 크기). 넘치면 날리지 않고 그 몫을 바로 <see cref="Delivered"/>.</item>
-    /// <item>GameEnded → 날던 코인 · 짝 대기 몫을 전부 즉시 Delivered (결과 화면 전에 숫자가 맞게).</item>
-    /// <item>delta &lt; 0 (소환 지출)은 여기서 다루지 않는다 — HUD 가 바로 굴린다.</item>
+    /// <item>GameEnded → 날던 코인 몫을 전부 즉시 Delivered (결과 화면 전에 숫자가 맞게).</item>
     /// </list>
-    /// 게임 시간 (일시정지 중 멈춤). 풀 · 버퍼는 Awake 에 미리 — 웨이브 중 할당 없음.
+    /// 게임 시간 (일시정지 중 멈춤). 풀은 Awake 에 미리 — 웨이브 중 할당 없음.
     /// </summary>
     public sealed class CoinFlyFx : MonoBehaviour
     {
-        private struct KillMark
-        {
-            public Vector3 World;
-            public int Reward;
-            public bool Used;
-        }
-
-        private const int FrameBuffer = 64;
-
         [SerializeField] private FxConfig fx;
         [Tooltip("비어 있으면 Awake 에 한 번 찾는다 (FxPool 은 DefaultExecutionOrder -40 이라 먼저 준비됨)")]
         [SerializeField] private FxPool pool;
@@ -38,17 +29,13 @@ namespace QL.FX.Combat
         [SerializeField] private FlyingCoin prefab;
 
         private FlyingCoin[] _coins;
-        private readonly KillMark[] _kills = new KillMark[FrameBuffer];
-        private readonly int[] _credits = new int[FrameBuffer];
-        private int _killCount;
-        private int _creditCount;
         private Action<FlyingCoin> _onArrived;
 
         /// <summary>코인이 닿을 HUD 코인 아이콘 (HudCoin 이 시작 때 넣는다). 비어 있으면 날리지 않고 바로 Delivered.</summary>
         public RectTransform Target { get; set; }
         /// <summary>(몫, 도착인가) — 도착이면 true, 상한 초과 · 판 끝 즉시 반영이면 false. 부르기 전에 <see cref="Pending"/> 이 이미 줄어 있다.</summary>
         public event Action<int, bool> Delivered;
-        /// <summary>아직 표시에 더해지지 않은 코인 합 (짝 대기 + 날고 있음).</summary>
+        /// <summary>아직 표시에 더해지지 않은 처치 코인 합 (날고 있음).</summary>
         public int Pending { get; private set; }
         public int FlyingCount { get; private set; }
         public int PoolSize => _coins != null ? _coins.Length : 0;
@@ -76,70 +63,30 @@ namespace QL.FX.Combat
 
         private void OnEnable()
         {
-            GameEvents.SlimeKilled += OnKilled;
-            GameEvents.CoinChanged += OnCoinChanged;
+            GameEvents.KillRewarded += OnKillRewarded;
             GameEvents.GameEnded += OnGameEnded;
         }
 
         private void OnDisable()
         {
-            GameEvents.SlimeKilled -= OnKilled;
-            GameEvents.CoinChanged -= OnCoinChanged;
+            GameEvents.KillRewarded -= OnKillRewarded;
             GameEvents.GameEnded -= OnGameEnded;
         }
 
         public FlyingCoin CoinAt(int i) => _coins[i];
 
-        private void OnKilled(SlimeView view)
+        /// <summary>처치 보상 — 그 점액 머리 위에서 코인 1개 (KillRewarded 는 반납 직전이라 위치가 살아 있다).</summary>
+        private void OnKillRewarded(SlimeView view, int reward)
         {
-            if (view == null || _killCount >= _kills.Length) return;
-            Transform t = view.transform;
-            _kills[_killCount++] = new KillMark
+            if (reward <= 0) return;
+            Pending += reward; // 바로 뒤 CoinChanged 때 HUD 목표 = 지갑 − Pending 이 그대로 (도착 때 굴림)
+            if (view == null)
             {
-                World = t.position + Vector3.up * (fx.damageHeadHeight * 0.5f * t.localScale.y),
-                Reward = view.Reward,
-                Used = false,
-            };
-        }
-
-        private void OnCoinChanged(int now, int delta)
-        {
-            if (delta <= 0) return;
-            Pending += delta;
-            if (_creditCount < _credits.Length) _credits[_creditCount++] = delta;
-            else Deliver(delta, false);
-        }
-
-        private void LateUpdate()
-        {
-            if (_creditCount > 0) Resolve();
-            _killCount = 0;
-        }
-
-        /// <summary>이번 프레임 코인 획득을 처치와 짝지어 날린다.</summary>
-        private void Resolve()
-        {
-            for (int c = 0; c < _creditCount; c++)
-            {
-                int amount = _credits[c];
-                int kill = -1;
-                for (int k = 0; k < _killCount; k++)
-                {
-                    if (_kills[k].Used || _kills[k].Reward != amount) continue;
-                    kill = k;
-                    break;
-                }
-                if (kill >= 0)
-                {
-                    _kills[kill].Used = true;
-                    LaunchFromWorld(_kills[kill].World, amount);
-                }
-                else
-                {
-                    LaunchBonus(amount);
-                }
+                Deliver(reward, false);
+                return;
             }
-            _creditCount = 0;
+            Transform t = view.transform;
+            LaunchFromWorld(t.position + Vector3.up * (fx.damageHeadHeight * 0.5f * t.localScale.y), reward);
         }
 
         private void LaunchFromWorld(Vector3 world, int amount)
@@ -153,22 +100,6 @@ namespace QL.FX.Combat
             }
             Vector2 pop = new Vector2(UnityEngine.Random.Range(-0.3f, 0.3f) * fx.coinPopHeight, fx.coinPopHeight);
             Launch(amount, start, pop, 0f);
-        }
-
-        private void LaunchBonus(int amount)
-        {
-            int n = Mathf.Clamp(fx.coinBonusCount, 1, amount);
-            int each = amount / n;
-            int extra = amount - each * n;
-            Vector2 center = canvasRect.rect.center;
-            for (int i = 0; i < n; i++)
-            {
-                int share = each + (i < extra ? 1 : 0);
-                float a = (i + 0.5f) * (Mathf.PI * 2f / n);
-                float r = fx.coinBonusScatter * (0.55f + 0.45f * ((i * 3) % n) / (float)Mathf.Max(1, n - 1)); // 반지름을 번갈아 — 원 하나로 줄 서지 않게
-                Vector2 pop = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * r;
-                Launch(share, center, pop, i * fx.coinBonusInterval);
-            }
         }
 
         private void Launch(int amount, Vector2 start, Vector2 pop, float hold)
@@ -217,7 +148,7 @@ namespace QL.FX.Combat
             Delivered?.Invoke(amount, arrived);
         }
 
-        /// <summary>날던 코인 · 짝 대기 몫을 전부 즉시 반영 (GameEnded).</summary>
+        /// <summary>날던 코인 몫을 전부 즉시 반영 (GameEnded).</summary>
         public void FlushAll()
         {
             int sum = 0;
@@ -228,9 +159,6 @@ namespace QL.FX.Combat
                 sum += c.Amount;
                 c.Stop();
             }
-            for (int i = 0; i < _creditCount; i++) sum += _credits[i];
-            _creditCount = 0;
-            _killCount = 0;
             FlyingCount = 0;
             Deliver(sum, false);
         }

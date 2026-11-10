@@ -7,6 +7,7 @@ using QL.FX.Combat;
 using QL.FX.Motion;
 using QL.Game;
 using QL.Game.Bootstrap;
+using QL.Game.Combat;
 using QL.Game.Drones;
 using QL.Game.Flow;
 using QL.Game.Input;
@@ -216,9 +217,9 @@ namespace QL.Tests.PlayMode.UI
             int reward = s.Reward;
             _slimes.Despawn(s, DespawnReason.Killed);
             Assert.AreEqual(shownBefore + reward, Wallet, "지갑은 바로 바뀐다 (KillRewarder)");
-            yield return null; // LateUpdate 에서 처치와 짝지어 발사
+            Assert.AreEqual(1, _coins.FlyingCount, "처치 1 → KillRewarded 그 자리에서 코인 1개 (U14)");
+            yield return null;
 
-            Assert.AreEqual(1, _coins.FlyingCount, "처치 1 → 코인 1개");
             Assert.AreEqual(shownBefore, _hud.Shown, "날아가는 동안 표시는 그대로");
             Assert.AreEqual(Wallet - reward, _hud.Target);
 
@@ -256,16 +257,52 @@ namespace QL.Tests.PlayMode.UI
         }
 
         [UnityTest]
-        public IEnumerator WaveBonus_ScattersCoins_FromCenter()
+        public IEnumerator WaveBonus_NoScatter_RollsImmediatelyWithoutReceipt()
         {
+            // U14: 웨이브 수당 흩뿌림은 없앴다 — 코인 비행은 KillRewarded 만. 영수증이 붙잡지 않은 CoinChanged(+) 는 바로 굴림
             yield return WaitCoinsSettled();
             int bonus = 50;
+            int launched = _coins.LaunchCount;
             _bootstrap.Wallet.Add(bonus);
             Raise("RaiseCoinChanged", Wallet, bonus);
+            Assert.AreEqual(0, _coins.Pending, "수당은 비행 몫이 아니다");
+            Assert.AreEqual(Wallet, _hud.Target, "붙잡은 몫 없음 → 바로 지갑 값으로");
+            Assert.IsTrue(_hud.IsRolling);
             yield return null;
-            Assert.AreEqual(Mathf.Min(Fx.coinBonusCount, Fx.coinFlyMax), _coins.FlyingCount, "보너스 = 코인 여러 개");
-            Assert.AreEqual(bonus, _coins.Pending, "몫 합 = 보너스");
+            Assert.AreEqual(0, _coins.FlyingCount, "흩뿌림 없음");
+            Assert.AreEqual(launched, _coins.LaunchCount);
 
+            yield return WaitCoinsSettled();
+            Assert.AreEqual(Wallet, _hud.Shown);
+        }
+
+        [UnityTest]
+        public IEnumerator KillRewarded_LaunchesFromSlime_NoKillCoinPairing()
+        {
+            yield return WaitCoinsSettled();
+            // ① KillRewarded 하나만 → 그 자리에서 코인 1개 (프레임 끝 짝짓기 없음)
+            SlimeView s = _slimes.Spawn(SlimeType.Blob, 2);
+            Raise("RaiseKillRewarded", s, 7);
+            Assert.AreEqual(1, _coins.FlyingCount, "KillRewarded 즉시 발사");
+            Assert.AreEqual(7, _coins.Pending, "몫 = reward 인자");
+            yield return WaitCoinsSettled();
+            Assert.AreEqual(0, _coins.Pending);
+
+            // ② KillRewarder 를 끄고 SlimeKilled + 같은 값 CoinChanged → 날지 않는다 (보상액 추정 짝짓기 없음 · 보류함 21)
+            KillRewarder rewarder = Object.FindAnyObjectByType<KillRewarder>();
+            Assert.IsNotNull(rewarder);
+            rewarder.enabled = false;
+            int reward = s.Reward;
+            int launched = _coins.LaunchCount;
+            Raise("RaiseSlimeKilled", s);
+            _bootstrap.Wallet.Add(reward);
+            Raise("RaiseCoinChanged", Wallet, reward);
+            yield return null;
+            yield return null;
+            Assert.AreEqual(launched, _coins.LaunchCount, "SlimeKilled · CoinChanged 만으로는 코인이 날지 않는다");
+            Assert.AreEqual(0, _coins.FlyingCount);
+            rewarder.enabled = true;
+            _slimes.Despawn(s, DespawnReason.Killed);
             yield return WaitCoinsSettled();
             Assert.AreEqual(Wallet, _hud.Shown);
         }

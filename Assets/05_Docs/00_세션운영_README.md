@@ -60,7 +60,7 @@ R5    아트 3세션(3D · UI · 맵) 첫날부터 상시. 에셋 완료 시마�
 | 12  | G05 | R3    | G04, L06   | 2.5h | 드론 3종이 IAttack 으로 점액을 공격하고 처치 보상을 준다                   |
 | 13  | G06 | R3    | G05, L07   | 1.5h | 준비 → 웨이브 → 결과 흐름을 붙여 한 판이 끝까지 돈다 — **Day2 완료**         |
 | 14  | G07 | R3    | G06        | 1.5h | **아트 1차 적용** — 그때까지 온 드론 · 점액 · 맵 모듈로 바꾸고, 같은 이름 파일로 바꿔 끼워도 깨지지 않는 프리팹 구조를 세운다. 안 온 것은 임시 도형 유지 → `WorkOrders/G07_아트_1차_적용.md` (전부 도착 · 모델 위치 04_Resources/Model 그대로) |
-| 15  | U01 | R4    | G06        | 1.5h | 타이틀 · 인게임 · 일시정지 · 결과 화면                               |
+| 15  | U01 | R4    | G06        | 1.5h | 타이틀 · 인게임 · 일시정지 · 결과 화면 → `WorkOrders/U01_화면4개.md` (UI 그림 import · 폰트 포함) |
 | 16  | U02 | R4    | U01        | 1.5h | HUD 5요소를 값이 바뀔 때만 갱신한다                                 |
 | 17  | U03 | R4    | U02        | 2h   | 모든 클릭 · 호버 · 드래그에 0.1초 안에 시각 반응                        |
 | 18  | U04 | R4    | U03        | 1.5h | 대기(호버링 · 출렁임) · 머지 연출                                  |
@@ -190,6 +190,7 @@ R5    아트 3세션(3D · UI · 맵) 첫날부터 상시. 에셋 완료 시마�
 | `Assets/Plugins/**` (DOTween)                                                                                                                                                       | 아무도 안 고침                          |
 | `_Verify/<ID>/` (저장소 루트, 검증 캡처) | 그 ID 작업 세션 |
 | `Assets/04_Resources/UI/*.png` (A08 그림, 사람 지시로 직접 납품) | R5 아트_UI 가 쓰고 R1 이 납품 커밋. **`.meta` import 설정은 R4 (U01)** |
+| `Assets/04_Resources/Fonts/` · `Assets/TextMesh Pro/` (U01) | R4 연출. 폰트 원본 · `OFL.txt` 는 `_ArtDelivery/Fonts/` 에서 복사 |
 | `Assets/04_Resources/Model/**` (3D 모델, 사람 지시로 직접 납품) | R5 아트가 쓰고 R1 이 납품 커밋. **`.meta` import 설정 · 머티리얼 · 프리팹은 R3 (G07)**. `Assets/06_Art/` 는 쓰지 않는다 |
 | `Assets/Tests/Game/**` · `Assets/Tests/PlayMode/**` | R3 |
 | 아트 전달 폴더 `D:\UnityProject\3D\QuarantineLine\_ArtDelivery\`                                                                                                                          | R5 (쓰기) / R3 (읽기만)                |

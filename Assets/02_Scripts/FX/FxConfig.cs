@@ -11,6 +11,7 @@ namespace QL.FX
     /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
     /// U11: 결과 화면 강조색(승 · 패) · 헤더 띠 · 진행 막대 칸 차오름.
     /// U05: 데미지 숫자 · 처치 대역 납작 · Splat/Puddle · 코인 비행 · 잔열 불꽃 · 풀 크기.
+    /// U06: 웨이브 경고 배너 · 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -347,6 +348,102 @@ namespace QL.FX
         [Header("U05 이펙트 풀 크기 (FxPool)")]
         [Min(1)] public int fxPoolSplat;
         [Min(1)] public int fxPoolPuddle;
+
+        [Header("U06 웨이브 경고 배너 — 화면 가운데 위 (실제 시간 SetUpdate(true), 입력 막지 않음)")]
+        [Tooltip("펼쳐짐 (scaleX 0 → 1) 시간 (초)")]
+        [Min(0.01f)] public float bannerOpenDuration;
+        public Ease bannerOpenEase;
+        [Tooltip("펼쳐진 뒤 깜빡임 횟수 · 한 번 (꺼짐 → 켜짐) 시간 (초) · 꺼질 때 알파")]
+        [Min(0)] public int bannerBlinkCount;
+        [Min(0.01f)] public float bannerBlinkDuration;
+        [Range(0f, 1f)] public float bannerBlinkAlpha;
+        [Tooltip("다 펼쳐진 채 유지 (초)")]
+        [Min(0f)] public float bannerHoldDuration;
+        [Tooltip("접히며 사라짐 (scaleX 1 → 0) 시간 (초)")]
+        [Min(0.01f)] public float bannerCloseDuration;
+        public Ease bannerCloseEase;
+        [Tooltip("윗줄 형식 — {0} = 웨이브 번호(1부터) · {1} = 전체")]
+        public string bannerTitleFormat;
+        [Tooltip("마지막 웨이브 윗줄 형식 — {0} · {1} 같음")]
+        public string bannerFinalTitleFormat;
+        [Tooltip("평소 강조색 (경고 아이콘 · 윗줄 글자)")]
+        public Color bannerColor;
+        [Tooltip("마지막 웨이브 강조색")]
+        public Color bannerFinalColor;
+        [Tooltip("패널(UI_Panel_Warning — 완성 색 그림이라 곱해진다) 틴트 · 마지막 웨이브 틴트")]
+        public Color bannerPanelColor;
+        public Color bannerFinalPanelColor;
+        [Tooltip("아랫줄(banner 문구) 글자색")]
+        public Color bannerTextColor;
+
+        [Header("U06 해치 경고등 — Posts 기둥 MPB (_EmissionColor · _BaseColor) + 꼭대기 빛 (FX_Glow_Dot, 가산)")]
+        [Tooltip("웨이브 시작 빠른 점멸 — 전체 시간 (초) · 한 번 (켜짐 → 꺼짐) 주기 (초)")]
+        [Min(0f)] public float postWaveBlinkDuration;
+        [Min(0.01f)] public float postWaveBlinkPeriod;
+        [Tooltip("웨이브 시작 점멸 색 (주황 경고등)")]
+        public Color postWaveColor;
+        [Tooltip("위기 느린 점멸 주기 (초) · 색 (붉게)")]
+        [Min(0.01f)] public float postCriticalPeriod;
+        public Color postCriticalColor;
+        [Tooltip("_EmissionColor = 색 × 이 세기 × 점멸값 (재질에 _EMISSION 이 켜져 있을 때만 보인다 — U07)")]
+        [Min(0f)] public float postEmissionIntensity;
+        [Tooltip("_BaseColor = 흰색 → 색 으로 점멸값 × 이 비율만큼 (기둥 몸체 물듦)")]
+        [Range(0f, 1f)] public float postBaseTint;
+        [Tooltip("꼭대기 빛 — 기둥 바닥에서 높이 (칸) · 지름 (칸) · 알파 최대")]
+        [Min(0f)] public float postGlowHeight;
+        [Min(0f)] public float postGlowSize;
+        [Range(0f, 1f)] public float postGlowAlpha;
+        [Tooltip("빛을 카메라 쪽으로 당겨 그리는 거리 (칸) — 기둥 몸체에 가리지 않게")]
+        [Min(0f)] public float postGlowCameraOffset;
+
+        [Header("U06 점액 히트 플래시 — 켜진 Model_A/B 렌더러 MPB _BaseMap(흰 텍스처) · _BaseColor (게임 시간)")]
+        [Tooltip("번쩍 시간 (초) — 같은 점액이 또 맞으면 이 시간을 다시 센다")]
+        [Min(0.01f)] public float hitFlashDuration;
+        [Tooltip("번쩍 색 — 흰색에 드론 종류색(1등급 tintColor)을 이 비율만큼 섞는다 (0 = 흰색)")]
+        public Color hitFlashColor;
+        [Range(0f, 1f)] public float hitFlashTypeMix;
+        [Tooltip("색 × 이 밝기 (텍스처를 흰색으로 바꾼 위에 곱한다 — 1 보다 크면 그림자 쪽도 밝게)")]
+        [Min(1f)] public float hitFlashIntensity;
+        [Tooltip("동시에 번쩍이는 점액 최대 (미리 만든 배열)")]
+        [Min(1)] public int hitFlashCapacity;
+
+        [Header("U06 해치 피격 — 카메라 흔들림 (CameraRig.SetShakeOffset, 게임 시간 — 일시정지 · 결과면 즉시 원위치)")]
+        [Tooltip("한 번 흔들림 시간 (초) — 연속 피격은 세기는 상한 안에서, 시간만 다시 이만큼")]
+        [Min(0.01f)] public float shakeDuration;
+        [Tooltip("세기 (월드 단위, 카메라 로컬 x · y 최대 이동)")]
+        [Min(0f)] public float shakeStrength;
+        [Tooltip("위기 상태면 세기 × 이 값")]
+        [Min(1f)] public float shakeCriticalMultiplier;
+        [Tooltip("세기 상한 (연속 피격 · 위기 배율을 곱해도 넘지 않음)")]
+        [Min(0f)] public float shakeStrengthCap;
+        [Tooltip("연속 피격마다 세기에 더할 몫 (shakeStrength 비율) — 상한까지")]
+        [Min(0f)] public float shakeStackRatio;
+        [Tooltip("흔들림 빠르기 (Perlin 노이즈 진동수, 1/초)")]
+        [Min(0.1f)] public float shakeFrequency;
+
+        [Header("U06 해치 피격 — HUD 해치 패널 (게임 시간)")]
+        [Tooltip("패널 흔들림 시간 (초) · 세기 (px) · 진동")]
+        [Min(0.01f)] public float hudShakeDuration;
+        [Min(0f)] public float hudShakeStrength;
+        [Min(1)] public int hudShakeVibrato;
+        [Tooltip("깎인 칸 번쩍 색 — 이 색에서 hatchSegmentFadeDuration 동안 꺼진 칸 알파로")]
+        public Color hatchHitFlashColor;
+
+        [Header("U06 HP 위기 (IsCritical) — 비네트 · 해치 패널 점멸 (게임 시간)")]
+        [Tooltip("화면 가장자리 비네트 색 (알파 무시 — 알파는 아래 최대값까지 점멸)")]
+        public Color vignetteColor;
+        [Tooltip("비네트 알파 최대 · 최소 (게임 영역을 가리지 않게 — 시작 0.25)")]
+        [Range(0f, 1f)] public float vignetteAlphaMax;
+        [Range(0f, 1f)] public float vignetteAlphaMin;
+        [Tooltip("비네트 한 번 (최소 → 최대 → 최소) 주기 (초)")]
+        [Min(0.01f)] public float vignettePeriod;
+        [Tooltip("비네트 안쪽 투명 반지름 · 가장자리까지 번지는 폭 (화면 반 = 1 기준)")]
+        [Range(0f, 1.5f)] public float vignetteInner;
+        [Range(0.01f, 1.5f)] public float vignetteFeather;
+        [Tooltip("해치 패널 붉은 테 — 색 · 알파 최대 · 주기 (초)")]
+        public Color hatchCriticalColor;
+        [Range(0f, 1f)] public float hatchCriticalAlpha;
+        [Min(0.01f)] public float hatchCriticalPeriod;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

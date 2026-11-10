@@ -37,6 +37,10 @@ namespace QL.Game.Stage
         private float _lastFov = float.NaN;
         private float _lastMargin = float.NaN;
 
+        // U06 흔들림 — Refit 이 정한 기본 위치. 흔들림은 여기에 회전 × 오프셋을 더할 뿐 (각도 · 거리는 그대로)
+        private Vector3 _basePosition;
+        private bool _hasBase;
+
         public Camera Camera => _camera;
 
         private void Awake()
@@ -122,6 +126,18 @@ namespace QL.Game.Stage
 
             Vector3 position = center + rotation * new Vector3(offsetX, offsetY, -distance);
             transform.SetPositionAndRotation(position, rotation);
+            _basePosition = position;
+            _hasBase = true;
+        }
+
+        /// <summary>
+        /// U06 흔들림 전용 — 기본 위치(Refit 결과) + 회전 × local 에 둔다. <c>Vector3.zero</c> 면 원위치.
+        /// 다음 Refit(화면비 변경 등)은 기본 위치로 되돌린다.
+        /// </summary>
+        public void SetShakeOffset(Vector3 local)
+        {
+            if (!_hasBase) return;
+            transform.position = _basePosition + transform.rotation * local;
         }
     }
 }

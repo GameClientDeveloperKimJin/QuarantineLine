@@ -63,7 +63,7 @@ MonoBehaviour:
     m_NumColorKeys: 3
     m_NumAlphaKeys: 2
   hatchSegmentOffAlpha: 0.12
-  hatchSegmentFadeDuration: 0.2
+  hatchSegmentFadeDuration: 0.35
   remainingBarColor: {r: 0.45, g: 1, b: 0.35, a: 1}
   buttonHoverScale: 1.03
   buttonHoverDuration: 0.08
@@ -214,3 +214,53 @@ MonoBehaviour:
   burnCameraOffset: 0.35
   fxPoolSplat: 12
   fxPoolPuddle: 12
+  bannerOpenDuration: 0.2
+  bannerOpenEase: 9
+  bannerBlinkCount: 2
+  bannerBlinkDuration: 0.1
+  bannerBlinkAlpha: 0.25
+  bannerHoldDuration: 1.2
+  bannerCloseDuration: 0.2
+  bannerCloseEase: 8
+  bannerTitleFormat: WAVE {0} / {1}
+  bannerFinalTitleFormat: FINAL WAVE {0} / {1}
+  bannerColor: {r: 1, g: 0.74, b: 0.24, a: 1}
+  bannerFinalColor: {r: 1, g: 0.32, b: 0.26, a: 1}
+  bannerPanelColor: {r: 1, g: 1, b: 1, a: 1}
+  bannerFinalPanelColor: {r: 1, g: 0.55, b: 0.5, a: 1}
+  bannerTextColor: {r: 1, g: 0.95, b: 0.86, a: 1}
+  postWaveBlinkDuration: 2
+  postWaveBlinkPeriod: 0.25
+  postWaveColor: {r: 1, g: 0.55, b: 0.1, a: 1}
+  postCriticalPeriod: 1.2
+  postCriticalColor: {r: 1, g: 0.12, b: 0.08, a: 1}
+  postEmissionIntensity: 4
+  postBaseTint: 0.5
+  postGlowHeight: 1.1
+  postGlowSize: 0.9
+  postGlowAlpha: 0.9
+  postGlowCameraOffset: 0.3
+  hitFlashDuration: 0.08
+  hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
+  hitFlashTypeMix: 0.2
+  hitFlashIntensity: 1.4
+  hitFlashCapacity: 64
+  shakeDuration: 0.25
+  shakeStrength: 0.06
+  shakeCriticalMultiplier: 1.5
+  shakeStrengthCap: 0.12
+  shakeStackRatio: 0.25
+  shakeFrequency: 30
+  hudShakeDuration: 0.3
+  hudShakeStrength: 10
+  hudShakeVibrato: 20
+  hatchHitFlashColor: {r: 1, g: 0.15, b: 0.1, a: 1}
+  vignetteColor: {r: 0.9, g: 0.05, b: 0.05, a: 1}
+  vignetteAlphaMax: 0.25
+  vignetteAlphaMin: 0.08
+  vignettePeriod: 1.6
+  vignetteInner: 0.85
+  vignetteFeather: 0.35
+  hatchCriticalColor: {r: 1, g: 0.15, b: 0.1, a: 1}
+  hatchCriticalAlpha: 0.6
+  hatchCriticalPeriod: 1.2

@@ -1,0 +1,10 @@
+newmtl M_LineSill
+Ka 0 0 0
+Kd 1 1 1
+Ks 0.2 0.2 0.2
+Ns 40
+d 1
+illum 2
+map_Kd QL_Stage_LineSill_BaseColor.png
+Ke 1 1 1
+map_Ke QL_Stage_LineSill_Emission.png

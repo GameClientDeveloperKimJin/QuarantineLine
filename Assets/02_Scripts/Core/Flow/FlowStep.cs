@@ -20,9 +20,12 @@ namespace QL.Core.Flow
         public readonly int WaveCount;
         public readonly string BannerText;
 
-        /// <summary>방금 웨이브를 막음 (마지막 웨이브 포함). 보너스 지급은 호출한 쪽.</summary>
+        /// <summary>방금 웨이브를 막음 (마지막 웨이브 포함). 지급은 호출한 쪽 — <see cref="Pay"/>.Total 을 한 번에.</summary>
         public readonly bool WaveCleared;
+        /// <summary>= Pay.ClearBonus (청소 수당 제외). 기존 호출자용.</summary>
         public readonly int ClearBonus;
+        /// <summary>WaveCleared 일 때 수당 내역 (클리어 수당 + 청소 수당). 패배한 Tick 은 default.</summary>
+        public readonly PayBreakdown Pay;
 
         /// <summary>None 이 아니면 이번 Tick 에 판이 끝남.</summary>
         public readonly GameOutcome Outcome;
@@ -37,7 +40,7 @@ namespace QL.Core.Flow
             int waveCount,
             string bannerText,
             bool waveCleared,
-            int clearBonus,
+            in PayBreakdown pay,
             GameOutcome outcome)
         {
             StateChanged = stateChanged;
@@ -49,7 +52,8 @@ namespace QL.Core.Flow
             WaveCount = waveCount;
             BannerText = bannerText;
             WaveCleared = waveCleared;
-            ClearBonus = clearBonus;
+            Pay = pay;
+            ClearBonus = pay.ClearBonus;
             Outcome = outcome;
         }
     }

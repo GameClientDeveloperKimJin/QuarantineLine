@@ -11,6 +11,9 @@ namespace QL.Core.Waves
     /// </summary>
     public static class WaveSchedule
     {
+        private const int ScheduleSeedPrime = 486187739;
+        private const int ScheduleSeedStep = 16777619;
+
         /// <summary>
         /// 웨이브 시작 때 한 번 부른다 (배열 할당 있음).
         /// 순서 고정 — 1) 시각 계산 2) Time → EntryIndex → i 오름차순 정렬 3) 정렬된 순서대로 rng.Next(LaneCount) 4) 반환.
@@ -50,6 +53,30 @@ namespace QL.Core.Waves
             }
 
             return events;
+        }
+
+        /// <summary>
+        /// 웨이브 시간표 전용 시드 — 소환 · 오염 난수(RuleConfig.RandomSeed 로 만든 공용 IRandom)와 분리해,
+        /// 준비 시간 중 무엇을 뽑았든 웨이브 waveIndex 의 시간표가 같게 한다. 같은 (baseSeed, waveIndex) = 같은 값.
+        /// </summary>
+        public static int ScheduleSeed(int baseSeed, int waveIndex)
+        {
+            unchecked
+            {
+                // 웨이브마다 다른 시드 — 큰 홀수 곱으로 섞는다 (baseSeed 와 그대로 같아지지 않게 +1)
+                return (baseSeed * ScheduleSeedPrime) ^ ((waveIndex + 1) * ScheduleSeedStep);
+            }
+        }
+
+        /// <summary>
+        /// 웨이브 waveIndex 의 시간표 — <see cref="ScheduleSeed"/>(config.RandomSeed, waveIndex) 로 만든 별도 난수로 <see cref="Build"/>.
+        /// 준비 시간 시작 때 미리 만들어도 웨이브 시작 때 만든 것과 같다 (예보 = 실제 스폰).
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">config.LaneCount 가 1 미만</exception>
+        /// <exception cref="ArgumentException">Build 와 같은 검증</exception>
+        public static SpawnEvent[] BuildForWave(in WaveSpec spec, in RuleConfig config, int waveIndex)
+        {
+            return Build(spec, config, new SeededRandom(ScheduleSeed(config.RandomSeed, waveIndex)));
         }
 
         /// <summary>D = 모든 항목의 Count × SpawnInterval 중 최댓값 (항목이 없으면 0).</summary>

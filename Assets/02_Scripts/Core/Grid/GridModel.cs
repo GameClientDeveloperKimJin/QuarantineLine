@@ -5,7 +5,7 @@ using QL.Core.Units;
 namespace QL.Core.Grid
 {
     /// <summary>
-    /// 배치 칸 전체의 상태 (드론 · 오염 · 머지 잠금 · 드래그).
+    /// 배치 칸 전체의 상태 (드론 · 오염 + 남은 시간 · 머지 잠금 · 드래그).
     /// 판정은 <see cref="MergeRule.Resolve"/> 에 맡기고 결과만 적용한다. 이벤트 없음 — 결과는 반환값으로만.
     /// </summary>
     public sealed class GridModel
@@ -14,16 +14,23 @@ namespace QL.Core.Grid
 
         private readonly UnitCatalog _catalog;
         private readonly float _mergeLockDuration;
+        private readonly float _contaminateDuration;
 
         private readonly bool[] _hasDrone;
         private readonly DroneType[] _type;
         private readonly int[] _grade;
         private readonly bool[] _contaminated;
         private readonly float[] _lockRemaining;
+        private readonly float[] _contaminateRemaining;
+        private readonly int[] _laneCandidates;
+        private readonly int[] _tickCleaned;
 
         public int LaneCount { get; }
         public int RowCount { get; }
         public int CellCount { get; }
+
+        /// <summary>마지막 <see cref="Tick"/> 에서 자연 청소(마름)된 칸 수. 칸 번호는 <see cref="TickCleanedCell"/>.</summary>
+        public int TickCleanedCount { get; private set; }
 
         /// <summary>집어 든 칸. 없으면 -1.</summary>
         public int DraggingIndex { get; private set; } = None;
@@ -46,6 +53,10 @@ namespace QL.Core.Grid
             _grade = new int[CellCount];
             _contaminated = new bool[CellCount];
             _lockRemaining = new float[CellCount];
+            _contaminateDuration = config.ContaminateDuration;
+            _contaminateRemaining = new float[CellCount];
+            _laneCandidates = new int[RowCount];
+            _tickCleaned = new int[CellCount];
         }
 
         // ── 좌표 ──────────────────────────────────────────────
@@ -164,6 +175,7 @@ namespace QL.Core.Grid
                     ClearDrone(from);
                     SetDrone(to, type, grade);
                     _contaminated[to] = false;
+                    _contaminateRemaining[to] = 0f;
                     _lockRemaining[to] = _mergeLockDuration;
                     break;
 
@@ -179,13 +191,32 @@ namespace QL.Core.Grid
             DraggingIndex = None;
         }
 
-        // ── 오염 (상태 토글만) ────────────────────────────────
+        // ── 오염 · 청소 (O01) ─────────────────────────────────
 
+        /// <summary>
+        /// 칸을 오염시키고 남은 시간을 <see cref="RuleConfig.ContaminateDuration"/> 으로 (이미 오염이면 시간만 다시).
+        /// ContaminateDuration ≤ 0 이면 자연 청소 없음 (머지 · <see cref="Clean"/> 으로만 지워짐).
+        /// </summary>
         /// <exception cref="ArgumentOutOfRangeException">index 가 칸 범위 밖</exception>
         public void Contaminate(int index)
         {
             CheckIndex(index);
             _contaminated[index] = true;
+            _contaminateRemaining[index] = _contaminateDuration > 0f ? _contaminateDuration : 0f;
+        }
+
+        /// <summary>
+        /// 점액이 해치에 닿았을 때 — 그 레인의 아직 오염 안 된 칸 중 무작위 1칸 (<see cref="Contamination.PickCell"/>).
+        /// 레인 전체가 오염이면 난수를 뽑지 않고 -1. 할당 없음.
+        /// </summary>
+        /// <returns>오염된 칸 번호, 없으면 -1</returns>
+        /// <exception cref="ArgumentOutOfRangeException">lane 이 레인 범위 밖</exception>
+        /// <exception cref="ArgumentNullException">rng 가 null</exception>
+        public int ContaminateInLane(int lane, IRandom rng)
+        {
+            int index = Contamination.PickCell(this, lane, rng, _laneCandidates);
+            if (index != None) Contaminate(index);
+            return index;
         }
 
         /// <exception cref="ArgumentOutOfRangeException">index 가 칸 범위 밖</exception>
@@ -193,21 +224,64 @@ namespace QL.Core.Grid
         {
             CheckIndex(index);
             _contaminated[index] = false;
+            _contaminateRemaining[index] = 0f;
+        }
+
+        /// <summary>오염 남은 시간 (오염 아니거나 자연 청소 없음이면 0).</summary>
+        /// <exception cref="ArgumentOutOfRangeException">index 가 칸 범위 밖</exception>
+        public float ContaminationRemaining(int index)
+        {
+            CheckIndex(index);
+            return _contaminateRemaining[index];
+        }
+
+        /// <summary>마지막 Tick 에서 자연 청소된 i 번째 칸 (0 ≤ i &lt; <see cref="TickCleanedCount"/>, 칸 번호 오름차순).</summary>
+        /// <exception cref="ArgumentOutOfRangeException">i 가 범위 밖</exception>
+        public int TickCleanedCell(int i)
+        {
+            if (i < 0 || i >= TickCleanedCount)
+                throw new ArgumentOutOfRangeException(nameof(i), i, $"0 ~ {TickCleanedCount - 1}");
+            return _tickCleaned[i];
         }
 
         // ── 시간 ──────────────────────────────────────────────
 
-        /// <summary>머지 잠금 남은 시간을 줄인다. 0 이하가 되면 해제. dt ≤ 0 은 무시.</summary>
-        public void Tick(float dt)
+        /// <summary>
+        /// 머지 잠금 · 오염 남은 시간을 줄인다. 0 이하가 되면 잠금 해제 · 자연 청소.
+        /// 자연 청소된 칸은 <see cref="TickCleanedCount"/> · <see cref="TickCleanedCell"/> 로 (다음 Tick 까지 유지). dt ≤ 0 은 무시 (목록은 비운다).
+        /// 할당 없음.
+        /// </summary>
+        /// <returns>이번 Tick 에 자연 청소된 칸 수</returns>
+        public int Tick(float dt)
         {
-            if (dt <= 0f) return;
+            TickCleanedCount = 0;
+            if (dt <= 0f) return 0;
 
             for (int i = 0; i < CellCount; i++)
             {
-                if (_lockRemaining[i] <= 0f) continue;
-                float left = _lockRemaining[i] - dt;
-                _lockRemaining[i] = left > 0f ? left : 0f;
+                if (_lockRemaining[i] > 0f)
+                {
+                    float left = _lockRemaining[i] - dt;
+                    _lockRemaining[i] = left > 0f ? left : 0f;
+                }
+
+                if (_contaminated[i] && _contaminateRemaining[i] > 0f)
+                {
+                    float left = _contaminateRemaining[i] - dt;
+                    if (left > 0f)
+                    {
+                        _contaminateRemaining[i] = left;
+                    }
+                    else
+                    {
+                        _contaminateRemaining[i] = 0f;
+                        _contaminated[i] = false;
+                        _tickCleaned[TickCleanedCount++] = i;
+                    }
+                }
             }
+
+            return TickCleanedCount;
         }
 
         // ── 내부 ──────────────────────────────────────────────

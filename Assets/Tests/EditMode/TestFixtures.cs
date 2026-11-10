@@ -183,7 +183,7 @@ namespace QL.Tests.EditMode
         public static readonly int[] FlowClearBonuses = { 19, 29, 37 };
         public static readonly string[] FlowBanners = { "TEST WAVE A", "TEST WAVE B", "TEST WAVE C" };
 
-        /// <summary><see cref="Config()"/> 에 해치 값만 넣은 설정.</summary>
+        /// <summary><see cref="Config()"/> 에 해치 값 · 청소 수당 · 시드를 넣은 설정 (O01: 수당 내역 · 시간표 시드).</summary>
         public static RuleConfig FlowConfig()
         {
             return new RuleConfig(
@@ -197,9 +197,34 @@ namespace QL.Tests.EditMode
                 summonBaseCost: 0,
                 summonCostStep: 0,
                 mergeLockDuration: MergeLockDuration,
-                contaminateDuration: 0f,
-                cleanReward: 0,
-                randomSeed: 0);
+                contaminateDuration: ContaminateDuration,
+                cleanReward: CleanReward,
+                randomSeed: RandomSeed);
+        }
+
+        // ── 오염 · 수당 (O01) ──
+
+        // 이진수로 정확한 값 — 절반 + 절반 경계가 오차 없이 맞게. 게임 값(5초 · 10코인)과 다르게 둔다
+        public const float ContaminateDuration = 3.5f;
+        public const int CleanReward = 11;
+
+        /// <summary><see cref="Config()"/> 에 오염 시간 · 청소 수당 · 시드만 넣은 설정. 레인 · 줄 · 머지 잠금은 같다.</summary>
+        public static RuleConfig ContaminationConfig()
+        {
+            return new RuleConfig(
+                laneCount: LaneCount,
+                rowCount: RowCount,
+                pathLength: 0f,
+                cellSize: 0f,
+                hatchMaxHp: 0,
+                hatchCriticalHp: 0,
+                startCoin: 0,
+                summonBaseCost: 0,
+                summonCostStep: 0,
+                mergeLockDuration: MergeLockDuration,
+                contaminateDuration: ContaminateDuration,
+                cleanReward: CleanReward,
+                randomSeed: RandomSeed);
         }
 
         /// <summary>

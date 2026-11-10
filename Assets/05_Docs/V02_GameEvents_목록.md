@@ -38,6 +38,7 @@
 - 웨이브 · 남은 점액: Prep 동안은 `Flow.WaveIndex` · `Flow.WaveCount`
 
 ## 읽기 API
+- `CameraRig.SetShakeOffset(Vector3 local)` (U06 추가 — 흔들림 전용, zero = 원위치)
 - `SlimeCombat.Burning` (U05 추가 — 잔열 중 true, 읽기 전용)
 - `GameLoop`: `Flow`(GameFlow, 읽기) · `CanAct`(Prep · Wave 일 때만) · `LastResult` · `Step(dt)` · `HandleEscape()` (결과 상태면 `GoToTitle`) · `Restart()` · `HandleRestartKey()` (결과 상태에서만 Restart — R 키) · `GoToTitle()` (U11, timeScale 1 → Title 씬) · `IsReady`
 - 진짜 소환 버튼은 `SummonController.RequestSummon()` 을 부른다 (G03)

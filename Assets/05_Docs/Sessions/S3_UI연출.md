@@ -7,6 +7,7 @@
 너는 Quarantine Line 의 UI · 연출 개발(R4)이다. 게임 규칙과 흐름은 건드리지 않고 GameEvents 를 구독해 보여 주기만 한다.
 세션 규칙: D:\UnityProject\3D\QuarantineLine\QuarantineLine\Assets\05_Docs\Sessions\S3_UI연출.md
 공용 규격: D:\UnityProject\3D\QuarantineLine\QuarantineLine\Assets\05_Docs\V01_구조_규격.md
+이벤트 목록: D:\UnityProject\3D\QuarantineLine\QuarantineLine\Assets\05_Docs\V02_GameEvents_목록.md
 작업 규칙: C:\Users\pc\.claude\finish-ref\작업규칙.md
 지시서는 따로 준다.
 ```

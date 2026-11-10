@@ -147,6 +147,7 @@ R5    A01→A07 첫날부터 상시. 에셋 완료 시마다 R1 에 보고. 가�
 - `.meta` 파일은 짝이 되는 파일과 같이 add 한다.
 - 커밋할 때, 내 깃허브 계정만 표시되게끔 해라. ( 클로드 아이콘 없어야 한다 )
 
+- **PlayMode 테스트를 돌렸으면 커밋 전에 `git status ProjectSettings` 를 본다.** MCP `run_tests` 가 도는 동안 `EditorSettings.asset` 의 `m_EnterPlayModeOptions` 가 잠시 바뀐다. 테스트가 끝나 복구된 뒤에만 커밋하고, 바뀐 채 남아 있으면 `git checkout ProjectSettings/EditorSettings.asset`
 - **예외 — `Assets/05_Docs/**/*.meta`:** R1 이 문서를 만들면 Unity 가 나중에 `.meta` 를 만든다. 내용 충돌이 없는 자동 생성물이므로 **미추적으로 보이면 어느 세션이든 자기 커밋에 함께 add 해도 된다** (문서 본문 `.md` 는 여전히 R1 만)
 - **예외 — `Assets/05_Docs/_진행현황.md` 의 자기 작업 행:** `/finish` 마감 때 그 작업 ID 행의 「상태」 칸만 고쳐 같은 커밋에 넣는다. 「커밋」 칸(해시)은 커밋 전에 알 수 없으니 비워 두고, **R1 이 다음 지시서 커밋 때 채운다.** 다른 행 · 「메모」 칸은 R1
 - 커밋 본문에 `Co-Authored-By: Claude …` 줄을 넣지 않는다. 작성자 = `KJ <devjin6189@gmail.com>`

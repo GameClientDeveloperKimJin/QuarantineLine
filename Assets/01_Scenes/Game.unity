@@ -266,7 +266,6 @@ GameObject:
   m_Component:
   - component: {fileID: 178884834}
   - component: {fileID: 178884833}
-  - component: {fileID: 178884832}
   m_Layer: 0
   m_Name: '[Summon]'
   m_TagString: Untagged
@@ -274,29 +273,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &178884832
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 178884831}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8bd3779c08180f548a543bc5383bfc90, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: QL.Game::QL.Game.Summon.TempHud
-  bootstrap: {fileID: 916952042}
-  summon: {fileID: 178884833}
-  slimes: {fileID: 1104750593}
-  loop: {fileID: 1008424470}
-  debugCoinAmount: 100
-  area:
-    serializedVersion: 2
-    x: 10
-    y: 10
-    width: 340
-    height: 240
 --- !u!114 &178884833
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -6,6 +6,7 @@ namespace QL.FX
     /// <summary>
     /// 연출 수치 (S3 규칙 6) — 색 · 크기 · 시간은 코드가 아니라 이 에셋(<c>Assets/03_Prefabs/FX/FxConfig.asset</c>)에 둔다.
     /// U01: 화면 전환 페이드 · 일시정지 / 결과 어둡게 · 엠블럼 크기 · 버튼 눌림 깊이.
+    /// U02: HUD 숫자 튐 · 코인 굴림 · 카운트다운 크기 · 해치 게이지 색 · 남은 점액 막대 색.
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -35,5 +36,37 @@ namespace QL.FX
         [Header("홀로그램 패널")]
         [Tooltip("패널 위 UI_FX_Scanline 틴트 (알파로 얇게)")]
         public Color scanlineTint;
+
+        [Header("HUD — 숫자 튐 (U02)")]
+        [Tooltip("웨이브 숫자 · 남은 점액이 바뀔 때 Punch Scale 세기 (1 = 두 배)")]
+        public float hudPunchStrength;
+        [Tooltip("Punch 시간 (초)")]
+        [Min(0f)] public float hudPunchDuration;
+        [Min(0)] public int hudPunchVibrato;
+        [Range(0f, 1f)] public float hudPunchElasticity;
+
+        [Header("HUD — 코인 (U02)")]
+        [Tooltip("코인 숫자가 이전 값 → 새 값으로 굴러가는 시간 (초)")]
+        [Min(0f)] public float coinRollDuration;
+        public Ease coinRollEase;
+
+        [Header("HUD — 준비 카운트다운 (U02)")]
+        [Tooltip("남은 초가 이 값 이하가 되면 크게")]
+        [Min(0)] public int countdownBigFrom;
+        [Tooltip("크게 보일 때 배율 (평소 1)")]
+        [Min(1f)] public float countdownBigScale;
+        public Color countdownColor;
+        public Color countdownBigColor;
+
+        [Header("HUD — 해치 게이지 (U02)")]
+        [Tooltip("칸 색 — 왼쪽(0) → 오른쪽(1). UI_Gauge_Segment 는 흰 그림이라 그대로 틴트된다")]
+        public Gradient hatchGaugeGradient;
+        [Tooltip("꺼진 칸 알파 (흔적만 남김)")]
+        [Range(0f, 1f)] public float hatchSegmentOffAlpha;
+        [Tooltip("칸이 꺼질 때 Fade 시간 (초)")]
+        [Min(0f)] public float hatchSegmentFadeDuration;
+
+        [Header("HUD — 남은 점액 막대 (U02)")]
+        public Color remainingBarColor;
     }
 }

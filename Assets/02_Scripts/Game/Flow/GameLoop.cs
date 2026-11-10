@@ -26,7 +26,7 @@ namespace QL.Game.Flow
 
         private GameFlow _flow;
 
-        /// <summary>값 읽기용 (TempHud · U02). 상태를 바꾸는 호출은 GameLoop 를 거친다.</summary>
+        /// <summary>값 읽기용 (U02 HUD). 상태를 바꾸는 호출은 GameLoop 를 거친다.</summary>
         public GameFlow Flow => _flow;
 
         public bool IsReady => _flow != null;

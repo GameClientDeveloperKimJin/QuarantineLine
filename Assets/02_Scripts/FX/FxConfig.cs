@@ -741,6 +741,60 @@ namespace QL.FX
         public float contamDryScale;
         [Min(0.01f)] public float contamDryDuration;
 
+        [Header("U09 첫 30초 커서 가이드 — 공통 (게임 시간 · 일시정지 때 멈춤, 캔버스 px = 1920×1080 기준)")]
+        [Tooltip("3단계 — 첫 머지 뒤 가이드 전체 페이드아웃 (초)")]
+        [Min(0.01f)] public float guideFadeOutDuration = 0.3f;
+        [Tooltip("드론 위치 = 칸 중심 + 위로 cellSize × 이 값 (DroneView hoverHeight 0.35 와 같게 — 화살표 · 손가락이 드론 몸통에 닿게)")]
+        [Min(0f)] public float guideAnchorHeight = 0.35f;
+        [Tooltip("손가락 그림 크기 (px, UI_Guide_Hand 128 정사각) · 손끝 = 피벗")]
+        [Min(8f)] public float guideHandSize = 112f;
+        [Tooltip("손가락 색 (흰 바탕 그림 틴트)")]
+        public Color guideHandColor = Color.white;
+        [Tooltip("말풍선 글자 크기 (S3 규칙 8 — 24 이상)")]
+        [Min(24f)] public float guideLabelFontSize = 28f;
+        [Tooltip("말풍선 글자 좌우 · 위아래 여백 합 (px)")]
+        public Vector2 guideLabelPadding = new Vector2(48f, 20f);
+        public Color guideLabelTextColor = new Color(0.86f, 1f, 0.98f, 1f);
+
+        [Header("U09 1단계 — 투입 버튼 톡톡 (손가락 · 말풍선은 DeployButton 기준)")]
+        [Tooltip("손끝이 닿는 버튼 위 점 (버튼 사각형 0~1 — 왼쪽 「드론 투입」 글자)")]
+        public Vector2 guideTapPoint = new Vector2(0.30f, 0.62f);
+        [Tooltip("손가락 각도 (도, 반시계 + · −40 = 오른쪽 위를 가리킴 — 손이 버튼 왼쪽 아래에서 들어옴)")]
+        public float guideTapAngle = -40f;
+        [Tooltip("톡톡 한 번 (초)")]
+        [Min(0.05f)] public float guideTapPeriod = 0.9f;
+        [Tooltip("누르기 전 손끝이 물러나는 거리 (px, 손가락 방향 반대로)")]
+        [Min(0f)] public float guideTapDistance = 22f;
+        [Tooltip("누를 때 Scale (1 → 이 값 → 1)")]
+        public float guideTapPressScale = 0.88f;
+        [Tooltip("말풍선 아래 가운데 = 버튼 위 가운데 + 이 값 (px)")]
+        public Vector2 guideSummonLabelOffset = new Vector2(0f, 30f);
+
+        [Header("U09 2단계 — 같은 드론 둘 사이 점선 화살표 + 손가락 끌기")]
+        [Tooltip("화살표 시작 · 끝을 드론 중심에서 띄우는 거리 (px — 드론 몸통을 가리지 않게)")]
+        [Min(0f)] public float guideArrowInsetStart = 20f;
+        [Min(0f)] public float guideArrowInsetEnd = 24f;
+        [Tooltip("점선 한 칸 간격 (px) · 점선 크기 (UI_Guide_Dash 32×8) · 흐르는 속도 (px/초 — 끄는 방향)")]
+        [Min(4f)] public float guideDashSpacing = 24f;
+        public Vector2 guideDashSize = new Vector2(14f, 6f);
+        [Min(0f)] public float guideDashSpeed = 40f;
+        [Tooltip("화살촉 크기 (UI_Guide_Arrow 128×64 — 오른쪽이 끝)")]
+        public Vector2 guideArrowHeadSize = new Vector2(48f, 24f);
+        public Color guideArrowColor = Color.white;
+        [Tooltip("끌기 한 번 (초) — 나타나며 누름 · 이동 · 놓고 머묾 · 사라짐 비율 (합 ≤ 1)")]
+        [Min(0.1f)] public float guideDragPeriod = 1.8f;
+        [Range(0f, 1f)] public float guideDragPressRatio = 0.18f;
+        [Range(0f, 1f)] public float guideDragMoveRatio = 0.5f;
+        [Range(0f, 1f)] public float guideDragHoldRatio = 0.17f;
+        public Ease guideDragEase = Ease.InOutSine;
+        [Tooltip("집고 있는 동안 손가락 Scale")]
+        public float guideDragPressScale = 0.88f;
+        [Tooltip("손가락 각도 (도) — 끄는 동안")]
+        public float guideDragAngle = 12f;
+        [Tooltip("말풍선 가운데 = 월드 (x 0 · 격리선에서 z 로 이 값 × cellSize) 의 화면 위치 + px — 칸 바로 위 경고 테이프 자리, 해상도 비율을 따라감")]
+        public float guideMergeLabelWorldZ = 0.15f;
+        public Vector2 guideMergeLabelOffset = new Vector2(0f, 0f);
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {

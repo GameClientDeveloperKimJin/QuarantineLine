@@ -444,3 +444,32 @@ MonoBehaviour:
   contamPopPeakRatio: 0.35
   contamDryScale: 0.6
   contamDryDuration: 0.5
+  guideFadeOutDuration: 0.3
+  guideAnchorHeight: 0.35
+  guideHandSize: 112
+  guideHandColor: {r: 1, g: 1, b: 1, a: 1}
+  guideLabelFontSize: 28
+  guideLabelPadding: {x: 48, y: 20}
+  guideLabelTextColor: {r: 0.86, g: 1, b: 0.98, a: 1}
+  guideTapPoint: {x: 0.3, y: 0.62}
+  guideTapAngle: -40
+  guideTapPeriod: 0.9
+  guideTapDistance: 22
+  guideTapPressScale: 0.88
+  guideSummonLabelOffset: {x: 0, y: 30}
+  guideArrowInsetStart: 20
+  guideArrowInsetEnd: 24
+  guideDashSpacing: 24
+  guideDashSize: {x: 14, y: 6}
+  guideDashSpeed: 40
+  guideArrowHeadSize: {x: 48, y: 24}
+  guideArrowColor: {r: 1, g: 1, b: 1, a: 1}
+  guideDragPeriod: 1.8
+  guideDragPressRatio: 0.18
+  guideDragMoveRatio: 0.5
+  guideDragHoldRatio: 0.17
+  guideDragEase: 4
+  guideDragPressScale: 0.88
+  guideDragAngle: 12
+  guideMergeLabelWorldZ: 0.15
+  guideMergeLabelOffset: {x: 0, y: 0}

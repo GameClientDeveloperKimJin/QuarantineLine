@@ -225,6 +225,7 @@ R5    아트 3세션(3D · UI · 맵) 첫날부터 상시. 에셋 완료 시마�
   - 디스크에서 씬을 고쳐야 하면 (가짜 오버라이드 정리 등): MCP 로 Title 열기 → 디스크 수정 → **`AssetDatabase.Refresh` 까지** → Game 다시 열기. Refresh 를 빼면 다음 Refresh(테스트 시작 등) 때 창이 뜬다 (O03 2026-11-11)
   - PlayMode 테스트 직전 Game 씬이 dirty 면 (컴파일 직후 원인 미상) MCP 로 Game 을 다시 열어 dirty 를 지운다 — 안 그러면 테스트 러너가 저장하며 UIRoot 가짜 오버라이드 ~900줄 (보류함 15)
   - **Feel 의존 (U17~)**: `QL.FX` asmdef 가 `MoreMountains.Tools` 참조. Feel 은 git 제외라 새 PC · 새 클론에선 Feel 을 먼저 임포트해야 QL.FX 가 컴파일된다
+  - **테스트는 컴파일 끝난 걸 확인한 뒤 시작** — `refresh_unity` 직후 바로 돌리면 「player was stopped」 로 중단됨 (F03 2026-11-12, 2번 재현)
   - 그래도 창이 떠서 MCP 가 멈추면: 세션은 R1 에 「Reload 창 대기」 보고 후 멈춘다 → 사람이 PC 에서 누르거나 원격(Chrome 원격 데스크톱 등)으로 누른다. 세션이 창을 대신 누르는 자동 클릭은 하지 않는다 — **예외: R1 만** 디스크 파일이 커밋본과 같은지(`git diff` 0) 확인해 Reload 가 안전하다고 판정하면 Win32 로 Reload 를 누를 수 있다 (`#32770` 창 · Reload 버튼 id 1 에 `WM_COMMAND` PostMessage, 2026-11-11 사람 모바일 요청)
 - `Assets/02_Scripts/Game/GameEvents.cs` — R3 소유. 다른 세션이 이벤트를 추가하려면 전달 요청
 

@@ -33,6 +33,7 @@
 | `WaveCleared` | `int index, PayBreakdown` | `GameLoop.cs:139` (마지막 웨이브 포함, 수당 `CoinChanged` :144 직전) — **O02** | U14 영수증 |
 | `CellContaminated` | `int cell, int lane, float duration` | `GameLoop.cs:281` (`ContaminateInLane` ≠ −1) — **O02** | O03 · U16 레인 핑 |
 | `CellCleaned` | `int cell, bool byMerge` | `GameLoop.cs:183` (자연) · `:195` (머지, DragController.cs:155 가 부름) · `DragController.cs:156` (loop 없을 때) — **O02** | O03 |
+| `PrepHoldChanged` | `bool held` | `GameLoop.cs:266` (SetPrepHold) · `:280` (ReleasePrepHold — 바로 시작 · 웨이브 시작 · 판 끝 · Restart · GoToTitle) — **G12**, 바뀔 때만 | U18a 가이드 · HUD 카운트다운 「연습 중」 |
 | `KillRewarded` | `SlimeView, int reward` | `Game/Combat/KillRewarder.cs:40` (`CoinChanged` :41 직전) — **O02 (보류함 21)** | U05 CoinFlyFx 전환 · U16 |
 
 ## 같은 프레임 순서 (O02 기준 — `EventOrder_PrepClearVictory_BonusEarnedIsPayTotalSum` 고정)
@@ -52,6 +53,7 @@
 - `CameraRig.SetShakeOffset(Vector3 local)` (U06 추가 — 흔들림 전용, zero = 원위치)
 - `SlimeCombat.Burning` (U05 추가 — 잔열 중 true, 읽기 전용)
 - `GameLoop`: `Flow`(GameFlow, 읽기) · `CanAct`(Prep · Wave 일 때만) · `LastResult` · `Step(dt)` · `HandleEscape()` (결과 상태면 `GoToTitle`) · `Restart()` · `HandleRestartKey()` (결과 상태에서만 Restart — R 키) · `GoToTitle()` (U11, timeScale 1 → Title 씬) · `IsReady`
+- `GameLoop.SetPrepHold(bool) → bool` · `IsPrepHeld` (G12) — Prep 에서만 true 받음 (그 밖엔 false 반환), 잡혀 있으면 준비 시간 안 줄고 `PrepTick` 안 옴 · 소환 · 드래그 · 머지 · 일시정지 그대로
 - `GameLoop.RequestStartWave()` · `IsPrep` · `PrepRemaining` (G11) — Prep 에서만 바로 웨이브 시작, Enter (숫자패드 포함). 그 밖 상태는 무시
 - 진짜 소환 버튼은 `SummonController.RequestSummon()` 을 부른다 (G03)
 - R4 슬롯: `Game.unity` 루트 빈 오브젝트 `[UI]` · `[FX]` · `[Audio]` (컴포넌트 없음)

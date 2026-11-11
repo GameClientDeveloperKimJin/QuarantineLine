@@ -429,8 +429,102 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsFalse(_guide.IsVisible);
             Assert.AreEqual(GStage.Done, _guide.Stage);
 
+            // U18a — 가이드가 안 뜨는 판은 준비 시간을 잡지 않는다
+            Assert.IsFalse(_loop.IsPrepHeld, "끝난 판 — hold 없음");
+            Assert.IsFalse(_guide.HeldPrepOnce);
+            float r0 = _loop.PrepRemaining;
+            _loop.Step(1f);
+            Assert.Less(_loop.PrepRemaining, r0, "준비 시간이 흐른다");
+
             CursorGuide.ResetSaved(); // 디버그 초기화
             Assert.IsFalse(CursorGuide.IsDoneSaved);
+        }
+
+        // ── U18a 준비 시간 잡기 (G12) ─────────────────────────
+
+        [UnityTest]
+        public IEnumerator Shown_HoldsPrep10s_CountdownPractice_FirstMergeReleases()
+        {
+            HudCountdown countdown = Object.FindAnyObjectByType<HudCountdown>();
+            Assert.IsNotNull(countdown);
+            Assert.IsFalse(_loop.IsPrepHeld, "지시서가 떠 있는 동안은 아직 안 잡음");
+            yield return SkipOrderCard();
+            Assert.IsTrue(_guide.IsVisible);
+            Assert.IsTrue(_loop.IsPrepHeld, "1단계가 뜨면 SetPrepHold(true)");
+            Assert.IsTrue(_guide.IsHoldingPrep);
+
+            Assert.IsTrue(countdown.IsHeldShown, "HUD 카운트다운 = 연습 중");
+            Assert.IsTrue(countdown.IsVisible);
+            Assert.AreEqual(_guide.Text.PrepHeld, countdown.HeldText, "문구 = GuideText SO");
+            Assert.AreEqual(_guide.Text.PrepHeld, countdown.Label.text);
+            Assert.GreaterOrEqual(countdown.Label.fontSize, 24f, "글자 24px 이상");
+            Assert.AreEqual("QL_BagelFatOne SDF", countdown.Label.font.name);
+
+            float r0 = _loop.PrepRemaining;
+            Assert.Greater(r0, 1f);
+            for (int i = 0; i < 100; i++) _loop.Step(0.1f); // 10초
+            Assert.AreEqual(r0, _loop.PrepRemaining, 1e-4f, "잡힌 10초 동안 PrepRemaining 그대로");
+            Assert.AreEqual(GameState.Prep, _loop.Flow.State);
+            Assert.IsTrue(countdown.IsHeldShown);
+
+            Spawn(0, 0, DroneType.Suction, 1);
+            Spawn(1, 0, DroneType.Suction, 1);
+            yield return null;
+            Assert.AreEqual(DropOutcome.Merge, DragDrop(_guide.PairFrom, _guide.PairTo));
+            Assert.IsFalse(_loop.IsPrepHeld, "첫 머지 → SetPrepHold(false)");
+            Assert.IsFalse(_guide.IsHoldingPrep);
+            Assert.IsFalse(countdown.IsHeldShown, "카운트다운 숫자로");
+            Assert.AreEqual(_numberFontSize(countdown), countdown.Label.fontSize, "숫자 글자 크기로 돌아옴");
+
+            _loop.Step(0.5f);
+            Assert.Less(_loop.PrepRemaining, r0, "머지 뒤 준비 시간이 줄어든다");
+            StringAssert.IsMatch("^[0-9]+$", countdown.Label.text, "PrepTick 숫자");
+            yield return WaitFade();
+            Assert.AreEqual(GStage.Done, _guide.Stage);
+            Assert.IsFalse(_loop.IsPrepHeld, "끝난 뒤에도 다시 안 잡음");
+        }
+
+        [UnityTest]
+        public IEnumerator StartButton_DuringHold_SkipsGuide_SavesDone_StartsWave()
+        {
+            HudCountdown countdown = Object.FindAnyObjectByType<HudCountdown>();
+            HudStartButton start = Object.FindAnyObjectByType<HudStartButton>();
+            Assert.IsNotNull(start);
+            yield return SkipOrderCard();
+            yield return null;
+            Assert.IsTrue(_loop.IsPrepHeld);
+            Assert.IsTrue(start.IsShown, "연습 중에도 「작업 시작」 버튼");
+
+            start.Button.onClick.Invoke(); // = Enter (GameLoop.RequestStartWave)
+            Assert.AreEqual(1, start.StartCount);
+            Assert.IsFalse(_loop.IsPrepHeld, "바로 시작 — GameLoop 가 hold 를 푼다");
+            Assert.IsFalse(countdown.IsHeldShown);
+            _loop.Step(0.02f);
+            Assert.AreEqual(GameState.Wave, _loop.Flow.State, "바로 웨이브 1");
+            Assert.AreEqual(GStage.Done, _guide.Stage, "가이드 건너뛰기 — 끝");
+            Assert.IsTrue(CursorGuide.IsDoneSaved, "QL.GuideDone 저장");
+            Assert.IsFalse(_guide.IsVisible);
+            Assert.IsFalse(countdown.IsVisible, "웨이브 중 카운트다운 숨김");
+        }
+
+        [UnityTest]
+        public IEnumerator HoldFrames_NoAlloc()
+        {
+            HudCountdown countdown = Object.FindAnyObjectByType<HudCountdown>();
+            yield return SkipOrderCard();
+            Assert.IsTrue(_loop.IsPrepHeld);
+            const BindingFlags F = BindingFlags.NonPublic | BindingFlags.Instance;
+            var update = (Action)typeof(CursorGuide).GetMethod("Update", F).CreateDelegate(typeof(Action), _guide);
+            for (int i = 0; i < 10; i++) { update(); _loop.Step(0.02f); }
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 200; i++) { update(); _loop.Step(0.02f); }
+            Assert.AreEqual(0L, GC.GetAllocatedBytesForCurrentThread() - before, "잡힌 동안 가이드 프레임 + Step 할당 0");
+            Assert.IsTrue(countdown.IsHeldShown);
+        }
+
+        private static float _numberFontSize(HudCountdown c)
+        {
+            return (float)typeof(HudCountdown).GetField("_numberFontSize", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(c);
         }
 
         // ── 할당 · Instantiate · 트윈 ─────────────────────────

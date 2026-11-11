@@ -252,13 +252,69 @@ MonoBehaviour:
   coneTexture: {fileID: 2800000, guid: c95ce51671567fd46b6d43b01665359d, type: 3}
   frostTexture: {fileID: 2800000, guid: ba8f77f5680012549af0befc105a8ea4, type: 3}
   ringTexture: {fileID: 2800000, guid: 486ca557fe5000b41932eb5fc1313813, type: 3}
+  glowTexture: {fileID: 2800000, guid: f1845bbe9b868214fa6b444ca08c8064, type: 3}
+  sparkTexture: {fileID: 2800000, guid: 49f403220d1de9247ab488299866e89f, type: 3}
   suctionColor: {r: 0.15, g: 0.95, b: 0.95, a: 1}
   plasmaColor: {r: 1, g: 0.55, b: 0.12, a: 1}
   cryoColor: {r: 0.55, g: 0.85, b: 1, a: 1}
-  duration: 0.1
+  duration: 0.14
   beamWidth: 0.18
   frostWidth: 0.12
   burstSize: 0.9
   height: 0.3
   coneApexV: 0.047
   ringRadiusFraction: 0.40625
+  gradeWidth:
+  - 1
+  - 1.35
+  - 1.75
+  gradeIntensity:
+  - 1.1
+  - 1.45
+  - 1.9
+  gradeCount:
+  - 1
+  - 1.6
+  - 2.3
+  pulseAmount: 0.35
+  pulseCount: 2
+  beamScroll: 9
+  beamTilePerCell: 0.7
+  fadeFrom: 0.55
+  spreadFrom: 0.75
+  heatFlicker: 0.25
+  heatFlickerHz: 38
+  particleIntensity: 1.6
+  maxParticles: 600
+  muzzleForward: 0.42
+  muzzleHeight: 0.5
+  muzzleSize: 0.55
+  muzzleLife: 0.09
+  impactSparks: 3
+  impactSparkSpeed: 4
+  impactSparkLife: 0.22
+  impactSparkSize: 0.1
+  impactRingSize: 0.6
+  impactRingLife: 0.2
+  suctionFlow: 4
+  suctionFlowSpeed: 7
+  suctionFlowSize: 0.2
+  swirlSize: 0.9
+  swirlLife: 0.24
+  swirlDots: 3
+  swirlRadius: 0.35
+  plasmaFlames: 6
+  plasmaFlameSpeed: 2.6
+  plasmaFlameSize: 0.45
+  plasmaFlameLife: 0.32
+  plasmaNoise: 0.8
+  plasmaNoiseFrequency: 1.6
+  plasmaEmbers: 3
+  plasmaEmberLife: 0.5
+  cryoFlakes: 5
+  cryoFlakeSpeed: 7
+  cryoFlakeSize: 0.24
+  cryoFlakeLife: 0.38
+  cryoGlints: 3
+  freezeShards: 12
+  freezeShardSpeed: 3.5

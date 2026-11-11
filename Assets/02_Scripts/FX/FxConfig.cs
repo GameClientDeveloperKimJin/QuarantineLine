@@ -62,6 +62,8 @@ namespace QL.FX
         [Min(1f)] public float countdownBigScale;
         public Color countdownColor;
         public Color countdownBigColor;
+        [Tooltip("U18a — 가이드 연습 중 (준비 시간 멈춤) 「연습 중 · Enter 로 시작」 글자 크기 (S3 규칙 8 — 24 이상, 숫자 140 대신)")]
+        [Min(24f)] public float countdownHeldFontSize = 44f;
 
         [Header("HUD — 해치 게이지 (U02)")]
         [Tooltip("칸 색 — 왼쪽(0) → 오른쪽(1). UI_Gauge_Segment 는 흰 그림이라 그대로 틴트된다")]

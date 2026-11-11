@@ -25,6 +25,9 @@ namespace QL.UI.Tutorial
     /// 웨이브 2 시작 · 판 끝(<c>GameEnded</c>)이면 조용히 끝 (저장 — 첫 판이 지났다). 게임 시간 (일시정지 때 멈춤). 게임을 멈추지 않고 상태도 바꾸지 않는다 (구독 · 읽기만).
     /// 트윈 없이 Update 에서 직접 움직인다 — 할당 0 · Instantiate 0 (점선은 프리팹에 미리 둔 개수만). 그림은 전부 raycastTarget 끔.
     /// 수치는 FxConfig 「U09」, 문구는 <see cref="GuideText"/> SO.
+    /// U18a (G12): 가이드가 처음 화면에 뜰 때 (준비 중) <see cref="GameLoop.SetPrepHold"/>(true) — 연습하는 동안 웨이브 1 카운트다운이 멈춘다.
+    /// 첫 머지 · 끝(웨이브 2 · 판 끝)에 false. GameLoop 가 먼저 풀고 (PrepHoldChanged(false) — Enter · 바로 시작 버튼) 웨이브 1 이 열리면 건너뛰기: 저장 + 끝.
+    /// 이미 끝난 판(<see cref="GuideStage.Done"/>)은 잡지 않는다. GameLoop 상태를 바꾸는 호출은 이 SetPrepHold 하나뿐 (R3 가 열어 둔 공개 메서드).
     /// </summary>
     public sealed class CursorGuide : MonoBehaviour
     {
@@ -77,11 +80,17 @@ namespace QL.UI.Tutorial
         [Header("디버그 (에디터만 — 빌드엔 영향 없음)")]
         [Tooltip("켜면 Play 때마다 QL.GuideDone 을 지우고 가이드를 다시 띄운다")]
         [SerializeField] private bool editorResetOnPlay;
+
+        /// <summary>테스트용 (에디터만) — true 면 editorResetOnPlay 를 무시한다 (테스트가 프리팹 디버그 값에 흔들리지 않게, GuidePrefsGuard 가 켜고 끈다).</summary>
+        public static bool EditorResetSuppressed { get; set; }
 #endif
 
         private GuideStage _stage;
         private LabelKind _label;
         private bool _visible;
+        private bool _holding;
+        private bool _heldOnce;
+        private bool _releasedByLoop;
         private bool _dragging;
         private bool _pairDirty = true;
         private bool _arrowShown;
@@ -125,6 +134,10 @@ namespace QL.UI.Tutorial
         public int DashCount => dashes.Length;
         public Graphic Dash(int i) => dashes[i];
         public GuideText Text => text;
+        /// <summary>U18a — 이 가이드가 준비 시간을 잡고 있다.</summary>
+        public bool IsHoldingPrep => _holding;
+        /// <summary>U18a — 이번 판에 한 번이라도 잡았다.</summary>
+        public bool HeldPrepOnce => _heldOnce;
 
         /// <summary>저장된 「가이드 끝남」.</summary>
         public static bool IsDoneSaved => PlayerPrefs.GetInt(PrefsKey, 0) == 1;
@@ -146,7 +159,7 @@ namespace QL.UI.Tutorial
         private void Awake()
         {
 #if UNITY_EDITOR
-            if (editorResetOnPlay) PlayerPrefs.DeleteKey(PrefsKey);
+            if (editorResetOnPlay && !EditorResetSuppressed) PlayerPrefs.DeleteKey(PrefsKey);
 #endif
             Graphic[] gs = GetComponentsInChildren<Graphic>(true);
             for (int i = 0; i < gs.Length; i++) gs[i].raycastTarget = false; // 클릭 · 드래그 방해 금지
@@ -194,6 +207,7 @@ namespace QL.UI.Tutorial
             GameEvents.DragEnded += OnDragEnded;
             GameEvents.WaveStarted += OnWaveStarted;
             GameEvents.GameEnded += OnGameEnded;
+            GameEvents.PrepHoldChanged += OnPrepHoldChanged;
         }
 
         private void OnDisable()
@@ -206,6 +220,8 @@ namespace QL.UI.Tutorial
             GameEvents.DragEnded -= OnDragEnded;
             GameEvents.WaveStarted -= OnWaveStarted;
             GameEvents.GameEnded -= OnGameEnded;
+            GameEvents.PrepHoldChanged -= OnPrepHoldChanged;
+            ReleaseHold();
         }
 
         private bool Active => _stage == GuideStage.Summon || _stage == GuideStage.Merge;
@@ -236,13 +252,23 @@ namespace QL.UI.Tutorial
             Save();
             _stage = GuideStage.Fading;
             _fade = 0f;
+            ReleaseHold(); // 연습 끝 — 웨이브 1 카운트다운이 흐른다
             if (!_visible) Finish(); // 대기 중이었으면 보일 것이 없다
         }
 
-        /// <summary>웨이브 2 (index 1) 시작 — 조용히 끝.</summary>
+        /// <summary>잡아 둔 준비 시간을 GameLoop 가 풀었다 (바로 시작 · 재시작 · 타이틀) — 우리가 푼 것(<see cref="ReleaseHold"/>)은 여기 오기 전에 _holding 이 false.</summary>
+        private void OnPrepHoldChanged(bool held)
+        {
+            if (held || !_holding) return;
+            _holding = false;
+            _releasedByLoop = true;
+        }
+
+        /// <summary>웨이브 2 (index 1) 시작 — 조용히 끝. GameLoop 가 풀고 웨이브 1 이 열렸으면 (Enter · 바로 시작) 건너뛰기 — 저장 + 끝.</summary>
         private void OnWaveStarted(int index, int total, string banner)
         {
-            if (index < 1 || _stage == GuideStage.Done) return;
+            if (_stage == GuideStage.Done) return;
+            if (index < 1 && !(_releasedByLoop && Active)) return;
             Save();
             Finish();
         }
@@ -263,6 +289,7 @@ namespace QL.UI.Tutorial
         private void Finish()
         {
             _stage = GuideStage.Done;
+            ReleaseHold();
             SetVisible(false);
             enabled = false;
         }
@@ -282,6 +309,7 @@ namespace QL.UI.Tutorial
             }
 
             bool show = CanShow();
+            if (show && !_holding && !_heldOnce) TryHold();
             if (show && _pairDirty) FindPair();
             SetVisible(show);
             if (!show) return;
@@ -302,6 +330,24 @@ namespace QL.UI.Tutorial
             if (payslip != null && payslip.IsPlaying) return false;
             GameBootstrap b = context.Bootstrap;
             return b != null && b.IsReady;
+        }
+
+        /// <summary>1단계가 처음 보일 때 한 번 — 준비 중에만 받아들여진다 (일시정지면 다음 프레임에 다시).</summary>
+        private void TryHold()
+        {
+            GameLoop loop = context.Loop;
+            if (loop == null || !loop.IsPrep) return;
+            if (!loop.SetPrepHold(true)) return;
+            _holding = true;
+            _heldOnce = true;
+        }
+
+        private void ReleaseHold()
+        {
+            if (!_holding) return;
+            _holding = false;
+            GameLoop loop = context != null ? context.Loop : null;
+            if (loop != null) loop.SetPrepHold(false);
         }
 
         private void SetVisible(bool v)

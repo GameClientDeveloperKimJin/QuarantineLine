@@ -69,9 +69,13 @@ namespace QL.Tests.PlayMode
         private GridModel Grid => _bootstrap.Grid;
         private RuleConfig Config => _bootstrap.Config;
 
+        // U18a (R1 예외 승인) — 가이드가 뜨면 준비 시간을 잡는다 (G12). 사람의 QL.GuideDone 과 무관하게 테스트 동안 1 (가이드 끝남), 끝나면 원복
+        private QL.Tests.PlayMode.UI.GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = QL.Tests.PlayMode.UI.GuidePrefsGuard.Save();
             GameEvents.ClearAll();
             ClearRecords();
             SceneManager.sceneLoaded += OnSceneLoaded;
@@ -83,6 +87,7 @@ namespace QL.Tests.PlayMode
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= OnSceneLoaded;
             Time.timeScale = 1f;
             GameEvents.ClearAll();

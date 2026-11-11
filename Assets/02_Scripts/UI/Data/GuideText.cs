@@ -15,9 +15,12 @@ namespace QL.UI.Data
         [SerializeField] private string summonAgain = "한 번 더 투입하세요 (SPACE)";
         [Tooltip("2단계 — 같은 드론 둘 사이 화살표")]
         [SerializeField] private string merge = "같은 드론을 겹치면 합쳐져요";
+        [Tooltip("U18a — 가이드 중 준비 시간이 멈춰 있을 때 HUD 카운트다운 자리 (숫자 대신)")]
+        [SerializeField] private string prepHeld = "연습 중 · Enter 로 시작";
 
         public string Summon => summon;
         public string SummonAgain => summonAgain;
         public string Merge => merge;
+        public string PrepHeld => prepHeld;
     }
 }

@@ -24,6 +24,9 @@ namespace QL.UI.Hud
 
         public void Play() => _tween.Restart();
 
+        /// <summary>처음 크기로 되돌리고 멈춤 (트윈은 남김 — 다음 Play 가 그대로 Restart).</summary>
+        public void Stop() => _tween.Rewind();
+
         public void Kill() => _tween.Kill();
     }
 }

@@ -1,6 +1,7 @@
 using QL.Core;
 using QL.FX;
 using QL.Game;
+using QL.UI.Tutorial;
 using TMPro;
 using UnityEngine;
 
@@ -12,6 +13,9 @@ namespace QL.UI.Hud
     /// 크기(scaler)와 Punch(label) 는 다른 Transform — Punch 가 끝날 때 크기를 되돌리지 않게.
     /// U15 (R1 결정): 작업 지시서(<see cref="WaveOrderCard"/>)가 화면에 있는 동안 <see cref="SetSuppressed"/>(true) 로 글자만 숨긴다 —
     /// 숫자 · 크기 · 색 · Punch 갱신은 그대로 하고, 풀리면 남은 초부터 다시 보인다.
+    /// U18a (G12): <c>PrepHoldChanged(true)</c> (커서 가이드 연습 중 — PrepTick 이 오지 않음) 동안 숫자 대신 <see cref="GuideText.PrepHeld"/>
+    /// (「연습 중 · Enter 로 시작」) 을 평소 크기 · 평소 색 · FxConfig.countdownHeldFontSize 로. 풀리면 마지막 남은 초를 원래 글자 크기로 다시 그린다.
+    /// 문구 SO 는 같은 Hud 아래 <see cref="CursorGuide"/> 가 가진 것을 시작 때 한 번 읽는다 (새 직렬화 연결 없음).
     /// </summary>
     public sealed class HudCountdown : MonoBehaviour
     {
@@ -27,6 +31,12 @@ namespace QL.UI.Hud
         private int _seconds = -1;
         private bool _shown;
         private bool _suppressed;
+        private bool _held;
+        private float _numberFontSize;
+        private string _heldText = DefaultHeldText;
+
+        /// <summary>CursorGuide · GuideText 를 못 찾았을 때 (테스트용 단독 HUD 등).</summary>
+        public const string DefaultHeldText = "연습 중 · Enter 로 시작";
 
         public TMP_Text Label => label;
         public int BigFrom => context.Fx.countdownBigFrom;
@@ -38,10 +48,16 @@ namespace QL.UI.Hud
         public bool IsSuppressed => _suppressed;
         /// <summary>U15 — 숨기지 않았다면 보였을지 (준비 중 첫 PrepTick 뒤).</summary>
         public bool WantsVisible => _shown;
+        /// <summary>U18a — 「연습 중」 표시 중 (PrepHoldChanged(true) ~ (false)).</summary>
+        public bool IsHeldShown => _held;
+        public string HeldText => _heldText;
 
         private void Awake()
         {
             _punch = new HudPunch(label.transform, context.Fx);
+            _numberFontSize = label.fontSize;
+            CursorGuide guide = context.GetComponentInChildren<CursorGuide>(true);
+            if (guide != null && guide.Text != null && !string.IsNullOrEmpty(guide.Text.PrepHeld)) _heldText = guide.Text.PrepHeld;
             SetShown(false);
         }
 
@@ -49,12 +65,14 @@ namespace QL.UI.Hud
         {
             GameEvents.PrepTick += OnPrepTick;
             GameEvents.StateChanged += OnStateChanged;
+            GameEvents.PrepHoldChanged += OnPrepHoldChanged;
         }
 
         private void OnDisable()
         {
             GameEvents.PrepTick -= OnPrepTick;
             GameEvents.StateChanged -= OnStateChanged;
+            GameEvents.PrepHoldChanged -= OnPrepHoldChanged;
         }
 
         private void OnDestroy()
@@ -66,6 +84,7 @@ namespace QL.UI.Hud
         {
             _hasTick = true;
             SetShown(true);
+            if (_held) ExitHeld(); // 잡힌 동안엔 오지 않지만 순서가 어긋나도 숫자로 돌아온다
             if (secondsLeft == _seconds) return;
             _seconds = secondsLeft;
             label.SetText(CountdownFormat, secondsLeft);
@@ -81,15 +100,51 @@ namespace QL.UI.Hud
         {
             if (state == GameState.Prep)
             {
-                SetShown(_hasTick); // 일시정지에서 돌아온 준비
+                SetShown(_hasTick || _held); // 일시정지에서 돌아온 준비
                 return;
             }
+            if (state != GameState.Paused && _held) ExitHeld(); // 웨이브 · 결과 — 다음 준비는 숫자부터
             SetShown(false);
             if (state == GameState.Wave)
             {
                 _hasTick = false; // 다음 준비는 첫 PrepTick 부터
                 _seconds = -1;
             }
+        }
+
+        private void OnPrepHoldChanged(bool held)
+        {
+            if (held)
+            {
+                if (_held) return;
+                _held = true;
+                _punch.Stop();
+                scaler.localScale = Vector3.one;
+                label.fontSize = context.Fx.countdownHeldFontSize;
+                label.color = context.Fx.countdownColor;
+                label.SetText(_heldText);
+                SetShown(true);
+                return;
+            }
+            if (!_held) return;
+            ExitHeld();
+            SetShown(_hasTick);
+        }
+
+        /// <summary>숫자로 돌아온다 — 마지막 남은 초를 원래 크기 · 색으로 (다음 PrepTick 이 같은 값이어도 다시 그려져 있게).</summary>
+        private void ExitHeld()
+        {
+            _held = false;
+            label.fontSize = _numberFontSize;
+            int s = _seconds;
+            _seconds = -1;
+            if (s < 0) return;
+            _seconds = s;
+            label.SetText(CountdownFormat, s);
+            FxConfig fx = context.Fx;
+            bool big = s <= fx.countdownBigFrom;
+            scaler.localScale = big ? new Vector3(fx.countdownBigScale, fx.countdownBigScale, 1f) : Vector3.one;
+            label.color = big ? fx.countdownBigColor : fx.countdownColor;
         }
 
         /// <summary>U15 — 작업 지시서가 떠 있는 동안 true (글자만 숨김, 값 갱신은 계속). false 면 원래 보일 상태로.</summary>

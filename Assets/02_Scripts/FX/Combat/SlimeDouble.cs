@@ -8,11 +8,13 @@ namespace QL.FX.Combat
     /// 처치 「대역」 하나 (FX_SlimeDouble.prefab — MeshFilter + MeshRenderer 만). 죽은 점액은 같은 프레임에 풀로 돌아가 곧 재사용되므로
     /// 그 점액 대신 이것이 켜진 Model 의 메시 · 재질 · 월드 자리를 넘겨받아 납작해지고(y 1 → deathSquashY, xz 1 → deathSquashXZ) 사라진다.
     /// 메시 피벗이 바닥이라 바닥에 붙은 채 납작해진다. 재질은 점액 것 그대로(sharedMaterial, 투명 Lit) — 알파만 MPB 로.
+    /// F01: 첫 <see cref="FxConfig.deathFlashDuration"/> 동안 히트 플래시와 같은 흰색 (_BaseMap 흰 텍스처) — 처치 타격도 번쩍이게.
     /// 트윈 = 0→1 진행값 하나 (SetAutoKill(false) + Restart, 수명은 timeScale). puddleDelay 가 지나면 풀에 Puddle 을 한 번 부른다.
     /// </summary>
     public sealed class SlimeDouble : MonoBehaviour
     {
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int BaseMapId = Shader.PropertyToID("_BaseMap");
 
         [SerializeField] private MeshFilter meshFilter;
         [SerializeField] private MeshRenderer meshRenderer;
@@ -24,6 +26,7 @@ namespace QL.FX.Combat
         private FxPool _pool;
         private Vector3 _baseScale;
         private Color _baseColor;
+        private Texture _baseMap;
         private FxSpriteParams _puddle;
         private bool _puddlePlayed;
         private float _total;
@@ -58,6 +61,7 @@ namespace QL.FX.Combat
             meshFilter.sharedMesh = mesh;
             meshRenderer.sharedMaterial = material;
             _baseColor = material != null && material.HasProperty(BaseColorId) ? material.GetColor(BaseColorId) : Color.white;
+            _baseMap = material != null && material.HasProperty(BaseMapId) ? material.GetTexture(BaseMapId) : null;
             _root.SetPositionAndRotation(position, rotation);
             _baseScale = scale;
             _puddle = puddle;
@@ -94,6 +98,17 @@ namespace QL.FX.Combat
             float fade = Mathf.Clamp01((elapsed - _fx.deathFadeDelay) / _fx.deathFadeDuration);
             Alpha = 1f - fade;
             Color c = _baseColor;
+            // F01: 처치 타격의 히트 플래시 (점액은 같은 프레임에 풀로 돌아가 HitFlashFx 가 못 그림) — 대역 첫 deathFlashDuration 동안 흰색
+            if (elapsed < _fx.deathFlashDuration)
+            {
+                c = _fx.hitFlashColor * _fx.hitFlashIntensity;
+                c.a = _baseColor.a;
+                _block.SetTexture(BaseMapId, Texture2D.whiteTexture);
+            }
+            else
+            {
+                _block.SetTexture(BaseMapId, _baseMap != null ? _baseMap : Texture2D.whiteTexture);
+            }
             c.a *= Alpha;
             _block.SetColor(BaseColorId, c);
             meshRenderer.SetPropertyBlock(_block);

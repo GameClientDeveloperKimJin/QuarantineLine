@@ -4,6 +4,7 @@ using NUnit.Framework;
 using QL.Core;
 using QL.FX;
 using QL.FX.Alert;
+using QL.FX.Combat;
 using QL.Game;
 using QL.Game.Bootstrap;
 using QL.Game.Drones;
@@ -164,7 +165,7 @@ namespace QL.Tests.PlayMode.UI
 
             yield return Wait(Fx.hitFlashDuration + 0.1f);
             Assert.IsFalse(_flash.IsFlashing(a));
-            Assert.IsFalse(ra.HasPropertyBlock(), "0.08초 뒤 해제 (원래 = 블록 없음)");
+            Assert.IsFalse(ra.HasPropertyBlock(), "hitFlashDuration 뒤 해제 (원래 = 블록 없음)");
             Assert.AreEqual(scale, ra.transform.localScale, "트랜스폼은 건드리지 않는다");
         }
 
@@ -196,6 +197,72 @@ namespace QL.Tests.PlayMode.UI
             Raise("RaiseSlimeDamaged", h, 5, DroneType.Suction);
             _slimes.Despawn(h, DespawnReason.ReachedLine); // SlimeReachedHatch 도 즉시 해제
             Assert.IsFalse(rh.HasPropertyBlock(), "SlimeReachedHatch 즉시 해제");
+        }
+
+        // ── F01 — 실제 공격 경로 (DroneCombat → SlimeDamaged, 이벤트 직접 발행 없음) ──
+
+        [UnityTest]
+        public IEnumerator F01_RealAttack_HitSlimeFlashesWhite_ForConfiguredDuration()
+        {
+            Assert.GreaterOrEqual(Fx.hitFlashDuration, 0.12f, "F01: 60fps 에서 7프레임 이상 (0.08 은 실제 플레이에서 안 보였음)");
+            int cell = _bootstrap.Grid.IndexOf(2, 0);
+            _bootstrap.Grid.Place(cell, DroneType.Suction, 1);
+            Object.FindAnyObjectByType<DroneBoard>().SyncCell(cell);
+            SlimeView target = _slimes.Spawn(SlimeType.Blob, 2);
+
+            SlimeView hit = null;
+            bool flashingAtEvent = false;
+            System.Action<SlimeView, int, DroneType> onHit = (v, d, t) =>
+            {
+                if (hit != null) return;
+                hit = v;
+                flashingAtEvent = _flash.IsFlashing(v); // HitFlashFx 는 씬 시작 때 먼저 구독
+            };
+            GameEvents.SlimeDamaged += onHit;
+            float end = Time.realtimeSinceStartup + 10f;
+            while (hit == null && Time.realtimeSinceStartup < end) yield return null; // GameLoop 가 실제로 돈다 (준비 중에도 전투)
+            GameEvents.SlimeDamaged -= onHit;
+
+            Assert.AreSame(target, hit, "레인 2 흡입 드론이 실제로 맞힘");
+            Assert.IsTrue(flashingAtEvent, "맞은 그 프레임에 번쩍 시작");
+            Renderer r = _flash.RendererOf(hit);
+            var probe = new MaterialPropertyBlock();
+            r.GetPropertyBlock(probe);
+            Assert.AreSame(Texture2D.whiteTexture, probe.GetTexture("_BaseMap"), "그려지는 프레임에 흰 텍스처");
+            Color c = probe.GetColor("_BaseColor");
+            Assert.Greater(Mathf.Min(c.r, Mathf.Min(c.g, c.b)), 1f, "흰색 (모든 채널 1 이상)");
+
+            yield return Wait(Fx.hitFlashDuration * 0.6f);
+            Assert.IsTrue(_flash.IsFlashing(hit) || hit.Combat.Hp <= 0, "번쩍 유지 중");
+            yield return Wait(Fx.hitFlashDuration);
+            // 흡입 1등급 간격 0.5초 > 번쩍 시간 — 다음 타격 전에 꺼진다
+            Assert.IsFalse(_flash.IsFlashing(hit), "시간이 지나면 원래대로");
+        }
+
+        [UnityTest]
+        public IEnumerator F01_KillHit_DoubleStartsWhite_ThenOriginalTexture()
+        {
+            var death = Object.FindAnyObjectByType<SlimeDeathFx>();
+            Assert.IsNotNull(death, "[FX] 아래 CombatFx(SlimeDeathFx) 가 없다");
+            Assert.Greater(Fx.deathFlashDuration, 0f);
+            SlimeView a = _slimes.Spawn(SlimeType.Blob, 1);
+            yield return null;
+            Raise("RaiseSlimeDamaged", a, 40, DroneType.Suction);
+            _slimes.Despawn(a, DespawnReason.Killed); // 처치 타격 — 같은 프레임에 반납 → 점액 플래시는 즉시 해제
+            Assert.IsFalse(_flash.IsFlashing(a));
+            SlimeDouble d = death.Last;
+            Assert.IsNotNull(d);
+            Renderer dr = d.GetComponent<MeshRenderer>();
+            var probe = new MaterialPropertyBlock();
+            dr.GetPropertyBlock(probe);
+            Assert.AreSame(Texture2D.whiteTexture, probe.GetTexture("_BaseMap"), "대역 첫 프레임 흰색 — 처치 타격도 번쩍");
+
+            yield return Wait(Fx.deathFlashDuration + 0.05f);
+            if (d.Active)
+            {
+                dr.GetPropertyBlock(probe);
+                Assert.AreNotSame(Texture2D.whiteTexture, probe.GetTexture("_BaseMap"), "그 뒤 점액 원래 텍스처");
+            }
         }
 
         // ── 3. 카메라 흔들림 ─────────────────────────────────

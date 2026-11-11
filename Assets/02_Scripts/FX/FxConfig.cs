@@ -362,7 +362,7 @@ namespace QL.FX
         [Min(0f)] public float postGlowCameraOffset;
 
         [Header("U06 점액 히트 플래시 — 켜진 Model_A/B 렌더러 MPB _BaseMap(흰 텍스처) · _BaseColor (게임 시간)")]
-        [Tooltip("번쩍 시간 (초) — 같은 점액이 또 맞으면 이 시간을 다시 센다")]
+        [Tooltip("번쩍 시간 (초) — 같은 점액이 또 맞으면 이 시간을 다시 센다. F01: 0.08 은 60fps 5프레임이라 실제 플레이에서 안 보임 → 0.13")]
         [Min(0.01f)] public float hitFlashDuration;
         [Tooltip("번쩍 색 — 흰색에 드론 종류색(1등급 tintColor)을 이 비율만큼 섞는다 (0 = 흰색)")]
         public Color hitFlashColor;
@@ -603,6 +603,31 @@ namespace QL.FX
         [Min(0.01f)] public float wavePanelPunchDuration;
         [Min(1)] public int wavePanelPunchVibrato;
         [Range(0f, 1f)] public float wavePanelPunchElasticity;
+
+        [Header("F01 드론 표식 — 종류색 링 (발밑 상시, Mat_FX_Ring 가산 · DroneMarkerFx)")]
+        public Color markerSuctionColor;
+        public Color markerPlasmaColor;
+        public Color markerCryoColor;
+        [Tooltip("링 지름 = cellSize × 이 값")]
+        [Min(0f)] public float markerRingSize;
+        [Tooltip("가산 재질 — 색 × 이 밝기, 알파 = 세기 (은은하게)")]
+        [Min(0f)] public float markerRingIntensity;
+        [Range(0f, 1f)] public float markerRingAlpha;
+        [Header("F01 드론 표식 — 드래그 중 머지 가능 표시 (같은 종류 · 등급 칸 초록 테두리 + 드론 밑 링)")]
+        public Color markerHintColor;
+        [Tooltip("테두리 한 변 = cellSize × 이 값 (U03 칸 외곽선과 같은 그림)")]
+        [Min(0f)] public float markerHintOutlineSize;
+        [Tooltip("링 지름 = cellSize × 이 값 (U04 머지 링 그림)")]
+        [Min(0f)] public float markerHintRingSize;
+        [Min(0f)] public float markerHintRingIntensity;
+        [Tooltip("숨 쉬듯 깜빡 — 한 주기 (초, 게임 시간) · 가장 옅을 때 알파")]
+        [Min(0.01f)] public float markerHintPulsePeriod;
+        [Range(0f, 1f)] public float markerHintAlphaMin;
+        [Tooltip("종류색 링 위에 겹쳐 그릴 높이 (월드)")]
+        [Min(0f)] public float markerHintLift;
+        [Header("F01 처치 대역 첫 번쩍 — 처치 타격은 점액이 같은 프레임에 풀로 돌아가 히트 플래시가 안 그려지므로 대역이 이어받는다")]
+        [Tooltip("대역 첫 이 시간 (초) 동안 히트 플래시와 같은 흰색 (0 = 끔)")]
+        [Min(0f)] public float deathFlashDuration;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

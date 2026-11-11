@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 4568501754195555176}
   - component: {fileID: 1620373762950999224}
   - component: {fileID: 4270222884865412453}
+  - component: {fileID: 1094505472179779758}
   m_Layer: 0
   m_Name: MotionFx
   m_TagString: Untagged
@@ -98,3 +99,21 @@ MonoBehaviour:
   modelChildNames:
   - Model_A
   - Model_B
+--- !u!114 &1094505472179779758
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5816024365773485673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da6242748dfddfd40a556e91004f9c0a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Motion.DroneMarkerFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  ringMaterial: {fileID: 2100000, guid: 2edffa8e8580ed647945453b8b8a7467, type: 2}
+  outlineMaterial: {fileID: 2100000, guid: ebfc10fbe63aa374392b7376c1542ec9, type: 2}
+  bootstrap: {fileID: 0}
+  board: {fileID: 0}

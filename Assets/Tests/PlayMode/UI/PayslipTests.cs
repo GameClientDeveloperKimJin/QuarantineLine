@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Reflection;
 using NUnit.Framework;
+using QL.Core.Combat;
 using QL.Core.Flow;
 using QL.FX;
 using QL.FX.Combat;
@@ -10,6 +11,7 @@ using QL.Game.Bootstrap;
 using QL.Game.Drones;
 using QL.Game.Flow;
 using QL.Game.Input;
+using QL.Game.Slimes;
 using QL.Game.Stage;
 using QL.Game.Summon;
 using QL.UI.Hud;
@@ -235,6 +237,48 @@ namespace QL.Tests.PlayMode.UI
             yield return Wait(1.5f);
             Assert.AreEqual(1, _finished, "더 부르지 않음");
             Assert.IsFalse(_coin.IsGainShowing, "「+합계」 사라짐");
+        }
+
+        [UnityTest]
+        public IEnumerator F01_RealGameLoopClear_HudKeepsPreClearValue_PayOnlyAtReceiptEnd()
+        {
+            // 진짜 GameLoop.Step 으로 웨이브 1 을 막는다 (점액은 격리선 4칸 앞에서 처치 반납 → KillRewarder · GameLoop 가 이벤트를 낸다)
+            yield return WaitSettled();
+            SlimeRegistry reg = Object.FindAnyObjectByType<SlimeRegistry>();
+            GameFlow flow = _loop.Flow;
+            bool cleared = false;
+            int pay = 0;
+            Action<int, PayBreakdown> onClear = (i, p) => { if (!cleared) { cleared = true; pay = p.Total; } };
+            GameEvents.WaveCleared += onClear;
+            int shownBeforeClear = -1, shownAtClear = -1;
+            _loop.enabled = true; // OnDisable 가 처치 구독을 끊는다 — 이 프레임 안에서만 Step 하고 바로 다시 끈다
+            for (int step = 0; step < 40000 && !cleared; step++)
+            {
+                shownBeforeClear = _coin.Shown;
+                _loop.Step(0.05f);
+                if (cleared) { shownAtClear = _coin.Shown; break; }
+                SlimeTarget[] t = reg.Targets;
+                for (int k = reg.TargetCount - 1; k >= 0; k--)
+                    if (t[k].Dist < 4f && reg.TryGet(t[k].Id, out SlimeView s)) reg.Despawn(s, DespawnReason.Killed);
+            }
+            GameEvents.WaveCleared -= onClear;
+            _loop.enabled = false; // 이 뒤로 준비 시간 · 다음 웨이브가 흐르지 않게 (영수증 · 굴림은 게임 시간)
+            Assert.IsTrue(cleared, "웨이브 1 클리어");
+            Assert.Greater(pay, 0);
+            Assert.AreEqual(shownBeforeClear, shownAtClear, "클리어 그 프레임 HUD = 클리어 전 값");
+            Assert.AreEqual(pay, _coin.Held, "수당은 붙잡힘");
+            Assert.AreEqual(Wallet - (_flyer != null ? _flyer.Pending : 0) - pay, _coin.Target, "목표 = 지갑 − 날고 있는 처치 몫 − 수당");
+
+            int expectedBeforeRelease = Wallet - pay; // 처치 코인은 도착 때 올라가도 된다 (R1) — 수당만 끝까지
+            yield return Wait(_fx.payslipCoinAt - 0.05f);
+            Assert.AreEqual(pay, _coin.Held, "1.9초 직전까지 수당 붙잡음");
+            Assert.LessOrEqual(_coin.Shown, expectedBeforeRelease, "1.9초 전 HUD 에 수당이 들어가지 않음");
+
+            yield return Wait(2.0f - (_fx.payslipCoinAt - 0.05f));
+            Assert.AreEqual(0, _coin.Held);
+            Assert.AreEqual(Wallet, _coin.Target, "2.0초 — 목표 = 지갑");
+            yield return Wait(_fx.coinRollDuration + Slack);
+            Assert.AreEqual(Wallet, _coin.Shown, "굴림 끝 — 표시 = 지갑");
         }
 
         [UnityTest]

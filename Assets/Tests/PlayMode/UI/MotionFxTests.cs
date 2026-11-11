@@ -382,5 +382,140 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsFalse(m.IsPopping);
             Assert.AreEqual(m.BaseLocalScale.x, ModelOf(view).localScale.x, Eps, "1 로 돌아온다");
         }
+
+        // ── F01 드론 표식 — 머지 가능 표시 · 종류색 링 ──────
+
+        [UnityTest]
+        public IEnumerator F01_DragStarted_HintsOnlySameTypeAndGrade_DragEndedClears()
+        {
+            var marker = Object.FindAnyObjectByType<DroneMarkerFx>();
+            Assert.IsNotNull(marker, "[FX] 아래 MotionFx(DroneMarkerFx) 가 없다");
+            int from = Place(0, 0, DroneType.Suction, 1);
+            int same1 = Place(1, 1, DroneType.Suction, 1);
+            int same2 = Place(4, 2, DroneType.Suction, 1);
+            int otherGrade = Place(2, 0, DroneType.Suction, 2);
+            int otherType = Place(3, 0, DroneType.Plasma, 1);
+            int otherType2 = Place(1, 0, DroneType.Cryo, 1);
+            yield return null;
+
+            Assert.IsTrue(_drag.BeginAt(from), "실제 흐름으로 집기 (DragStarted)");
+            Assert.AreEqual(2, marker.HintCount, "같은 종류 · 같은 등급 두 칸만");
+            Assert.IsTrue(marker.IsHinted(same1));
+            Assert.IsTrue(marker.IsHinted(same2));
+            Assert.IsFalse(marker.IsHinted(from), "집은 칸 제외");
+            Assert.IsFalse(marker.IsHinted(otherGrade));
+            Assert.IsFalse(marker.IsHinted(otherType));
+            Assert.IsFalse(marker.IsHinted(otherType2));
+            Assert.IsTrue(marker.HintOutlineAt(same1).enabled && marker.HintRingAt(same1).enabled, "초록 테두리 + 링");
+            Assert.IsFalse(marker.HintOutlineAt(otherType).enabled);
+            var probe = new MaterialPropertyBlock();
+            marker.HintOutlineAt(same1).GetPropertyBlock(probe);
+            Color c = probe.GetColor("_BaseColor");
+            Assert.Greater(c.g, c.r + 0.3f, "초록");
+            Vector3 cellPos = _bootstrap.Space.CellToWorld(same1);
+            Vector3 p = marker.HintOutlineAt(same1).transform.position;
+            Assert.AreEqual(cellPos.x, p.x, Eps);
+            Assert.AreEqual(cellPos.z, p.z, Eps);
+
+            DropResult r = _drag.ReleaseAt(same1);
+            Assert.AreEqual(DropOutcome.Merge, r.Outcome, "표시된 칸에 놓으면 진짜 머지");
+            Assert.AreEqual(0, marker.HintCount, "놓으면 0");
+            Assert.IsFalse(marker.HintOutlineAt(same1).enabled);
+            Assert.IsFalse(marker.HintRingAt(same2).enabled);
+
+            // 같은 짝 없음 → 아무것도 안 뜸 (G2 흡입 둘 → 방금 머지로 same1 이 G2, otherGrade 도 G2 — 짝 있음. Cryo 는 혼자)
+            Assert.IsTrue(_drag.BeginAt(otherType2));
+            Assert.AreEqual(0, marker.HintCount, "짝이 없으면 표시 없음");
+            _drag.Cancel();
+            Assert.AreEqual(0, marker.HintCount);
+
+            yield return Wait(MergeLock + 0.05f); // 잠금 풀린 뒤
+            Assert.IsTrue(_drag.BeginAt(otherGrade));
+            Assert.AreEqual(1, marker.HintCount, "머지로 생긴 2등급도 짝");
+            Assert.IsTrue(marker.IsHinted(same1));
+            _drag.Cancel();
+            Assert.AreEqual(0, marker.HintCount, "취소(DragEnded Return)도 0");
+        }
+
+        [UnityTest]
+        public IEnumerator F01_TypeRing_UnderEveryDrone_ColorByType()
+        {
+            var marker = Object.FindAnyObjectByType<DroneMarkerFx>();
+            Assert.IsNotNull(marker);
+            int s = Place(0, 0, DroneType.Suction, 1);
+            int p = Place(2, 1, DroneType.Plasma, 2);
+            int c = Place(4, 2, DroneType.Cryo, 3);
+            yield return null; // LateUpdate
+
+            int shown = 0;
+            for (int i = 0; i < Grid.CellCount; i++) if (marker.IsTypeRingShown(i)) shown++;
+            Assert.AreEqual(3, shown, "드론 있는 칸만");
+            AssertRing(marker, s, DroneType.Suction);
+            AssertRing(marker, p, DroneType.Plasma);
+            AssertRing(marker, c, DroneType.Cryo);
+            Assert.AreNotEqual(marker.TypeColor(DroneType.Suction), marker.TypeColor(DroneType.Plasma));
+            Assert.AreNotEqual(marker.TypeColor(DroneType.Plasma), marker.TypeColor(DroneType.Cryo));
+            Assert.AreNotEqual(marker.TypeColor(DroneType.Suction), marker.TypeColor(DroneType.Cryo));
+
+            // 드래그 중엔 드론을 따라간다 · 이동 뒤 새 칸
+            Assert.IsTrue(_drag.BeginAt(s));
+            Vector3 floor = _bootstrap.Space.CellToWorld(1, 2);
+            _drag.HoverAt(Grid.IndexOf(1, 2), floor);
+            yield return null;
+            Vector3 rp = marker.TypeRingAt(s).transform.position;
+            Vector3 vp = _board.ViewAt(s).transform.position;
+            Assert.AreEqual(vp.x, rp.x, Eps, "끌리는 드론 x 를 따라감");
+            Assert.AreEqual(vp.z, rp.z, Eps);
+            _drag.ReleaseAt(Grid.IndexOf(1, 2));
+            yield return null;
+            Assert.IsFalse(marker.IsTypeRingShown(s), "떠난 칸 링 꺼짐");
+            AssertRing(marker, Grid.IndexOf(1, 2), DroneType.Suction);
+        }
+
+        [UnityTest]
+        public IEnumerator F01_Markers_ZeroAllocPerFrame()
+        {
+            var marker = Object.FindAnyObjectByType<DroneMarkerFx>();
+            Place(0, 0, DroneType.Suction, 1);
+            Place(1, 1, DroneType.Suction, 1);
+            Place(2, 2, DroneType.Plasma, 2);
+            Place(3, 0, DroneType.Cryo, 1);
+            yield return null;
+            const BindingFlags F = BindingFlags.Instance | BindingFlags.NonPublic;
+            var late = (System.Action)typeof(DroneMarkerFx).GetMethod("LateUpdate", F).CreateDelegate(typeof(System.Action), marker);
+            var start = (System.Action<int>)typeof(DroneMarkerFx).GetMethod("OnDragStarted", F).CreateDelegate(typeof(System.Action<int>), marker);
+            var end = (System.Action<int, DropOutcome>)typeof(DroneMarkerFx).GetMethod("OnDragEnded", F).CreateDelegate(typeof(System.Action<int, DropOutcome>), marker);
+            int from = Grid.IndexOf(0, 0);
+            for (int i = 0; i < 3; i++) { start(from); late(); end(from, DropOutcome.Return); late(); } // 데우기
+
+            long before = System.GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 60; i++)
+            {
+                start(from);
+                for (int k = 0; k < 5; k++) late();
+                end(from, DropOutcome.Return);
+                late();
+            }
+            long bytes = System.GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.AreEqual(0L, bytes, "표식 프레임 · 집기 · 놓기 할당 0");
+            Assert.AreEqual(0, marker.HintCount);
+        }
+
+        private void AssertRing(DroneMarkerFx marker, int cell, DroneType type)
+        {
+            Assert.IsTrue(marker.IsTypeRingShown(cell), "칸 " + cell + " 링");
+            var probe = new MaterialPropertyBlock();
+            marker.TypeRingAt(cell).GetPropertyBlock(probe);
+            Color got = probe.GetColor("_BaseColor");
+            Color want = marker.TypeColor(type);
+            Assert.AreEqual(want.r * Fx.markerRingIntensity, got.r, 1e-3f, type + " 색");
+            Assert.AreEqual(want.g * Fx.markerRingIntensity, got.g, 1e-3f);
+            Assert.AreEqual(want.b * Fx.markerRingIntensity, got.b, 1e-3f);
+            Assert.AreEqual(Fx.markerRingAlpha, got.a, 1e-3f, "은은하게");
+            Vector3 cp = _bootstrap.Space.CellToWorld(cell);
+            Vector3 rp = marker.TypeRingAt(cell).transform.position;
+            Assert.AreEqual(cp.x, rp.x, 0.05f, "발밑");
+            Assert.AreEqual(cp.z, rp.z, 0.05f);
+        }
     }
 }

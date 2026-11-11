@@ -218,10 +218,10 @@ MonoBehaviour:
   postGlowSize: 0.9
   postGlowAlpha: 0.9
   postGlowCameraOffset: 0.3
-  hitFlashDuration: 0.08
+  hitFlashDuration: 0.13
   hitFlashColor: {r: 1, g: 1, b: 1, a: 1}
-  hitFlashTypeMix: 0.2
-  hitFlashIntensity: 1.4
+  hitFlashTypeMix: 0.1
+  hitFlashIntensity: 1.5
   hitFlashCapacity: 64
   shakeDuration: 0.25
   shakeStrength: 0.06
@@ -360,3 +360,17 @@ MonoBehaviour:
   wavePanelPunchDuration: 0.2
   wavePanelPunchVibrato: 6
   wavePanelPunchElasticity: 0.5
+  markerSuctionColor: {r: 0.15, g: 0.95, b: 0.9, a: 1}
+  markerPlasmaColor: {r: 1, g: 0.5, b: 0.12, a: 1}
+  markerCryoColor: {r: 0.4, g: 0.7, b: 1, a: 1}
+  markerRingSize: 0.82
+  markerRingIntensity: 1.2
+  markerRingAlpha: 0.6
+  markerHintColor: {r: 0.25, g: 1, b: 0.3, a: 1}
+  markerHintOutlineSize: 1.04
+  markerHintRingSize: 0.98
+  markerHintRingIntensity: 1.6
+  markerHintPulsePeriod: 0.8
+  markerHintAlphaMin: 0.45
+  markerHintLift: 0.004
+  deathFlashDuration: 0.1

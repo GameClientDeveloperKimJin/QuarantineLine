@@ -21,7 +21,7 @@ namespace QL.Tests.PlayMode.UI
 {
     /// <summary>
     /// U06 웨이브 · 피격 연출 — Game.unity 를 열고 GameEvents 리플렉션 발행 · SlimeRegistry.Spawn / Despawn 으로
-    /// 경고 배너 · 히트 플래시 · 카메라 흔들림 · 위기 비네트 · HUD 해치 점멸 · 경고등을 본다. DroneSeeder · DragController 는 끈다.
+    /// (U15: 경고 배너 지움) 히트 플래시 · 카메라 흔들림 · 위기 비네트 · HUD 해치 점멸 · 경고등을 본다. DroneSeeder · DragController 는 끈다.
     /// </summary>
     public sealed class AlertFxTests
     {
@@ -31,7 +31,6 @@ namespace QL.Tests.PlayMode.UI
 
         private GameBootstrap _bootstrap;
         private SlimeRegistry _slimes;
-        private WaveBannerFx _banner;
         private HitFlashFx _flash;
         private CameraShakeFx _shake;
         private HatchAlertFx _posts;
@@ -63,13 +62,11 @@ namespace QL.Tests.PlayMode.UI
 
             _bootstrap = Object.FindAnyObjectByType<GameBootstrap>();
             _slimes = Object.FindAnyObjectByType<SlimeRegistry>();
-            _banner = Object.FindAnyObjectByType<WaveBannerFx>(FindObjectsInactive.Include); // R1 범위 조정 — 꺼 둠
             _flash = Object.FindAnyObjectByType<HitFlashFx>();
             _shake = Object.FindAnyObjectByType<CameraShakeFx>();
             _posts = Object.FindAnyObjectByType<HatchAlertFx>();
             _vignette = Object.FindAnyObjectByType<CriticalVignetteFx>();
             _hatch = Object.FindAnyObjectByType<HudHatch>();
-            Assert.IsNotNull(_banner, "UIRoot 에 WaveBannerFx 가 없다");
             Assert.IsNotNull(_flash, "[FX] 아래 AlertFx(HitFlashFx) 가 없다");
             Assert.IsNotNull(_shake, "[FX] 아래 AlertFx(CameraShakeFx) 가 없다");
             Assert.IsNotNull(_posts, "[FX] 아래 AlertFx(HatchAlertFx) 가 없다");
@@ -128,15 +125,13 @@ namespace QL.Tests.PlayMode.UI
             return block.GetColor("_BaseColor");
         }
 
-        // ── 1. 웨이브 배너 (R1 범위 조정 2026-11-10: 만들지 않음 — UIRoot 에 꺼 둔 채 둔다) ──
+        // ── 1. 웨이브 배너 — U15 에서 지움 (웨이브 시작 알림 = 작업 지시서 WaveOrderCard, WaveOrderTests) ──
 
         [UnityTest]
-        public IEnumerator WaveBanner_DisabledByScope_DoesNotShow()
+        public IEnumerator WaveBanner_RemovedInU15_NoBannerComponent()
         {
-            Assert.IsFalse(_banner.gameObject.activeInHierarchy, "배너는 꺼 둔다 (웨이브 시작 알림은 이후 지시서)");
-            Raise("RaiseWaveStarted", 0, 3, "배너");
+            Assert.IsNull(System.Type.GetType("QL.FX.Alert.WaveBannerFx, QL.FX"), "WaveBannerFx 는 U15 에서 지웠다");
             yield return null;
-            Assert.IsFalse(_banner.Panel.gameObject.activeInHierarchy, "WaveStarted 에도 배너가 보이지 않는다");
         }
 
         // ── 2. 히트 플래시 ───────────────────────────────────

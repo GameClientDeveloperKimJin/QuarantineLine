@@ -247,10 +247,24 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(string.Format(HudCoin.CoinFormat, now), _coin.CoinText.text, "굴러간 뒤 글자 = now");
         }
 
+        /// <summary>U15: 첫 준비의 작업 지시서가 떠 있는 동안은 카운트다운이 숨는다 (R1 결정) — 지시서가 끝난 뒤 본다.</summary>
         [UnityTest]
         public IEnumerator PrepTick_BelowBigFrom_ScalesUp()
         {
             int bigFrom = _countdown.BigFrom;
+            WaveOrderCard card = Object.FindAnyObjectByType<WaveOrderCard>();
+            Assert.IsNotNull(card);
+            Raise("RaisePrepTick", bigFrom + 2);
+            Assert.AreEqual(card.IsShowing, _countdown.IsSuppressed, "지시서 중이면 숨김");
+            if (card.IsShowing) Assert.IsFalse(_countdown.IsVisible, "지시서 중 숨김");
+            _loop.enabled = false; // 지시서가 끝날 때까지 준비 시간이 흐르지 않게
+            Time.timeScale = 1f;
+            float end = Time.realtimeSinceStartup + 5f;
+            while (card.IsShowing && Time.realtimeSinceStartup < end) yield return null;
+            Time.timeScale = 0f;
+            _loop.enabled = true;
+            Assert.IsFalse(card.IsShowing);
+
             Raise("RaisePrepTick", bigFrom + 2);
             Assert.IsTrue(_countdown.IsVisible);
             Assert.AreEqual(string.Format(HudCountdown.CountdownFormat, bigFrom + 2), _countdown.Label.text);

@@ -11,10 +11,12 @@ namespace QL.FX
     /// U04: 드론 호버링 · 점액 출렁임 · 머지 Sequence 비율 · 머지 · 소환 이펙트 · 이펙트 풀 크기.
     /// U11: 결과 화면 강조색(승 · 패) · 헤더 띠 · 진행 막대 칸 차오름.
     /// U05: 데미지 숫자 · 처치 대역 납작 · Splat/Puddle · 코인 비행 · 잔열 불꽃 · 풀 크기.
-    /// U06: 웨이브 경고 배너 · 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
+    /// U06: 해치 경고등 · 점액 히트 플래시 · 카메라 / HUD 흔들림 · 위기 비네트 · 해치 패널 점멸.
     /// U12: 휴게 시간 카드 — 어둡게 · 카드 등장 / 닫힘 · 커피 김 루프 · 팁 교체 · 상태 줄 형식과 색.
     /// U13: 결재 도장 결과 — 어둡게 · 패널 부팅 · 스캔라인 띠 · 숫자 올라감 · 도장 · Punch · 버튼 잠금 해제 시점.
     /// U14: 수당 영수증 — 시퀀스 시점 · 문구 (팀 · 항목 이름) · 종이 색 · 클리어 배너 · HUD 코인 「+합계」.
+    /// U15: 작업 지시서 — 시퀀스 시점 (슬롯 · 출력 · 흔들림 · 도장 · Punch · 카메라 · 흡수) · 웨이브 패널 Punch (문구는 WaveOrderText SO).
+    /// (U06 웨이브 경고 배너 수치는 U15 에서 배너와 함께 지움 — 웨이브 시작 알림 = 작업 지시서)
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
     public sealed class FxConfig : ScriptableObject
@@ -339,33 +341,6 @@ namespace QL.FX
         [Min(1)] public int fxPoolSplat;
         [Min(1)] public int fxPoolPuddle;
 
-        [Header("U06 웨이브 경고 배너 — 화면 가운데 위 (실제 시간 SetUpdate(true), 입력 막지 않음)")]
-        [Tooltip("펼쳐짐 (scaleX 0 → 1) 시간 (초)")]
-        [Min(0.01f)] public float bannerOpenDuration;
-        public Ease bannerOpenEase;
-        [Tooltip("펼쳐진 뒤 깜빡임 횟수 · 한 번 (꺼짐 → 켜짐) 시간 (초) · 꺼질 때 알파")]
-        [Min(0)] public int bannerBlinkCount;
-        [Min(0.01f)] public float bannerBlinkDuration;
-        [Range(0f, 1f)] public float bannerBlinkAlpha;
-        [Tooltip("다 펼쳐진 채 유지 (초)")]
-        [Min(0f)] public float bannerHoldDuration;
-        [Tooltip("접히며 사라짐 (scaleX 1 → 0) 시간 (초)")]
-        [Min(0.01f)] public float bannerCloseDuration;
-        public Ease bannerCloseEase;
-        [Tooltip("윗줄 형식 — {0} = 웨이브 번호(1부터) · {1} = 전체")]
-        public string bannerTitleFormat;
-        [Tooltip("마지막 웨이브 윗줄 형식 — {0} · {1} 같음")]
-        public string bannerFinalTitleFormat;
-        [Tooltip("평소 강조색 (경고 아이콘 · 윗줄 글자)")]
-        public Color bannerColor;
-        [Tooltip("마지막 웨이브 강조색")]
-        public Color bannerFinalColor;
-        [Tooltip("패널(UI_Panel_Warning — 완성 색 그림이라 곱해진다) 틴트 · 마지막 웨이브 틴트")]
-        public Color bannerPanelColor;
-        public Color bannerFinalPanelColor;
-        [Tooltip("아랫줄(banner 문구) 글자색")]
-        public Color bannerTextColor;
-
         [Header("U06 해치 경고등 — Posts 기둥 MPB (_EmissionColor · _BaseColor) + 꼭대기 빛 (FX_Glow_Dot, 가산)")]
         [Tooltip("웨이브 시작 빠른 점멸 — 전체 시간 (초) · 한 번 (켜짐 → 꺼짐) 주기 (초)")]
         [Min(0f)] public float postWaveBlinkDuration;
@@ -589,6 +564,45 @@ namespace QL.FX
         [Min(0.01f)] public float coinGainInDuration;
         [Min(0f)] public float coinGainHoldDuration;
         [Min(0.01f)] public float coinGainOutDuration;
+
+        [Header("U15 작업 지시서 — 시퀀스 시점 (초, 게임 시간 — 일시정지 때 같이 멈춤 · WavePrepStarted 기준, 영수증 중이면 그 끝 기준)")]
+        [Tooltip("슬롯 발광 Fade 0 → 1 (원본 0.00 · 0.15초)")]
+        [Min(0.01f)] public float orderSlotFadeDuration;
+        [Tooltip("종이 출력 시작 (원본 0.10) · 높이 0 → 끝 시간 (0.45) · 이징 (OutQuad)")]
+        [Min(0f)] public float orderPrintAt;
+        [Min(0.01f)] public float orderPrintDuration;
+        public Ease orderPrintEase;
+        [Tooltip("출력 중 흔들림 — DOShakeRotation 시간 (0.3) · 각도 (2°) · 진동 수")]
+        [Min(0.01f)] public float orderShakeDuration;
+        [Min(0f)] public float orderShakeAngle;
+        [Min(1)] public int orderShakeVibrato;
+        [Tooltip("「접수」 도장 (원본 0.60 · 0.18초 · Scale 1.6 → 1 InBack) · 나타남 Fade 시간 · 각도 범위 (도, −18 ~ −10)")]
+        [Min(0f)] public float orderStampAt;
+        [Min(0.01f)] public float orderStampDuration;
+        public float orderStampScaleFrom;
+        public Ease orderStampEase;
+        [Min(0.01f)] public float orderStampFadeDuration;
+        public float orderStampAngleMin;
+        public float orderStampAngleMax;
+        [Tooltip("도장 충격 (원본 0.78) — 종이 DOPunchScale 세기 (0.04) · 시간 · 진동 수 · 탄성")]
+        [Min(0f)] public float orderPunchAt;
+        [Min(0f)] public float orderPunchStrength;
+        [Min(0.01f)] public float orderPunchDuration;
+        [Min(1)] public int orderPunchVibrato;
+        [Range(0f, 1f)] public float orderPunchElasticity;
+        [Tooltip("도장 충격 카메라 흔들림 (CameraShakeFx.Kick) — 세기 · 시간. 해치 피격(shakeStrength)보다 약하게")]
+        [Min(0f)] public float orderCameraKickStrength;
+        [Min(0.01f)] public float orderCameraKickDuration;
+        [Tooltip("흡수 (원본 1.20 · 0.4초 InQuad) — Scale 1 → 이 값 + 웨이브 패널 가운데로. 끝 = 지시서 끝 (숨김 · 카운트다운 다시 · 웨이브 패널 Punch). 종이 클릭 → 이 시점으로 건너뜀")]
+        [Min(0f)] public float orderAbsorbAt;
+        [Min(0.01f)] public float orderAbsorbDuration;
+        [Min(0.01f)] public float orderAbsorbScale;
+        public Ease orderAbsorbEase;
+        [Header("U15 웨이브 패널 — 흡수 Punch (원본 1.60 · DOPunchScale(0.12) 0.2초, 게임 시간)")]
+        [Min(0f)] public float wavePanelPunchStrength;
+        [Min(0.01f)] public float wavePanelPunchDuration;
+        [Min(1)] public int wavePanelPunchVibrato;
+        [Range(0f, 1f)] public float wavePanelPunchElasticity;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

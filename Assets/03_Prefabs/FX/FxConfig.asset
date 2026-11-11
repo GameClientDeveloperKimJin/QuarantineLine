@@ -207,21 +207,6 @@ MonoBehaviour:
   burnCameraOffset: 0.35
   fxPoolSplat: 12
   fxPoolPuddle: 12
-  bannerOpenDuration: 0.2
-  bannerOpenEase: 9
-  bannerBlinkCount: 2
-  bannerBlinkDuration: 0.1
-  bannerBlinkAlpha: 0.25
-  bannerHoldDuration: 1.2
-  bannerCloseDuration: 0.2
-  bannerCloseEase: 8
-  bannerTitleFormat: WAVE {0} / {1}
-  bannerFinalTitleFormat: FINAL WAVE {0} / {1}
-  bannerColor: {r: 1, g: 0.74, b: 0.24, a: 1}
-  bannerFinalColor: {r: 1, g: 0.32, b: 0.26, a: 1}
-  bannerPanelColor: {r: 1, g: 1, b: 1, a: 1}
-  bannerFinalPanelColor: {r: 1, g: 0.55, b: 0.5, a: 1}
-  bannerTextColor: {r: 1, g: 0.95, b: 0.86, a: 1}
   postWaveBlinkDuration: 2
   postWaveBlinkPeriod: 0.25
   postWaveColor: {r: 1, g: 0.55, b: 0.1, a: 1}
@@ -346,3 +331,32 @@ MonoBehaviour:
   coinGainInDuration: 0.1
   coinGainHoldDuration: 0.9
   coinGainOutDuration: 0.3
+  orderSlotFadeDuration: 0.15
+  orderPrintAt: 0.1
+  orderPrintDuration: 0.45
+  orderPrintEase: 6
+  orderShakeDuration: 0.3
+  orderShakeAngle: 2
+  orderShakeVibrato: 10
+  orderStampAt: 0.6
+  orderStampDuration: 0.18
+  orderStampScaleFrom: 1.6
+  orderStampEase: 26
+  orderStampFadeDuration: 0.06
+  orderStampAngleMin: -18
+  orderStampAngleMax: -10
+  orderPunchAt: 0.78
+  orderPunchStrength: 0.04
+  orderPunchDuration: 0.25
+  orderPunchVibrato: 6
+  orderPunchElasticity: 0.5
+  orderCameraKickStrength: 0.025
+  orderCameraKickDuration: 0.15
+  orderAbsorbAt: 1.2
+  orderAbsorbDuration: 0.4
+  orderAbsorbScale: 0.1
+  orderAbsorbEase: 5
+  wavePanelPunchStrength: 0.12
+  wavePanelPunchDuration: 0.2
+  wavePanelPunchVibrato: 6
+  wavePanelPunchElasticity: 0.5

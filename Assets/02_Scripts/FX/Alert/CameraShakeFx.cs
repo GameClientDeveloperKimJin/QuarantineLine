@@ -13,6 +13,8 @@ namespace QL.FX.Alert
     /// 연속 피격은 세기에 shakeStackRatio 몫만 더하되 shakeStrengthCap 을 넘지 않고, 시간은 처음부터 다시 — 멀미 나게 쌓이지 않게.
     /// 게임 시간(Time.deltaTime) — timeScale 0 이면 멈춘다. 일시정지 · 결과(StateChanged Paused/Result, GameEnded)는 즉시 원위치.
     /// 끝나면 반드시 SetShakeOffset(Vector3.zero). 트윈 없음 (할당 없음).
+    /// U15: <see cref="Kick"/> — 피격과 따로 도는 작은 흔들림 (작업 지시서 도장 충격). 피격 세기 · 횟수(HitCount · PeakStrength · IsShaking)에 섞이지 않고
+    /// 오프셋만 더해진다. 같은 게임 시간 · 같은 멈춤 규칙.
     /// </summary>
     public sealed class CameraShakeFx : MonoBehaviour
     {
@@ -27,6 +29,9 @@ namespace QL.FX.Alert
         private float _timeLeft;
         private float _clock;
         private Vector3 _offset;
+        private float _kickStrength;
+        private float _kickDuration;
+        private float _kickLeft;
 
         public FxConfig Config => fx;
         public CameraRig Rig => rig;
@@ -40,6 +45,11 @@ namespace QL.FX.Alert
         public Vector3 Offset => _offset;
         public bool IsCritical => _critical;
         public int HitCount { get; private set; }
+        /// <summary>U15 — <see cref="Kick"/> 흔들림이 도는 중.</summary>
+        public bool IsKicking => _kickLeft > 0f;
+        /// <summary>U15 — 지금 Kick 세기 (잦아들기 전 값).</summary>
+        public float KickStrength => IsKicking ? _kickStrength : 0f;
+        public int KickCount { get; private set; }
 
         private void OnEnable()
         {
@@ -69,8 +79,24 @@ namespace QL.FX.Alert
         {
             _timeLeft = 0f;
             _strength = 0f;
+            _kickLeft = 0f;
+            _kickStrength = 0f;
             _offset = Vector3.zero;
             if (rig != null) rig.SetShakeOffset(Vector3.zero);
+        }
+
+        /// <summary>
+        /// U15 — 작은 흔들림 한 번 (strength 카메라 로컬 유닛 · duration 초, 남은 시간 비율로 잦아듦). 도는 중이면 큰 세기 · 시간 처음부터.
+        /// 결과 상태 · 세기/시간 0 이하는 무시. 피격 흔들림과 오프셋만 더한다.
+        /// </summary>
+        public void Kick(float strength, float duration)
+        {
+            if (!(strength > 0f) || !(duration > 0f)) return;
+            if (_loop != null && _loop.IsReady && _loop.Flow.State == GameState.Result) return;
+            _kickStrength = IsKicking ? Mathf.Max(_kickStrength, strength) : strength;
+            _kickDuration = duration;
+            _kickLeft = duration;
+            KickCount++;
         }
 
         private void ReadInitial()
@@ -120,20 +146,39 @@ namespace QL.FX.Alert
 
         private void LateUpdate()
         {
-            if (!IsShaking) return;
+            if (!IsShaking && !IsKicking) return;
             float dt = Time.deltaTime;
             if (dt <= 0f) return; // timeScale 0 — 멈춤
-            _timeLeft -= dt;
-            if (_timeLeft <= 0f)
+            float amp = 0f;
+            if (IsShaking)
+            {
+                _timeLeft -= dt;
+                if (_timeLeft <= 0f)
+                {
+                    _timeLeft = 0f;
+                    _strength = 0f;
+                }
+                else amp += _strength * (_timeLeft / fx.shakeDuration);
+            }
+            if (IsKicking)
+            {
+                _kickLeft -= dt;
+                if (_kickLeft <= 0f)
+                {
+                    _kickLeft = 0f;
+                    _kickStrength = 0f;
+                }
+                else amp += _kickStrength * (_kickLeft / _kickDuration);
+            }
+            if (!IsShaking && !IsKicking)
             {
                 Stop();
                 return;
             }
             _clock += dt * fx.shakeFrequency;
-            float k = _timeLeft / fx.shakeDuration;
             float x = (Mathf.PerlinNoise(_clock, 0.37f) - 0.5f) * 2f;
             float y = (Mathf.PerlinNoise(0.71f, _clock) - 0.5f) * 2f;
-            _offset = new Vector3(x, y, 0f) * (_strength * k);
+            _offset = new Vector3(x, y, 0f) * amp;
             if (rig != null) rig.SetShakeOffset(_offset);
         }
     }

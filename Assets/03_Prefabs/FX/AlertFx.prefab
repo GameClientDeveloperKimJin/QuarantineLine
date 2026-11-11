@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2531135635447947976}
   - component: {fileID: 8524098475895287378}
   - component: {fileID: 5796051236479699824}
+  - component: {fileID: 2665690147547052382}
   m_Layer: 0
   m_Name: AlertFx
   m_TagString: Untagged
@@ -99,6 +100,22 @@ MonoBehaviour:
   ringMaterial: {fileID: 2100000, guid: 2edffa8e8580ed647945453b8b8a7467, type: 2}
   ringMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   bootstrap: {fileID: 0}
+--- !u!114 &2665690147547052382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256068098827723847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dbbcaec997f0a74fa19201c2b2e1cca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Alert.GateSignFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  font: {fileID: 11400000, guid: 87b34aa4aa9b8aa409592cc45862b9c8, type: 2}
+  gateName: SpawnGate
+  signName: GateSign
 --- !u!1 &5370850614246768935
 GameObject:
   m_ObjectHideFlags: 0

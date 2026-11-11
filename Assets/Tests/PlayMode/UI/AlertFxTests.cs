@@ -392,5 +392,42 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsFalse(_posts.PostAt(0).HasPropertyBlock(), "평소 값 (블록 없음)");
             Assert.IsFalse(_posts.GlowAt(0).enabled);
         }
+
+        // ── U17 게이트 표기판 (보류함 33) ─────────────────────
+
+        [UnityTest]
+        public IEnumerator GateSign_ShowsWaveCode_AtR3Sign_OnScreen_SwapsOnPrep()
+        {
+            GateSignFx sign = Object.FindAnyObjectByType<GateSignFx>();
+            Assert.IsNotNull(sign, "[FX] AlertFx 에 GateSignFx 가 없다");
+            for (int i = 0; i < 10 && sign.Text == null; i++) yield return null;
+            Assert.IsNotNull(sign.Sign, "R3 Stage_SpawnGate/GateSign 을 찾는다");
+            Assert.IsNotNull(sign.Text, "글자를 만든다");
+
+            string banner0 = _bootstrap.Data.Waves.Waves[0].BannerText;
+            Assert.AreEqual("C-1", GateSignFx.CodeOf(banner0), "Waves.asset 실측 — 「C-1 화물칸, …」 첫 낱말");
+            Assert.AreEqual("C-1", sign.Text.text, "시작 = 웨이브 1");
+            Assert.AreEqual("QL_BagelFatOne SDF", sign.Text.font.name, "글꼴 하나");
+            Assert.AreEqual(0f, Vector3.Distance(sign.Sign.position + Fx.gateSignOffset * _bootstrap.Data.Config.CellSize, sign.Text.transform.position), 1e-3f, "R3 표기판 자리");
+            Assert.AreNotSame(sign.Sign, sign.Text.transform.parent, "R3 계층은 건드리지 않음 (글자는 AlertFx 아래)");
+
+            // 화면 안 · 해치 HUD 패널 아래 (G09 p1 — 패널 아래 끝 바로 밑 왼쪽 기둥 앞)
+            Camera cam = Camera.main;
+            sign.Text.ForceMeshUpdate();
+            Vector3 sp = cam.WorldToScreenPoint(sign.Text.transform.TransformPoint(sign.Text.bounds.center)); // TMP bounds = 로컬
+            Assert.Greater(sp.z, 0f);
+            Assert.That(sp.x, Is.InRange(0f, Screen.width), "화면 안 (x)");
+            Assert.That(sp.y, Is.InRange(0f, Screen.height), "화면 안 (y)");
+            var hatch = (RectTransform)GameObject.Find("HatchPanel").transform;
+            var c = new Vector3[4];
+            hatch.GetWorldCorners(c);
+            Assert.Less(sp.y, c[0].y, "해치 패널 아래 (가려지지 않음)");
+
+            Raise("RaiseWavePrepStarted", 1, default(QL.Core.Waves.WaveForecast));
+            Assert.AreEqual(GateSignFx.CodeOf(_bootstrap.Data.Waves.Waves[1].BannerText), sign.Text.text, "WavePrepStarted 마다 교체");
+            Assert.AreEqual("C-2", sign.Text.text);
+            Assert.AreEqual(1, sign.ShownIndex);
+            Assert.AreEqual(string.Empty, sign.CodeAt(99), "범위 밖 = 빈 글자 (예외 없음)");
+        }
     }
 }

@@ -22,7 +22,7 @@ namespace QL.UI.Hud
     /// <item>휴게(Paused) · 결과(Result) 중엔 새 메시지 없음 (<see cref="GameLoop.CanAct"/>). 떠 있는 것은 게임 시간이라 같이 멈춤</item>
     /// <item>0.00 입력 줄 · 0.50 이전 말풍선 위로 밀림 + 흐려짐, 새 말풍선 팝, 핑 · 팝 + 4.0 접힘 → 풀 반납. 말풍선은 화면에 최대 2개 (세 번째가 오면 가장 오래된 것부터 접힘)</item>
     /// </list>
-    /// 위치 = R3 <c>GridSpace</c> 읽기 (변이 = 그 점액 레인 · 위치, 게이트가 화면 밖이라 격리선에서 최대 opsPingPathMaxDist 칸 · 피격 = 그 레인 격리선 <c>PathToWorld(lane, 0)</c> · 오염 = <c>CellToWorld(cell)</c>).
+    /// 위치 = R3 <c>GridSpace</c> 읽기 (변이 = 그 점액 레인 · 위치, 격리선에서 최대 opsPingPathMaxDist 칸 (U17 — 10 = 스폰선, 게이트가 보임) · 피격 = 그 레인 격리선 <c>PathToWorld(lane, 0)</c> · 오염 = <c>CellToWorld(cell)</c>).
     /// 할당: 메시지마다 {lane} 치환 문자열 1회만. 대기 · 연출 프레임 0. 클릭은 받지 않는다 (raycastTarget 끔).
     /// </summary>
     public sealed class OpsMessenger : MonoBehaviour
@@ -198,7 +198,7 @@ namespace QL.UI.Hud
             if (slime == null || slime.Type != SlimeType.Mutant) return;
             GameBootstrap b = context.Bootstrap;
             if (b == null || !b.IsReady) return;
-            // 그 점액 레인 · 위치 — 단 스폰선(게이트)은 화면 위 해치 패널 밑에 가려 보이지 않으므로 opsPingPathMaxDist 칸 안쪽으로 당긴다
+            // 그 점액 레인 · 위치 — opsPingPathMaxDist 칸까지 (U17: U10 뒤 게이트가 화면에 보여 8 → 10 = 스폰선. 더 긴 길이 오면 안쪽으로 당김)
             float dist = Mathf.Min(slime.Dist, context.Fx.opsPingPathMaxDist);
             Offer(OpsTrigger.MutantSpawned, slime.Lane, true, b.Space.PathToWorld(slime.Lane, dist));
         }

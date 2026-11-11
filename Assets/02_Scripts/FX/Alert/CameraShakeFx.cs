@@ -3,6 +3,7 @@ using QL.Game;
 using QL.Game.Bootstrap;
 using QL.Game.Flow;
 using QL.Game.Stage;
+using MoreMountains.Tools;
 using UnityEngine;
 
 namespace QL.FX.Alert
@@ -158,7 +159,7 @@ namespace QL.FX.Alert
                     _timeLeft = 0f;
                     _strength = 0f;
                 }
-                else amp += _strength * (_timeLeft / fx.shakeDuration);
+                else amp += _strength * (1f - MMTween.Evaluate(1f - _timeLeft / fx.shakeDuration, fx.shakeDecayCurve)); // U17 Feel 곡선 (Linear = U06)
             }
             if (IsKicking)
             {

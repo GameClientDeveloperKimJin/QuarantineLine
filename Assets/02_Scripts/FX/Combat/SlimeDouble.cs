@@ -1,4 +1,5 @@
 using DG.Tweening;
+using MoreMountains.Tools;
 using QL.FX.Motion;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace QL.FX.Combat
     /// 그 점액 대신 이것이 켜진 Model 의 메시 · 재질 · 월드 자리를 넘겨받아 납작해지고(y 1 → deathSquashY, xz 1 → deathSquashXZ) 사라진다.
     /// 메시 피벗이 바닥이라 바닥에 붙은 채 납작해진다. 재질은 점액 것 그대로(sharedMaterial, 투명 Lit) — 알파만 MPB 로.
     /// F01: 첫 <see cref="FxConfig.deathFlashDuration"/> 동안 히트 플래시와 같은 흰색 (_BaseMap 흰 텍스처) — 처치 타격도 번쩍이게.
+    /// U17: 납작해지기 전 <see cref="FxConfig.deathStretchDuration"/> 동안 위로 쭉 (예비 동작, Feel MMTween 곡선) — 납작은 남은 시간에 끝나 끝 시점(deathSquashDuration)은 그대로.
     /// 트윈 = 0→1 진행값 하나 (SetAutoKill(false) + Restart, 수명은 timeScale). puddleDelay 가 지나면 풀에 Puddle 을 한 번 부른다.
     /// </summary>
     public sealed class SlimeDouble : MonoBehaviour
@@ -90,9 +92,23 @@ namespace QL.FX.Combat
         private void Apply(float t)
         {
             float elapsed = t * _total;
-            float s = DOVirtual.EasedValue(0f, 1f, Mathf.Clamp01(elapsed / _fx.deathSquashDuration), _fx.deathSquashEase);
-            float xz = Mathf.LerpUnclamped(1f, _fx.deathSquashXZ, s);
-            float y = Mathf.LerpUnclamped(1f, _fx.deathSquashY, s);
+            float pre = Mathf.Min(_fx.deathStretchDuration, _fx.deathSquashDuration * 0.5f);
+            float xz, y;
+            if (elapsed < pre)
+            {
+                // 0 → 꼭대기 (Feel 곡선) — 늘어난 모양에서 바로 납작으로 넘어간다
+                float u = MMTween.Evaluate(elapsed / pre, _fx.deathStretchCurve);
+                xz = Mathf.LerpUnclamped(1f, _fx.deathStretchXZ, u);
+                y = Mathf.LerpUnclamped(1f, _fx.deathStretchY, u);
+            }
+            else
+            {
+                float s = DOVirtual.EasedValue(0f, 1f, Mathf.Clamp01((elapsed - pre) / (_fx.deathSquashDuration - pre)), _fx.deathSquashEase);
+                float fromXZ = pre > 0f ? _fx.deathStretchXZ : 1f;
+                float fromY = pre > 0f ? _fx.deathStretchY : 1f;
+                xz = Mathf.LerpUnclamped(fromXZ, _fx.deathSquashXZ, s);
+                y = Mathf.LerpUnclamped(fromY, _fx.deathSquashY, s);
+            }
             _root.localScale = new Vector3(_baseScale.x * xz, _baseScale.y * y, _baseScale.z * xz);
 
             float fade = Mathf.Clamp01((elapsed - _fx.deathFadeDelay) / _fx.deathFadeDuration);

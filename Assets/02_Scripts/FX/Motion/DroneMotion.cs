@@ -1,4 +1,5 @@
 using DG.Tweening;
+using MoreMountains.Tools;
 using QL.Game.Drones;
 using UnityEngine;
 
@@ -9,7 +10,8 @@ namespace QL.FX.Motion
     /// <b>루트는 건드리지 않는다</b> (R3 DroneView 가 위치 · 크기를 매 순간 정함). 자식 <c>Model</c> 의 localPosition · localScale 만 쓴다.
     /// 세 연출이 같은 Model 을 만지므로 값은 필드에 모으고 <see cref="Apply"/> 한 곳에서 합쳐 쓴다:
     ///   localPosition = 기본 + 끌려옴 오프셋 × pull + 위 × (호버 폭 × bob)
-    ///   localScale    = 기본 × scale + 기본 ⊙ punch
+    ///   localScale    = (기본 × scale + 기본 ⊙ punch) ⊙ (1 − squash/2, 1 + squash, 1 − squash/2)
+    /// U17: 머지 스쿼시 · 스트레치 — 머지 Sequence 안 진행값 하나 → squash = 세기 × sin(반복) × (1 − Feel MMTween 감쇠 곡선). 늘어나며 커지고 납작하게 내려앉는다.
     /// 호버링(Yoyo) · 머지 Sequence · 소환 팝 = 트윈 셋, 전부 SetAutoKill(false) 로 재사용. 뷰가 풀로 돌아가면 <see cref="Park"/> (Pause + 원복).
     /// </summary>
     public sealed class DroneMotion
@@ -24,6 +26,7 @@ namespace QL.FX.Motion
         private Vector3 _pullLocal;  // 루트 로컬 단위 끌려옴 방향 × 거리
         private float _scale = 1f;
         private Vector3 _punch;
+        private float _squash;       // 세로 늘어남 몫 (− 면 납작)
 
         private Tween _idle;
         private Sequence _merge;
@@ -102,6 +105,7 @@ namespace QL.FX.Motion
             _pull = 1f;
             _scale = _fx.mergeScaleFrom;
             _punch = Vector3.zero;
+            _squash = 0f;
             Apply();
         }
 
@@ -118,14 +122,16 @@ namespace QL.FX.Motion
             _merge.Insert(up, DOVirtual.Float(_fx.mergeScalePeak, 1f, down, SetScale).SetEase(_fx.mergeScaleDownEase, _fx.mergeScaleOvershoot));
             _merge.Insert(up + down, DOTween.Punch(GetPunch, SetPunch, Vector3.one * _fx.mergePunchStrength, punch,
                 _fx.mergePunchVibrato, _fx.mergePunchElasticity));
+            _merge.Insert(0f, DOVirtual.Float(0f, 1f, total, SetSquashT).SetEase(Ease.Linear)); // U17 — 곡선은 SetSquashT 에서 (Feel)
             // 비율 합이 1 보다 작아도 전체 길이는 mergeLock 그대로 (끝에 빈 구간)
             if (_merge.Duration() < total) _merge.AppendInterval(total - _merge.Duration());
             _merge.OnComplete(ResetShape);
-            TweenCount += 5;
+            TweenCount += 6;
         }
 
         private void ResetShape()
         {
+            _squash = 0f;
             _pull = 0f;
             _scale = 1f;
             _punch = Vector3.zero;
@@ -184,13 +190,31 @@ namespace QL.FX.Motion
         private Vector3 GetPunch() => _punch;
         private void SetPunch(Vector3 v) { _punch = v; Apply(); }
 
+        /// <summary>머지 진행 k (0~1) → 스쿼시 몫. Feel MMTween.Evaluate 는 정적 계산 (할당 없음).</summary>
+        private void SetSquashT(float k)
+        {
+            float a = _fx.mergeSquashAmount;
+            _squash = a > 0f
+                ? a * Mathf.Sin(k * _fx.mergeSquashCycles * Mathf.PI * 2f) * (1f - MMTween.Evaluate(Mathf.Clamp01(k), _fx.mergeSquashDecay))
+                : 0f;
+            Apply();
+        }
+
         private void Apply()
         {
             if (_model == null) return;
             Vector3 p = _basePos + _pullLocal * _pull;
             p.y += _fx.droneHoverAmp * _bob;
             _model.localPosition = p;
-            _model.localScale = _baseScale * _scale + Vector3.Scale(_baseScale, _punch);
+            Vector3 k = _baseScale * _scale + Vector3.Scale(_baseScale, _punch);
+            if (_squash != 0f)
+            {
+                float side = 1f - _squash * 0.5f;
+                k.x *= side;
+                k.y *= 1f + _squash;
+                k.z *= side;
+            }
+            _model.localScale = k;
         }
     }
 }

@@ -24,6 +24,8 @@ namespace QL.UI.Hud
     /// <item>0.60 「접수」 도장 (Scale 1.6 → 1 InBack + Fade, 각도 −18° ~ −10° 무작위) · 0.78 종이 PunchScale + 작은 카메라 흔들림 (<see cref="CameraShakeFx.Kick"/>)</item>
     /// <item>1.20 Scale 1 → 0.1 + 웨이브 패널 가운데로 · 1.60 끝 — 숨김 · 웨이브 패널 Punch (<see cref="HudWave.PunchAbsorb"/>) · <see cref="Finished"/></item>
     /// </list>
+    /// U17 (보류함 32): 숨김을 끝 콜백 하나에만 맡기지 않는다 — 흡수 값이 1 에 닿는 순간(SetAbsorb), 끝 콜백, WaveStarted 중 먼저 오는 쪽이
+    /// 끝을 낸다 (재생당 <see cref="Finished"/> 1번 — <c>_live</c> 가드). Seek · Goto 로 콜백을 건너뛰어도 작은 종이가 패널 위에 남지 않는다.
     /// 값 = forecast 그대로 (점액 수 · 변이 수 · 주의 레인 = CautionLane + 1, −1 이면 「없음」). 문구는 <see cref="WaveOrderText"/> SO, 시점 · 세기는 FxConfig 「U15」.
     /// 카운트다운(<see cref="HudCountdown"/>)은 WavePrepStarted 부터 지시서 끝까지 숨김 (R1 결정 — 기다리는 동안 포함).
     /// 종이를 클릭하면 1.20 흡수로 건너뛴다. 종이(Paper) 말고는 raycastTarget 끔 — 연출 중에도 소환 · 머지가 된다.
@@ -86,6 +88,8 @@ namespace QL.UI.Hud
         private WaveForecast _pending;
         private CameraShakeFx _shake;
         private string[] _sites;
+        /// <summary>이번 재생이 아직 끝나지 않았다 (Play 의 Restart 뒤 true · Finish · 판 끝에서 false) — 끝 처리 1번 가드.</summary>
+        private bool _live;
 
         /// <summary>지시서가 화면에 있다 (출력 ~ 흡수 끝). 일시정지 중에도 true.</summary>
         public bool IsShowing { get; private set; }
@@ -170,6 +174,7 @@ namespace QL.UI.Hud
         private void OnEnable()
         {
             GameEvents.WavePrepStarted += OnWavePrepStarted;
+            GameEvents.WaveStarted += OnWaveStarted;
             GameEvents.GameEnded += OnGameEnded;
             if (payslip != null) payslip.Finished += OnPayslipFinished;
         }
@@ -177,6 +182,7 @@ namespace QL.UI.Hud
         private void OnDisable()
         {
             GameEvents.WavePrepStarted -= OnWavePrepStarted;
+            GameEvents.WaveStarted -= OnWaveStarted;
             GameEvents.GameEnded -= OnGameEnded;
             if (payslip != null) payslip.Finished -= OnPayslipFinished;
         }
@@ -210,6 +216,7 @@ namespace QL.UI.Hud
 
         private void Play(int index, in WaveForecast forecast)
         {
+            _live = false; // 되감는 동안 SetAbsorb 가 끝을 내지 않게
             ShownIndex = index;
             ShownForecast = forecast;
 
@@ -234,6 +241,7 @@ namespace QL.UI.Hud
             if (countdown != null) countdown.SetSuppressed(true);
             PlayCount++;
             _sequence.Restart();
+            _live = true;
             Started?.Invoke(index);
         }
 
@@ -287,8 +295,26 @@ namespace QL.UI.Hud
         private void OnGameEnded(ResultSummary summary)
         {
             if (_sequence != null && _sequence.IsActive()) _sequence.Pause();
+            _live = false;
             _waiting = false;
             Hide();
+        }
+
+        /// <summary>
+        /// 웨이브 시작 안전장치 (U17) — 준비 시간(5초 이상)이 지시서(영수증 2.0 + 1.6초)보다 길어 보통은 이미 끝나 있다.
+        /// 아직 떠 있으면 흡수 끝으로 마무리 (<see cref="Finished"/> 1번), 영수증 끝을 기다리던 지시서는 취소.
+        /// </summary>
+        private void OnWaveStarted(int index, int total, string banner)
+        {
+            bool wasWaiting = _waiting;
+            _waiting = false;
+            if (_live)
+            {
+                if (_sequence != null && _sequence.IsActive()) _sequence.Pause();
+                Finish();
+            }
+            else if (IsShowing) Hide();
+            else if (wasWaiting && countdown != null) countdown.SetSuppressed(false);
         }
 
         private void Hide()
@@ -301,6 +327,8 @@ namespace QL.UI.Hud
 
         private void Finish()
         {
+            if (!_live) return; // 재생당 1번 (흡수 1 도달 · 끝 콜백 · WaveStarted 중 먼저 온 쪽)
+            _live = false;
             Hide();
             if (wavePanel != null) wavePanel.PunchAbsorb();
             Finished?.Invoke(ShownIndex);
@@ -358,6 +386,7 @@ namespace QL.UI.Hud
             panel.localScale = new Vector3(s, s, 1f);
             panel.anchoredPosition = _basePos + _absorbDelta * t;
             slot.alpha = _slot * (1f - Mathf.Clamp01(t)); // 종이가 떠나면 슬롯 발광도 꺼짐
+            if (t >= 1f && _live) Finish(); // 다 빨려 들어갔다 — 끝 콜백을 건너뛰어도(Seek · Goto) 여기서 숨김
         }
     }
 }

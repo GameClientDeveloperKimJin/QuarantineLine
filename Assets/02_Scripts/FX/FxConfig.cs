@@ -651,7 +651,7 @@ namespace QL.FX
         [Tooltip("주황 — 가산 재질이라 색 × 밝기, 알파 = 시작 세기 (Fade 1 → 0)")]
         public Color opsPingColor;
         [Min(0f)] public float opsPingIntensity;
-        [Tooltip("변이 등장 핑 — 그 점액 위치(격리선까지 남은 칸)를 이 칸 수 안쪽으로 당긴다. 스폰선(10칸)은 해치 패널 밑이라 보이지 않음 (1920×1080 실측: 8칸 = 화면 위에서 178px)")]
+        [Tooltip("변이 등장 핑 — 그 점액 위치(격리선까지 남은 칸)를 이 칸 수 안쪽으로 당긴다. U17: U10 카메라 뒤 스폰 게이트가 해치 패널 아래로 보여 10 (= 스폰선, 길 밖으로는 안 나감). U16 때는 8 (게이트가 패널에 가려짐)")]
         [Min(0f)] public float opsPingPathMaxDist;
 
         [Header("F01 드론 표식 — 종류색 링 (발밑 상시, Mat_FX_Ring 가산 · DroneMarkerFx)")]
@@ -804,6 +804,45 @@ namespace QL.FX
         public string displayToWindowLabel = "창 모드";
         [Tooltip("전체 화면 → 창 모드로 바꿀 때 창 크기 (px). 모니터보다 크면 모니터 크기로 줄인다")]
         public Vector2Int displayWindowedSize = new Vector2Int(1280, 720);
+
+        [Header("U17 게이트 표기판 「C-1」 — R3 Stage_SpawnGate/GateSign 자리 월드 TMP (GateSignFx · 글자 면 = 카메라 면)")]
+        [Tooltip("GateSign 월드 위치 + 이 값 × cellSize")]
+        public Vector3 gateSignOffset = Vector3.zero;
+        [Tooltip("월드 TextMeshPro 글자 크기 (TMP fontSize — 10 ≈ 1 월드 단위 높이)")]
+        [Min(0.1f)] public float gateSignFontSize = 4f;
+        [Tooltip("글자 색 (불투명 SDF — 블룸 문턱 0.9 아래로 두어 번지지 않게)")]
+        public Color gateSignColor = new Color(0.55f, 0.95f, 0.9f, 1f);
+        [Tooltip("글자 상자 (월드 단위, 줄바꿈 없음 · 넘쳐도 그대로)")]
+        public Vector2 gateSignBox = new Vector2(2f, 0.6f);
+
+        [Header("U17 머지 스쿼시 · 스트레치 (Feel MMTween 곡선 — DroneMotion 머지 Sequence 안 진행값, Model 만)")]
+        [Tooltip("세로 늘어남 몫 최대 (세로 × (1 + a), 가로 × (1 − a/2)) — 0 이면 끔")]
+        [Min(0f)] public float mergeSquashAmount = 0.16f;
+        [Tooltip("머지 길이 동안 늘어남 → 납작 반복 수 (1.5 = 늘어남 · 납작 · 늘어남)")]
+        [Min(0f)] public float mergeSquashCycles = 1.5f;
+        [Tooltip("세기 감쇠 = 1 − 이 곡선(진행) (Feel MMTween)")]
+        public MoreMountains.Tools.MMTween.MMTweenCurve mergeSquashDecay = MoreMountains.Tools.MMTween.MMTweenCurve.EaseOutQuadratic;
+
+        [Header("U17 처치 — 납작해지기 전 위로 쭉 (예비 동작, 대역 SlimeDouble · deathSquashDuration 안에서)")]
+        [Tooltip("늘어나는 시간 (초) — 이 뒤 남은 deathSquashDuration 동안 납작")]
+        [Min(0f)] public float deathStretchDuration = 0.05f;
+        [Tooltip("늘어남 꼭대기 세로 · 가로 배율")]
+        [Min(0f)] public float deathStretchY = 1.25f;
+        [Min(0f)] public float deathStretchXZ = 0.85f;
+        [Tooltip("0 → 꼭대기 곡선 (Feel MMTween)")]
+        public MoreMountains.Tools.MMTween.MMTweenCurve deathStretchCurve = MoreMountains.Tools.MMTween.MMTweenCurve.EaseOutQuadratic;
+
+        [Header("U17 해치 피격 흔들림 감쇠 곡선 (Feel MMTween — 값만, 경로는 CameraShakeFx → CameraRig.SetShakeOffset 그대로)")]
+        [Tooltip("세기 = 시작 세기 × (1 − 이 곡선(지난 비율)). LinearTween = U06 그대로 · EaseOutQuadratic = 첫 순간 세고 빨리 잦아듦")]
+        public MoreMountains.Tools.MMTween.MMTweenCurve shakeDecayCurve = MoreMountains.Tools.MMTween.MMTweenCurve.EaseOutQuadratic;
+
+        [Header("U17 청소 링 — 머지 「펑」(등급 색) 과 갈리게: 초록을 오래 · 두 겹")]
+        [Tooltip("초록 → 흰 색 진행 곡선 (Feel MMTween — EaseInQuadratic 이면 앞 절반은 거의 초록)")]
+        public MoreMountains.Tools.MMTween.MMTweenCurve contamRingColorCurve = MoreMountains.Tools.MMTween.MMTweenCurve.EaseInQuadratic;
+        [Tooltip("두 번째(안쪽) 링 늦게 시작 (초) · 크기 배율 (첫 링 대비) · 세기 배율 — 늦음 0 이면 두 번째 링 없음")]
+        [Min(0f)] public float contamRing2Delay = 0.1f;
+        [Min(0f)] public float contamRing2Scale = 0.7f;
+        [Min(0f)] public float contamRing2Intensity = 0.8f;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

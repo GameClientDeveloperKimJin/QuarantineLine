@@ -39,6 +39,8 @@ namespace QL.Tests.PlayMode.UI
         private const string SceneName = "Game";
         private const int MaxWaitFrames = 300;
         private const float Slack = 0.3f;
+        /// <summary>드론 위끝 높이 (칸 ×) — 호버 0.35 + 몸체 · 2등급 링 (G09 p2 실측 근사).</summary>
+        private const float DroneTopHeight = 0.75f;
 
         private GameLoop _loop;
         private GameBootstrap _bootstrap;
@@ -501,6 +503,72 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(started, _started, "기다리던 지시서는 시작 안 함");
         }
 
+        // ── U17 보류함 32 — 흡수 뒤 종이 잔상 ─────────────────
+
+        [UnityTest]
+        public IEnumerator AbsorbEnd_PanelAndSlotInactive_FinishedOnce()
+        {
+            Prep(1, new WaveForecast(1, 20, 2, 0));
+            yield return Wait(_card.Duration + Slack);
+            Assert.IsFalse(_card.IsShowing, "흡수 끝 → 숨김");
+            Assert.IsFalse(_card.Panel.gameObject.activeSelf, "작은 종이(Scale 0.1)가 웨이브 패널 위에 남지 않는다");
+            Assert.IsFalse(_card.Slot.gameObject.activeSelf, "슬롯도 꺼짐");
+            Assert.AreEqual(1, _finished, "끝남 알림 1번 (흡수 1 도달 + 끝 콜백이 겹쳐도)");
+            yield return Wait(0.3f);
+            Assert.AreEqual(1, _finished);
+        }
+
+        [UnityTest]
+        public IEnumerator SeekToDuration_SkipsEndCallback_StillHidden_FinishedOnce()
+        {
+            Prep(1, new WaveForecast(1, 20, 2, 0));
+            yield return Wait(0.2f);
+            _card.Seek(_card.Duration); // Goto — 끝 콜백을 건너뛰는 길 (G09 캡처 방식)
+            Assert.IsFalse(_card.IsShowing, "Seek 로 끝까지 가도 숨김");
+            Assert.IsFalse(_card.Panel.gameObject.activeSelf);
+            Assert.AreEqual(1, _finished, "끝남 알림 1번");
+            _card.Seek(_card.Duration);
+            _card.Resume();
+            yield return Wait(0.3f);
+            Assert.IsFalse(_card.Panel.gameObject.activeSelf);
+            Assert.AreEqual(1, _finished, "다시 Seek · Resume 해도 늘지 않음");
+
+            // 다음 재생은 정상 (가드가 다음 판에 새지 않음)
+            Prep(2, new WaveForecast(2, 30, 6, 3));
+            Assert.IsTrue(_card.Panel.gameObject.activeSelf, "다음 지시서는 보인다");
+            yield return WaitCardDone();
+            Assert.AreEqual(2, _finished);
+        }
+
+        [UnityTest]
+        public IEnumerator WaveStarted_ForceHides_CancelsWaiting_FinishedOnce()
+        {
+            Prep(1, new WaveForecast(1, 20, 2, 0));
+            yield return Wait(0.5f);
+            Assert.IsTrue(_card.IsShowing);
+            Raise("RaiseWaveStarted", 1, 3, "C-2");
+            Assert.IsFalse(_card.IsShowing, "웨이브 시작 → 즉시 숨김");
+            Assert.IsFalse(_card.Panel.gameObject.activeSelf);
+            Assert.IsFalse(_card.Slot.gameObject.activeSelf);
+            Assert.IsFalse(_countdown.IsSuppressed, "카운트다운 숨김 풀림");
+            Assert.AreEqual(1, _finished, "흡수 끝으로 마무리 — 알림 1번");
+            yield return Wait(_card.Duration + Slack);
+            Assert.AreEqual(1, _finished, "남은 시퀀스가 끝 콜백을 또 부르지 않음");
+
+            // 영수증 끝을 기다리던 지시서는 취소
+            int started = _started;
+            ClearThenPrep(1, new WaveForecast(2, 30, 6, 3));
+            Assert.IsTrue(_card.IsWaiting);
+            Raise("RaiseWaveStarted", 2, 3, "C-3");
+            Assert.IsFalse(_card.IsWaiting, "기다림 취소");
+            Assert.IsFalse(_countdown.IsSuppressed);
+            float end = Time.realtimeSinceStartup + 8f;
+            while (_payslip.IsPlaying && Time.realtimeSinceStartup < end) yield return null;
+            yield return null;
+            Assert.AreEqual(started, _started, "기다리던 지시서는 시작 안 함");
+            Assert.IsFalse(_card.Panel.gameObject.activeSelf);
+        }
+
         // ── 재사용 · 할당 ────────────────────────────────────
 
         [UnityTest]
@@ -545,6 +613,16 @@ namespace QL.Tests.PlayMode.UI
             Assert.LessOrEqual(sheet.xMax, hatch.xMax + 0.5f);
             Assert.IsFalse(sheet.Overlaps(wave), "웨이브 패널과 겹치지 않음");
             Assert.GreaterOrEqual(sheet.yMin, 0f, "화면 안");
+            // U17 — 종이 아래끝(찢긴 끝)이 그리드 첫 줄(격리선 쪽) 드론 윗부분에 닿지 않는다 (U10 21:9 p3b 에서 닿음 → 종이 452 → 432)
+            Camera cam = Camera.main;
+            var space = _bootstrap.Space;
+            float droneTop = 0f;
+            for (int lane = 0; lane < _bootstrap.Grid.LaneCount; lane++)
+            {
+                Vector3 top = space.CellToWorld(_bootstrap.Grid.IndexOf(lane, 0)) + Vector3.up * (DroneTopHeight * space.CellSize);
+                droneTop = Mathf.Max(droneTop, cam.WorldToScreenPoint(top).y);
+            }
+            Assert.GreaterOrEqual(sheet.yMin, droneTop + 8f, "종이 아래끝 y " + sheet.yMin.ToString("0") + " ≥ 첫 줄 드론 위끝 y " + droneTop.ToString("0") + " + 8px");
 
             var texts = _card.Panel.GetComponentsInChildren<TMPro.TMP_Text>(true);
             Assert.AreEqual(3 + 2 * WaveOrderCard.RowCount, texts.Length, "머리 3 · 줄마다 2");

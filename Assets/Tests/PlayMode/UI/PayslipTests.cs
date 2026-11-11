@@ -131,10 +131,17 @@ namespace QL.Tests.PlayMode.UI
             while (Time.time < end) yield return null;
         }
 
+        /// <summary>
+        /// 영수증 · 굴림 · 비행 코인이 다 끝날 때까지 (U17 보류함 27). 상한은 실시간이 아니라 <b>게임 시간</b> — 느린 첫 실행(재시작 직후)에서
+        /// 실시간 5초가 게임 시간 1.9초 Release 전에 끝나 붙잡힌 몫이 남던 것. 조건 = 영수증 끝(IsPlaying · Finished) + 붙잡힘 0 (Release) + 굴림 끝.
+        /// 실시간 60초는 멈춤 방지용 안전판일 뿐.
+        /// </summary>
         private IEnumerator WaitSettled()
         {
-            float end = Time.realtimeSinceStartup + 5f;
-            while (Time.realtimeSinceStartup < end && (_receipt.IsPlaying || _coin.IsRolling || (_flyer != null && _flyer.Pending > 0)))
+            float gameEnd = Time.time + _fx.payslipEndAt + 3f;
+            float hardEnd = Time.realtimeSinceStartup + 60f;
+            while (Time.time < gameEnd && Time.realtimeSinceStartup < hardEnd
+                   && (_receipt.IsPlaying || _coin.Held > 0 || _coin.IsRolling || (_flyer != null && _flyer.Pending > 0)))
                 yield return null;
         }
 
@@ -295,6 +302,8 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsTrue(_coin.IsRolling);
 
             yield return WaitSettled();
+            Assert.IsFalse(_receipt.IsPlaying, "영수증 끝 (게임 시간 기준으로 기다림 — 보류함 27)");
+            Assert.AreEqual(0, _coin.Held, "Release 됨");
             Assert.AreEqual(Wallet, _coin.Shown, "끝난 뒤 HUD = 지갑 (영수증 중 소환 포함)");
             Assert.AreEqual(Wallet.ToString(), _coin.CoinText.text);
         }

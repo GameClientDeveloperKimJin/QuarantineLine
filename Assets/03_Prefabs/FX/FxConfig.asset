@@ -388,7 +388,7 @@ MonoBehaviour:
   opsPingLoops: 2
   opsPingColor: {r: 1, g: 0.55, b: 0.15, a: 0.9}
   opsPingIntensity: 2
-  opsPingPathMaxDist: 8
+  opsPingPathMaxDist: 10
   markerSuctionColor: {r: 0.15, g: 0.95, b: 0.9, a: 1}
   markerPlasmaColor: {r: 1, g: 0.5, b: 0.12, a: 1}
   markerCryoColor: {r: 0.4, g: 0.7, b: 1, a: 1}
@@ -421,9 +421,9 @@ MonoBehaviour:
   contamDropColor: {r: 0.45, g: 1, b: 0.3, a: 0.9}
   contamMarkerDim: 0.6
   contamLabelFormat: "\uC624\uC5FC {0:1}\uCD08"
-  contamLabelOffset: {x: 0, y: 0, z: -0.42}
+  contamLabelOffset: {x: 0, y: 0, z: -0.18}
   contamLabelFontSize: 24
-  contamLabelPadding: {x: 10, y: 2}
+  contamLabelPadding: {x: 6, y: 0}
   contamLabelTextColor: {r: 0.55, g: 1, b: 0.35, a: 1}
   contamLabelBgColor: {r: 1, g: 1, b: 1, a: 0.92}
   contamLabelSortingOrder: 4
@@ -433,7 +433,7 @@ MonoBehaviour:
   contamRingSize: 1
   contamRingScaleFrom: 0.5
   contamRingScaleTo: 2.5
-  contamRingDuration: 0.35
+  contamRingDuration: 0.45
   contamRingEase: 9
   contamRingColorFrom: {r: 0.4, g: 1, b: 0.3, a: 1}
   contamRingColorTo: {r: 1, g: 1, b: 1, a: 1}
@@ -477,3 +477,19 @@ MonoBehaviour:
   displayToFullscreenLabel: "\uC804\uCCB4 \uD654\uBA74"
   displayToWindowLabel: "\uCC3D \uBAA8\uB4DC"
   displayWindowedSize: {x: 1280, y: 720}
+  gateSignOffset: {x: 0, y: 0.15, z: -0.4}
+  gateSignFontSize: 6
+  gateSignColor: {r: 0.55, g: 0.95, b: 0.9, a: 1}
+  gateSignBox: {x: 2, y: 0.6}
+  mergeSquashAmount: 0.16
+  mergeSquashCycles: 1.5
+  mergeSquashDecay: 2
+  deathStretchDuration: 0.05
+  deathStretchY: 1.25
+  deathStretchXZ: 0.85
+  deathStretchCurve: 2
+  shakeDecayCurve: 2
+  contamRingColorCurve: 1
+  contamRing2Delay: 0.1
+  contamRing2Scale: 0.7
+  contamRing2Intensity: 0.8

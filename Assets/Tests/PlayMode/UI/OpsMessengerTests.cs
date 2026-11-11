@@ -215,7 +215,7 @@ namespace QL.Tests.PlayMode.UI
             Vector3 p = _ping.LastPosition;
             Assert.AreEqual(Space.CellToWorld(2, 0).x, p.x, LaneTolerance, "핑 x = 그 레인");
             float dist = Mathf.Min(m.Dist, _fx.opsPingPathMaxDist);
-            Assert.Less(_fx.opsPingPathMaxDist, Space.PathLength, "스폰선(화면 밖)보다 안쪽");
+            Assert.LessOrEqual(_fx.opsPingPathMaxDist, Space.PathLength, "U17: 게이트가 화면에 보여(U10) 스폰선까지 허용 — 길 밖으로는 안 나감");
             Assert.AreEqual(Space.PathToWorld(2, dist).z, p.z, LaneTolerance, "핑 = 그 점액 레인 길 위 (게이트 쪽, 화면 안으로 당김)");
             Assert.LessOrEqual(p.z, at.z + LaneTolerance, "점액보다 격리선 쪽");
             Assert.AreEqual(_fx.worldFxHeight, p.y, 0.0001f, "바닥");

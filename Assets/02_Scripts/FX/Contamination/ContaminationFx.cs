@@ -1,4 +1,5 @@
 using DG.Tweening;
+using MoreMountains.Tools;
 using QL.Core.Grid;
 using QL.FX.Motion;
 using QL.Game;
@@ -23,7 +24,9 @@ namespace QL.FX.Contamination
     /// </list>
     /// 웅덩이 · 링 · 말풍선은 칸 수만큼 준비 때 한 번 만든다 (Instantiate 0 · Collider · GraphicRaycaster 없음 — 드래그 레이캐스트 방해 없음).
     /// 진행은 Update 의 게임 시간(<c>Time.deltaTime</c>) 하나 — 트윈을 만들지 않아 DOTween 수가 늘지 않는다. 색은 MPB 하나 재사용. 대기 프레임 할당 0.
-    /// 수치는 FxConfig 「O03」.
+    /// U17: 청소 링이 같은 칸 U04 머지 「펑」(등급 색 링 · 0.3초)과 섞여 금색으로 보이던 것 → 초록이 오래 남게 (Feel MMTween 색 곡선) +
+    /// 안쪽 두 번째 링 (<see cref="FxConfig.contamRing2Delay"/> 늦게 · 작게). 두 번째 링 쿼드도 준비 때 칸마다 한 번.
+    /// 수치는 FxConfig 「O03」 · 「U17 청소 링」.
     /// </summary>
     public sealed class ContaminationFx : MonoBehaviour
     {
@@ -64,6 +67,8 @@ namespace QL.FX.Contamination
         private Renderer[] _puddleR;
         private Transform[] _ringT;
         private Renderer[] _ringR;
+        private Transform[] _ring2T;
+        private Renderer[] _ring2R;
         private RectTransform[] _labelT;
         private CanvasGroup[] _labelGroup;
         private TMP_Text[] _labelText;
@@ -101,6 +106,11 @@ namespace QL.FX.Contamination
         public Renderer PuddleRendererAt(int cell) => _puddleR[cell];
         public Transform RingAt(int cell) => _ringT[cell];
         public bool IsRingActive(int cell) => _ringR != null && _ringR[cell].enabled;
+        /// <summary>U17 안쪽 두 번째 링.</summary>
+        public Transform Ring2At(int cell) => _ring2T[cell];
+        public bool IsRing2Active(int cell) => _ring2R != null && _ring2R[cell].enabled;
+        /// <summary>그 칸 링 진행 (초 — 두 번째 링은 여기서 contamRing2Delay 를 뺀 값).</summary>
+        public float RingTime(int cell) => _ringTime[cell];
         public RectTransform LabelAt(int cell) => _labelT[cell];
         public TMP_Text LabelTextAt(int cell) => _labelText[cell];
         public bool IsLabelShown(int cell) => _labelShown != null && _labelShown[cell];
@@ -194,6 +204,7 @@ namespace QL.FX.Contamination
                 _ringTime[cell] = 0f;
                 _ringCount++;
                 if (!_ringR[cell].enabled) _ringR[cell].enabled = true;
+                if (_ring2R[cell].enabled) _ring2R[cell].enabled = false; // 늦게 켠다 (LateUpdate)
                 ApplyRing(cell);
             }
 
@@ -221,6 +232,7 @@ namespace QL.FX.Contamination
                 _phase[i] = Phase.Free;
                 if (_puddleR[i].enabled) _puddleR[i].enabled = false;
                 if (_ringR[i].enabled) _ringR[i].enabled = false;
+                if (_ring2R[i].enabled) _ring2R[i].enabled = false;
                 ShowLabel(i, false);
             }
         }
@@ -235,11 +247,12 @@ namespace QL.FX.Contamination
             bool camFound = false;
             for (int i = 0; i < _phase.Length; i++)
             {
-                if (_ringR[i].enabled)
+                if (_ringR[i].enabled || _ring2R[i].enabled)
                 {
                     _ringTime[i] += dt;
-                    if (_ringTime[i] >= fx.contamRingDuration) _ringR[i].enabled = false;
+                    if (_ringTime[i] >= fx.contamRingDuration) { if (_ringR[i].enabled) _ringR[i].enabled = false; }
                     else ApplyRing(i);
+                    ApplyRing2(i);
                 }
 
                 Phase ph = _phase[i];
@@ -329,14 +342,28 @@ namespace QL.FX.Contamination
 
         private void ApplyRing(int cell)
         {
-            float k = Mathf.Clamp01(_ringTime[cell] / fx.contamRingDuration);
+            PaintRing(_ringT[cell], _ringR[cell], _ringTime[cell], 1f, fx.contamRingIntensity);
+        }
+
+        /// <summary>U17 안쪽 링 — contamRing2Delay 뒤 켜져 같은 길이로 퍼진다 (작게 · 약하게).</summary>
+        private void ApplyRing2(int cell)
+        {
+            float t = _ringTime[cell] - fx.contamRing2Delay;
+            bool on = fx.contamRing2Delay > 0f && t >= 0f && t < fx.contamRingDuration;
+            if (_ring2R[cell].enabled != on) _ring2R[cell].enabled = on;
+            if (on) PaintRing(_ring2T[cell], _ring2R[cell], t, fx.contamRing2Scale, fx.contamRingIntensity * fx.contamRing2Intensity);
+        }
+
+        private void PaintRing(Transform t, Renderer r, float time, float scale, float intensity)
+        {
+            float k = Mathf.Clamp01(time / fx.contamRingDuration);
             float grow = DOVirtual.EasedValue(0f, 1f, k, fx.contamRingEase);
-            float d = Mathf.LerpUnclamped(fx.contamRingScaleFrom, fx.contamRingScaleTo, grow) * _cellSize * fx.contamRingSize;
-            _ringT[cell].localScale = new Vector3(d, d, d);
-            Color c = Color.LerpUnclamped(fx.contamRingColorFrom, fx.contamRingColorTo, k);
-            float i = fx.contamRingIntensity;
-            _block.SetColor(BaseColorId, new Color(c.r * i, c.g * i, c.b * i, c.a * (1f - k)));
-            _ringR[cell].SetPropertyBlock(_block);
+            float d = Mathf.LerpUnclamped(fx.contamRingScaleFrom, fx.contamRingScaleTo, grow) * _cellSize * fx.contamRingSize * scale;
+            t.localScale = new Vector3(d, d, d);
+            // 초록 → 흰 — Feel 곡선 (EaseInQuadratic 이면 앞 절반은 초록 그대로, 머지 등급 색 링과 갈림)
+            Color c = Color.LerpUnclamped(fx.contamRingColorFrom, fx.contamRingColorTo, MMTween.Evaluate(k, fx.contamRingColorCurve));
+            _block.SetColor(BaseColorId, new Color(c.r * intensity, c.g * intensity, c.b * intensity, c.a * (1f - k)));
+            r.SetPropertyBlock(_block);
         }
 
         /// <summary>번짐 순간 초록 방울 몇 개 — 웅덩이 가장자리로 퍼지며 살짝 솟는다 (FxPool Spark 재사용).</summary>
@@ -433,6 +460,8 @@ namespace QL.FX.Contamination
             _puddleR = new Renderer[n];
             _ringT = new Transform[n];
             _ringR = new Renderer[n];
+            _ring2T = new Transform[n];
+            _ring2R = new Renderer[n];
             _labelT = new RectTransform[n];
             _labelGroup = new CanvasGroup[n];
             _labelText = new TMP_Text[n];
@@ -460,6 +489,8 @@ namespace QL.FX.Contamination
                 _puddleT[i] = _puddleR[i].transform;
                 _ringR[i] = MakeQuad("CleanRing_" + i.ToString("00"), rings, ringMaterial, new Vector3(p.x, fx.contamRingHeight, p.z));
                 _ringT[i] = _ringR[i].transform;
+                _ring2R[i] = MakeQuad("CleanRing2_" + i.ToString("00"), rings, ringMaterial, new Vector3(p.x, fx.contamRingHeight + 0.002f, p.z));
+                _ring2T[i] = _ring2R[i].transform;
                 MakeLabel(i);
             }
             _ready = true;

@@ -13,7 +13,6 @@ using QL.Game;
 using QL.Game.Bootstrap;
 using QL.Game.Drones;
 using QL.Game.Flow;
-using QL.Game.Grid;
 using QL.Game.Input;
 using QL.Game.Slimes;
 using QL.Game.Stage;
@@ -319,9 +318,17 @@ namespace QL.Tests.PlayMode.FX
             yield return null;
             Assert.Greater(_fx.RingAt(cell).localScale.x, ringFrom, "링 퍼짐");
 
-            yield return WaitGame(Mathf.Max(_cfg.contamPopDuration, _cfg.contamRingDuration) + 0.1f);
+            // U17 — 안쪽 두 번째 링은 contamRing2Delay 뒤 켜진다 · 초록이 오래 남음 (머지 등급 색 링과 갈림)
+            Assert.IsFalse(_fx.IsRing2Active(cell), "안쪽 링은 늦게");
+            yield return WaitGame(_cfg.contamRing2Delay + 0.05f);
+            Assert.IsTrue(_fx.IsRing2Active(cell), "안쪽 링 켜짐");
+            Assert.Less(_fx.Ring2At(cell).localScale.x, _fx.RingAt(cell).localScale.x, "안쪽 링이 더 작다");
+            Assert.AreEqual(_fx.RingAt(cell).position.x, _fx.Ring2At(cell).position.x, PosTolerance, "같은 칸");
+
+            yield return WaitGame(Mathf.Max(_cfg.contamPopDuration, _cfg.contamRingDuration + _cfg.contamRing2Delay) + 0.1f);
             Assert.AreEqual(0, _fx.ActiveCount, "웅덩이 반납");
             Assert.AreEqual(0, _fx.ActiveRingCount, "링 끝");
+            Assert.IsFalse(_fx.IsRing2Active(cell), "안쪽 링도 끝");
             Assert.AreEqual(1, _fx.RingPlayCount, "링은 한 번만");
             Assert.IsFalse(_marker.IsTypeRingDimmed(cell), "씻은 칸 링 다시 밝게");
         }
@@ -356,7 +363,7 @@ namespace QL.Tests.PlayMode.FX
         public IEnumerator Pool_NoInstantiate_IdleAndAnimFramesZeroAlloc_TweensFlat()
         {
             int created = _fx.CreatedCount;
-            Assert.AreEqual(Grid.CellCount * 4, created, "웅덩이 · 링 · 말풍선 · 글자 = 칸 수씩");
+            Assert.AreEqual(Grid.CellCount * 5, created, "웅덩이 · 링 · 안쪽 링(U17) · 말풍선 · 글자 = 칸 수씩");
             int objects = OwnObjects(_fx.transform);
             const BindingFlags F = BindingFlags.Instance | BindingFlags.NonPublic;
             var late = (Action)typeof(ContaminationFx).GetMethod("LateUpdate", F).CreateDelegate(typeof(Action), _fx);

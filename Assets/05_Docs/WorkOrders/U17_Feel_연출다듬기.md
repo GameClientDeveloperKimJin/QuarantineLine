@@ -25,6 +25,10 @@
 - DOTween → Feel 로 바꾸든 Feel 을 덧붙이든 자유. **바꾼 것마다 「무엇을 왜」** 보고 (규칙 9)
 - 과하면 실패: 한 화면에 흔들림 · 번쩍임이 겹쳐 눈이 피곤하면 줄인다
 
+## 함께 처리 (U10 에서 넘어옴)
+- U16 `opsPingPathMaxDist` 8 → 10 (스폰 게이트가 이제 보임 — 변이 핑을 게이트 쪽으로)
+- 21:9 에서 U15 지시서 종이 아래끝이 그리드 첫 줄 드론에 닿음 → 종이 크기 · 위치 조정
+
 ## 함께 처리
 - **보류함 27**: `PayslipTests.SpendDuringReceipt_RollsImmediately_EndEqualsWallet` — 기다림을 실시간 5초 상한 대신 게임 시간 · 조건(`Released` / `Finished`) 기준으로
 - 보류함 14 의 R4 쪽 (HudTests 리플렉션 → 직접 호출) 은 G09 뒤라 **하지 않음**

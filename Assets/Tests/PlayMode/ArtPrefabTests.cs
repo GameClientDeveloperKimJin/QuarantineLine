@@ -102,6 +102,55 @@ namespace QL.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// G09 — g 줄판 OBJ: Body · Part_G2 · Part_G3 가 모델 아래 자식 메시로 들어와 자식 경로(GameObject 토글)를 쓴다.
+        /// 서브메시 대체 경로(한 렌더러에 부품 재질이 섞임)면 실패.
+        /// </summary>
+        [Test]
+        public void DroneModel_GradePartsAreChildMeshes()
+        {
+            foreach (GameObject prefab in DronePrefabs())
+            {
+                Transform model = prefab.transform.Find("Model");
+                Assert.IsNotNull(model, prefab.name);
+                foreach (string part in new[] { "Body", PartG2, PartG3 })
+                {
+                    Transform t = FindChild(model, part);
+                    Assert.IsNotNull(t, prefab.name + " — 자식 " + part + " 가 없다");
+                    var r = t.GetComponent<MeshRenderer>();
+                    Assert.IsNotNull(r, prefab.name + "/" + part + " MeshRenderer 없음");
+                    foreach (Material m in r.sharedMaterials)
+                    {
+                        Assert.IsNotNull(m, prefab.name + "/" + part + " 빈 재질 슬롯");
+                        string other = part == PartG2 ? PartG3 : PartG2;
+                        Assert.IsFalse(m.name.Contains(other), prefab.name + "/" + part + " 에 " + other + " 재질이 섞였다 (서브메시 합침)");
+                        if (part == "Body") Assert.IsFalse(m.name.Contains(PartG2) || m.name.Contains(PartG3), prefab.name + " Body 에 부품 재질");
+                    }
+                }
+
+                // 뷰에서 등급 1 → 3 → 1 로 자식 GameObject 가 켜지고 꺼진다 (재질 배열은 그대로)
+                DroneView view = SpawnDrone(prefab);
+                Transform body = FindChild(view.transform, "Body");
+                Material[] bodyMats = body.GetComponent<MeshRenderer>().sharedMaterials;
+                view.Show(DroneType.Suction, 1, Color.white);
+                Assert.IsFalse(FindChild(view.transform, PartG2).gameObject.activeSelf, prefab.name + " 1등급 G2");
+                Assert.IsFalse(FindChild(view.transform, PartG3).gameObject.activeSelf, prefab.name + " 1등급 G3");
+                view.Show(DroneType.Suction, 3, Color.white);
+                Assert.IsTrue(FindChild(view.transform, PartG2).gameObject.activeSelf, prefab.name + " 3등급 G2");
+                Assert.IsTrue(FindChild(view.transform, PartG3).gameObject.activeSelf, prefab.name + " 3등급 G3");
+                view.Show(DroneType.Suction, 1, Color.white);
+                Assert.IsFalse(FindChild(view.transform, PartG3).gameObject.activeSelf, prefab.name + " 다시 1등급 G3");
+                CollectionAssert.AreEqual(bodyMats, body.GetComponent<MeshRenderer>().sharedMaterials, prefab.name + " Body 재질 배열이 바뀌었다 (서브메시 경로)");
+            }
+        }
+
+        private static Transform FindChild(Transform root, string childName)
+        {
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == childName) return t;
+            return null;
+        }
+
         [Test]
         public void DroneModelMissingParts_NoException()
         {

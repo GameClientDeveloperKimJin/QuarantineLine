@@ -9,9 +9,12 @@ namespace QL.Game.Stage
     /// G07: 무대 모듈 프리팹(루트 + 자식 Model) 칸이 차 있으면 그것을 깔고, 비어 있으면 예전 임시 도형(바닥 · 턱 큐브)을 쓴다.
     /// 모듈 배치는 _아트납품.md A09 표 — Config(레인 · 줄 · 길이 · 칸 크기)와 아래 칸 단위 오프셋으로 계산한다. 시작 때 한 번만.
     /// G10: 복도 벽 바깥(Outer) — A11 데크 판 · 컨테이너 더미를 배치좌표.md 표(직렬화 배열) 그대로 깐다.
+    /// G09: 레인 경계마다 가는 발광 선(LaneLines) — 레인 바닥은 어둡게(Mat_Lane), 구분은 선으로 (시안 ingame_reference).
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
     {
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+
         [SerializeField] private GameBootstrap bootstrap;
 
         [Header("프리팹 · 재질")]
@@ -22,6 +25,8 @@ namespace QL.Game.Stage
         [SerializeField] private Material spawnLineMaterial;
         [Tooltip("격리선 레이저 — URP Unlit (블룸은 U07)")]
         [SerializeField] private Material laserMaterial;
+        [Tooltip("레인 구분 발광 선 — _EMISSION 켠 재질 (Mat_LaneLine). 비우면 선 없음")]
+        [SerializeField] private Material laneLineMaterial;
 
         [Header("무대 모듈 프리팹 (비우면 임시 도형 / 없음)")]
         [Tooltip("M1 격리선 턱 — 레인마다 1개. 비우면 Hatch 큐브")]
@@ -136,8 +141,22 @@ namespace QL.Game.Stage
             public float yaw;
         }
 
+        [Header("레인 구분 발광 선 (G09 — 점액 길 z 0 ~ pathLength)")]
+        [Tooltip("선 굵기 (칸 단위)")]
+        [SerializeField] private float laneLineWidthCells = 0.03f;
+        [Tooltip("발광 색 (세기를 곱해 _EmissionColor 로)")]
+        [SerializeField] private Color laneLineColor = new Color(0.1f, 0.85f, 0.9f, 1f);
+        [Tooltip("발광 세기 — 블룸 문턱(U07 Volume 0.9)을 살짝 넘게. 점액 발광보다 어둡게 (G09 p1 측정: 2 = 점액만큼 밝음, 1.2 채택)")]
+        [SerializeField] private float laneLineIntensity = 1.2f;
+        [Tooltip("레인 폭 양끝(바깥 테두리) 선도 긋는다 — 끄면 레인 사이 선만")]
+        [SerializeField] private bool laneLineEdges = true;
+        [Tooltip("시작 때 선들을 정적 배치로 묶는다 (런타임 생성이라 Static 플래그 대신)")]
+        [SerializeField] private bool laneLineStaticBatch = true;
+
         [Header("겹침 방지 y 오프셋 (월드)")]
         [SerializeField] private float laneYOffset = 0.005f;
+        [Tooltip("레인 선 — 레인 띠 위 · 칸 · 사거리 띠 아래")]
+        [SerializeField] private float laneLineYOffset = 0.008f;
         [SerializeField] private float cellYOffset = 0.01f;
         [SerializeField] private float spawnLineYOffset = 0.01f;
 
@@ -217,6 +236,8 @@ namespace QL.Game.Stage
                 CreatePrimitive(PrimitiveType.Quad, "Lane_" + lane, lanes, laneMaterial,
                     center, flat, new Vector3(cs * laneWidthRatio, pathSpan, 1f));
             }
+
+            BuildLaneLines(space, root, flat);
 
             // 칸 — Cell.prefab (Collider 없음)
             Transform cells = CreateGroup("Cells", root);
@@ -314,6 +335,42 @@ namespace QL.Game.Stage
             BuildOuter(root, cs);
         }
 
+        /// <summary>
+        /// 레인 구분 발광 선 (보류함 29) — 레인 경계 x 마다 가는 쿼드 하나, 점액 길 z 0 ~ pathLength.
+        /// Collider 없음 · 그림자 없음. 색 × 세기는 MaterialPropertyBlock 의 _EmissionColor (공유 재질 그대로). 시작 때 1회.
+        /// </summary>
+        private void BuildLaneLines(GridSpace space, Transform root, Quaternion flat)
+        {
+            if (laneLineMaterial == null)
+            {
+                Debug.LogWarning("[StageBuilder] laneLineMaterial 이 비어 레인 구분 선을 그리지 않는다", this);
+                return;
+            }
+
+            float cs = space.CellSize;
+            float pathSpan = space.PathLength * cs;
+            float x0 = -space.LaneCount * cs * 0.5f;
+            int first = laneLineEdges ? 0 : 1;
+            int last = laneLineEdges ? space.LaneCount : space.LaneCount - 1;
+
+            Transform group = CreateGroup("LaneLines", root);
+            var block = new MaterialPropertyBlock();
+            Color emission = laneLineColor * laneLineIntensity;
+            emission.a = 1f;
+            block.SetColor(EmissionColorId, emission);
+            for (int i = first; i <= last; i++)
+            {
+                MeshRenderer line = CreatePrimitive(PrimitiveType.Quad, "LaneLine_" + i, group, laneLineMaterial,
+                    new Vector3(x0 + i * cs, laneLineYOffset, pathSpan * 0.5f), flat,
+                    new Vector3(laneLineWidthCells * cs, pathSpan, 1f), true);
+                line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                line.receiveShadows = false;
+                line.SetPropertyBlock(block);
+            }
+
+            if (laneLineStaticBatch) StaticBatchingUtility.Combine(group.gameObject);
+        }
+
         /// <summary>복도 벽 바깥 — 데크 판 · 컨테이너 더미 (A11). 판정과 무관한 배경, Collider 없음.</summary>
         private void BuildOuter(Transform root, float cs)
         {
@@ -407,11 +464,14 @@ namespace QL.Game.Stage
             return t;
         }
 
+        /// <param name="removeColliderNow">true 면 Collider 를 즉시 지운다 (같은 프레임에 Collider 0 을 보장 — 레인 선)</param>
         private static MeshRenderer CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material,
-            Vector3 localPosition, Quaternion localRotation, Vector3 localScale)
+            Vector3 localPosition, Quaternion localRotation, Vector3 localScale, bool removeColliderNow = false)
         {
             GameObject go = GameObject.CreatePrimitive(type);
-            Destroy(go.GetComponent<Collider>()); // 칸 판정은 GridSpace — Collider 안 씀 (시작 시 1회)
+            // 칸 판정은 GridSpace — Collider 안 씀 (시작 시 1회)
+            if (removeColliderNow) DestroyImmediate(go.GetComponent<Collider>());
+            else Destroy(go.GetComponent<Collider>());
             go.name = name;
             Transform t = go.transform;
             t.SetParent(parent, false);

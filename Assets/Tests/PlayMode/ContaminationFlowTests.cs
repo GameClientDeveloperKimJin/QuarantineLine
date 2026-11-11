@@ -13,7 +13,6 @@ using QL.Game.Bootstrap;
 using QL.Game.Combat;
 using QL.Game.Drones;
 using QL.Game.Flow;
-using QL.Game.Grid;
 using QL.Game.Input;
 using QL.Game.Slimes;
 using QL.Game.Summon;
@@ -47,7 +46,6 @@ namespace QL.Tests.PlayMode
         private DroneCombat _combat;
         private SummonController _summon;
         private KillRewarder _rewarder;
-        private ContaminationView _view;
         private WaveSpec[] _specs;
 
         // 이벤트 기록 — 순서 확인용 문자열 + 값
@@ -192,7 +190,6 @@ namespace QL.Tests.PlayMode
             _combat = Object.FindAnyObjectByType<DroneCombat>();
             _summon = Object.FindAnyObjectByType<SummonController>();
             _rewarder = Object.FindAnyObjectByType<KillRewarder>();
-            _view = Object.FindAnyObjectByType<ContaminationView>();
             Assert.IsNotNull(_bootstrap);
             Assert.IsNotNull(_runner);
             Assert.IsNotNull(_registry);
@@ -201,7 +198,6 @@ namespace QL.Tests.PlayMode
             Assert.IsNotNull(_combat);
             Assert.IsNotNull(_summon);
             Assert.IsNotNull(_rewarder);
-            Assert.IsNotNull(_view, "Game.unity 에 ContaminationView (임시 오염 표시) 가 없다");
 
             _drag.enabled = false; // 실제 마우스가 끼어들지 않게
             Time.timeScale = 0f;   // 시간은 테스트가 Step 으로
@@ -279,9 +275,9 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(1, ContaminatedCount(), "다른 레인 · 다른 칸 그대로");
             Assert.AreEqual(Config.ContaminateDuration, _contaminatedDuration[0], 1e-5f, "duration = ContaminateDuration");
 
-            yield return null; // LateUpdate — 임시 표시
-            Assert.IsTrue(_view.IsShown(cell), "오염 칸 임시 표시가 켜진다");
-            Assert.AreEqual(1, _view.VisibleCount);
+            yield return null; // 한 프레임 뒤에도 GridModel 상태 그대로 (보류함 28 — 임시 표시 ContaminationView 삭제, 표시는 O03 ContaminationFx)
+            Assert.IsTrue(Grid.Get(cell).IsContaminated, "오염 칸 상태가 유지된다");
+            Assert.AreEqual(1, ContaminatedCount());
 
             // 레인을 다 채운 뒤 한 번 더 — 후보 없음 → 이벤트 없음
             for (int i = 1; i < Grid.RowCount; i++) BreachLane(TestLane);
@@ -350,7 +346,7 @@ namespace QL.Tests.PlayMode
             Assert.Greater(resumed, 0, "청소 뒤 다시 공격");
 
             yield return null;
-            Assert.AreEqual(0, _view.VisibleCount, "표시도 꺼진다");
+            Assert.AreEqual(0, ContaminatedCount(), "오염 칸 0 (GridModel)");
 
             // 같은 목록을 다시 읽어도 (Grid.Tick 없이 Step) 청소 이벤트를 두 번 내지 않는다
             int cleaned = _cleanedCell.Count;

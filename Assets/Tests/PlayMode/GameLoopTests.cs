@@ -54,6 +54,10 @@ namespace QL.Tests.PlayMode
         private readonly List<ResultSummary> _ended = new List<ResultSummary>();
         private readonly List<int> _coinDeltas = new List<int>();
         private readonly List<int> _reachedDamage = new List<int>();
+        /// <summary>GameLoop 가 받아들인(해치 피해를 낸) 격리선 도달의 레인 (0부터) — 보류함 19 MostBreachedLane 기대값.</summary>
+        private readonly List<int> _reachedLane = new List<int>();
+        private readonly List<int> _payTotals = new List<int>();
+        private int _hatchSeenAtReach;
         private int _killed;
         private int _droneSpawned;
 
@@ -113,7 +117,14 @@ namespace QL.Tests.PlayMode
             GameEvents.GameEnded += r => _ended.Add(r);
             GameEvents.CoinChanged += (now, delta) => _coinDeltas.Add(delta);
             GameEvents.SlimeKilled += s => _killed++;
-            GameEvents.SlimeReachedHatch += s => _reachedDamage.Add(s.HatchDamage);
+            GameEvents.SlimeReachedHatch += s =>
+            {
+                _reachedDamage.Add(s.HatchDamage);
+                // GameLoop 핸들러(OnEnable 구독 = 먼저)가 받아들였으면 HatchHpChanged 가 하나 늘어 있다
+                if (_hatchNow.Count > _hatchSeenAtReach) _reachedLane.Add(s.Lane);
+                _hatchSeenAtReach = _hatchNow.Count;
+            };
+            GameEvents.WaveCleared += (i, p) => _payTotals.Add(p.Total);
             GameEvents.DroneSpawned += (c, t, g) => _droneSpawned++;
         }
 
@@ -131,6 +142,9 @@ namespace QL.Tests.PlayMode
             _ended.Clear();
             _coinDeltas.Clear();
             _reachedDamage.Clear();
+            _reachedLane.Clear();
+            _payTotals.Clear();
+            _hatchSeenAtReach = 0;
             _killed = 0;
             _droneSpawned = 0;
         }
@@ -307,6 +321,22 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(GameState.Result, _states[_states.Count - 1]);
             Assert.AreEqual(0f, Time.timeScale);
 
+            // 보류함 19 — U11 결과 필드: 도달 웨이브 · 깬 웨이브 · 보너스 합 · 많이 뚫린 레인
+            ResultSummary r = _ended[0];
+            Assert.AreEqual(Flow.WaveIndex + 1, r.WaveReached, "WaveReached = 끝난 웨이브 번호 (1부터)");
+            Assert.AreEqual(_specs.Length, r.WaveCount);
+            Assert.AreEqual(r.WaveReached - 1, r.WavesCleared, "패배 → 깬 웨이브 = 도달 − 1");
+            int pay = 0;
+            for (int i = 0; i < _payTotals.Count; i++) pay += _payTotals[i];
+            Assert.AreEqual(pay, r.BonusEarned, "BonusEarned = WaveCleared Pay.Total 합");
+            Assert.Greater(_reachedLane.Count, 0, "격리선 도달 기록");
+            int[] perLane = new int[Grid.LaneCount];
+            for (int i = 0; i < _reachedLane.Count; i++) perLane[_reachedLane[i]]++;
+            int bestLane = 0;
+            for (int lane = 1; lane < perLane.Length; lane++) if (perLane[lane] > perLane[bestLane]) bestLane = lane;
+            Assert.AreEqual(bestLane + 1, r.MostBreachedLane, "MostBreachedLane = 가장 많이 닿은 레인 (1부터, 동점이면 낮은 번호)");
+            Assert.AreEqual(perLane[bestLane], r.MostBreachedCount, "MostBreachedCount");
+
             // 결과 뒤 Step 은 아무것도 하지 않는다
             int ended = _ended.Count;
             int alive = _registry.AliveCount;
@@ -398,6 +428,13 @@ namespace QL.Tests.PlayMode
             int bonusSum = 0;
             for (int w = 0; w < _specs.Length; w++) bonusSum += _specs[w].ClearBonus;
             Assert.AreEqual(bonusSum, r.BonusEarned, "BonusEarned = Pay.Total 합 (청소 없음 → ClearBonus 합, 마지막 웨이브 포함)");
+            // 보류함 19 — 승리: 도달 = 깬 = 전체 웨이브, 뚫린 레인 없음 (0 = 없음)
+            Assert.AreEqual(_specs.Length, r.WaveCount);
+            Assert.AreEqual(_specs.Length, r.WaveReached, "승리 → WaveReached = WaveCount");
+            Assert.AreEqual(_specs.Length, r.WavesCleared);
+            Assert.AreEqual(0, _reachedLane.Count, "도달 없음");
+            Assert.AreEqual(0, r.MostBreachedLane, "뚫린 레인 없음 → 0");
+            Assert.AreEqual(0, r.MostBreachedCount);
             Assert.AreEqual(0f, Time.timeScale);
             yield return null;
         }

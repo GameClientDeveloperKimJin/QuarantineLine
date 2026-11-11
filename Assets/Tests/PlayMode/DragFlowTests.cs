@@ -332,6 +332,84 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(maxGrade, _board.ViewAt(alive[0]).Grade);
         }
 
+        /// <summary>G09 — 머지 뒤 대상 뷰의 등급 부품(자식 Part_G2 · Part_G3)이 새 등급대로 켜진다. 드론 3종 모두.</summary>
+        [UnityTest]
+        public IEnumerator Merge_SwitchesGradePartChildren_AllTypes()
+        {
+            DroneType[] types = { DroneType.Suction, DroneType.Plasma, DroneType.Cryo };
+            for (int t = 0; t < types.Length; t++)
+            {
+                DroneType type = types[t];
+                Assume.That(_bootstrap.Catalog.MaxGrade(type), Is.GreaterThanOrEqualTo(3));
+                // 줄 t 의 레인 0~3 에 1등급 넷 → (0→1) · (2→3) 2등급 둘 → (1→3) 3등급
+                int a = Place(0, t, type, 1), b = Place(1, t, type, 1), c = Place(2, t, type, 1), d = Place(3, t, type, 1);
+                AssertParts(_board.ViewAt(b), false, false, type + " 1등급");
+
+                Assert.AreEqual(DropOutcome.Merge, DragTo(a, b).Outcome);
+                Assert.AreEqual(DropOutcome.Merge, DragTo(c, d).Outcome);
+                AssertParts(_board.ViewAt(b), true, false, type + " 머지 → 2등급");
+                AssertParts(_board.ViewAt(d), true, false, type + " 머지 → 2등급");
+
+                yield return WaitUnlocked(b);
+                yield return WaitUnlocked(d);
+                Assert.AreEqual(DropOutcome.Merge, DragTo(b, d).Outcome);
+                AssertParts(_board.ViewAt(d), true, true, type + " 머지 → 3등급");
+            }
+        }
+
+        private static void AssertParts(DroneView view, bool g2, bool g3, string what)
+        {
+            Assert.IsNotNull(view, what + " 뷰 없음");
+            Transform p2 = FindChild(view.transform, "Part_G2");
+            Transform p3 = FindChild(view.transform, "Part_G3");
+            Assert.IsNotNull(p2, what + " — 자식 Part_G2 가 없다 (서브메시 대체 경로)");
+            Assert.IsNotNull(p3, what + " — 자식 Part_G3 가 없다 (서브메시 대체 경로)");
+            Assert.AreEqual(g2, p2.gameObject.activeInHierarchy, what + " Part_G2");
+            Assert.AreEqual(g3, p3.gameObject.activeInHierarchy, what + " Part_G3");
+        }
+
+        private static Transform FindChild(Transform root, string childName)
+        {
+            foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name == childName) return t;
+            return null;
+        }
+
+        /// <summary>보류함 16 — Clear() 는 SetHover(-1) · Set(-1, null) 경로로 지워 호버 · 미리보기 해제 이벤트를 한 번씩 낸다.</summary>
+        [UnityTest]
+        public IEnumerator HighlighterClear_RaisesHoverAndPreviewOff_Once()
+        {
+            int hoverCell = Grid.IndexOf(1, 1);
+            int previewCell = Grid.IndexOf(3, 0);
+            _highlighter.SetOrigin(Grid.IndexOf(0, 0));
+            _highlighter.SetHover(hoverCell);
+            _highlighter.Set(previewCell, DropOutcome.Merge);
+            Assert.AreNotEqual(_highlighter.ColorAt(0), _highlighter.ColorAt(previewCell));
+
+            var hovers = new List<int>();
+            var previews = new List<int>();
+            var previewHas = new List<bool>();
+            GameEvents.CellHoverChanged += c => hovers.Add(c);
+            GameEvents.DropPreviewChanged += (c, o, has) => { previews.Add(c); previewHas.Add(has); };
+
+            _highlighter.Clear();
+
+            Assert.AreEqual(new[] { -1 }, hovers.ToArray(), "CellHoverChanged(-1) 1번");
+            Assert.AreEqual(new[] { -1 }, previews.ToArray(), "DropPreviewChanged(-1) 1번");
+            Assert.IsFalse(previewHas[0], "has = false");
+            Assert.AreEqual(-1, _highlighter.OriginIndex);
+            Assert.AreEqual(-1, _highlighter.PreviewIndex);
+            Assert.AreEqual(-1, _highlighter.HoverIndex);
+            Color normal = _highlighter.ColorAt(Grid.IndexOf(4, 2)); // 한 번도 칠하지 않은 칸 = normal
+            for (int i = 0; i < Grid.CellCount; i++)
+                Assert.AreEqual(normal, _highlighter.ColorAt(i), "칸 " + i + " 이 normal 로 돌아오지 않았다");
+
+            _highlighter.Clear(); // 이미 비었으면 이벤트 없음
+            Assert.AreEqual(1, hovers.Count);
+            Assert.AreEqual(1, previews.Count);
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator Views_AlwaysMatchGrid()
         {

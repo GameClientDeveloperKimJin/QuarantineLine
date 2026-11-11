@@ -94,13 +94,16 @@ namespace QL.Game.Input
             GameEvents.RaiseCellHoverChanged(index);
         }
 
-        /// <summary>모든 상태 해제, 칠한 칸만 normal 로.</summary>
+        /// <summary>
+        /// 모든 상태 해제 — SetOrigin · Set · SetHover 의 -1 경로로 지워 호버 · 미리보기가 있었으면 이벤트를 낸다
+        /// (U03 외곽선 · 사거리 띠가 남지 않게, 보류함 16). 남은 칠은 normal 로.
+        /// </summary>
         public void Clear()
         {
             if (!EnsureReady()) return;
-            _origin = None;
-            _preview = None;
-            _hover = None;
+            SetOrigin(None);
+            Set(None, null);
+            SetHover(None);
             for (int i = 0; i < _renderers.Length; i++) Paint(i, normal);
         }
 

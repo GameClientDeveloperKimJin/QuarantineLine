@@ -225,57 +225,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 1070923775770208205, guid: 451f3ff5326e1864d8c81afb74501092, type: 3}
   m_PrefabInstance: {fileID: 16094960}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &79228828
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 79228830}
-  - component: {fileID: 79228829}
-  m_Layer: 0
-  m_Name: '[Contamination]'
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &79228829
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 79228828}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 19b74c05aef3c4a49801ba66a822b689, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: QL.Game::QL.Game.Grid.ContaminationView
-  bootstrap: {fileID: 916952042}
-  plateMaterial: {fileID: 2100000, guid: a4bb2d541722c2b45b3b30cf06e1b5f8, type: 2}
-  color: {r: 0.35, g: 1, b: 0.2, a: 1}
-  maxAlpha: 0
-  minAlpha: 0
-  sizeRatio: 0.95
-  yOffset: 0.03
---- !u!4 &79228830
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 79228828}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &129237095
 GameObject:
   m_ObjectHideFlags: 0
@@ -922,6 +871,7 @@ MonoBehaviour:
   hatchMaterial: {fileID: 2100000, guid: 71395de71ca8c9143a3de6ada1e15dce, type: 2}
   spawnLineMaterial: {fileID: 2100000, guid: da7dc1277d88df2438a6a8f3e48a7086, type: 2}
   laserMaterial: {fileID: 2100000, guid: a7c926b6da2c55947b6d51cb7ed46fd3, type: 2}
+  laneLineMaterial: {fileID: 2100000, guid: aa6ea24f274b0cb459efcc3559efd6f2, type: 2}
   lineSill: {fileID: 2334797657807792110, guid: 1a352e6d63faf3c4aa76336c90098cd0, type: 3}
   linePost: {fileID: 2489912361597177375, guid: 5f7f69f83dfe91a42b571cc11243e725, type: 3}
   wallPanel: {fileID: 8869888741690603275, guid: a95006e302650084ab678e71277fa64f, type: 3}
@@ -1062,7 +1012,13 @@ MonoBehaviour:
     z: 8.6
     yaw: 180
   outerFlipX: 1
+  laneLineWidthCells: 0.03
+  laneLineColor: {r: 0.1, g: 0.85, b: 0.9, a: 1}
+  laneLineIntensity: 1.2
+  laneLineEdges: 1
+  laneLineStaticBatch: 1
   laneYOffset: 0.005
+  laneLineYOffset: 0.008
   cellYOffset: 0.01
   spawnLineYOffset: 0.01
   gizmoRadius: 0.08
@@ -1749,7 +1705,6 @@ SceneRoots:
   m_Roots:
   - {fileID: 916952043}
   - {fileID: 982715536}
-  - {fileID: 79228830}
   - {fileID: 472742588}
   - {fileID: 653306844}
   - {fileID: 1840085649}

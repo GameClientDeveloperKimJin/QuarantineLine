@@ -8,6 +8,7 @@ namespace QL.Game.Stage
     /// 크기 · 위치는 전부 GridSpace / RuleConfig. 아래 직렬화 기본값은 표시용 비율 · 연출값만.
     /// G07: 무대 모듈 프리팹(루트 + 자식 Model) 칸이 차 있으면 그것을 깔고, 비어 있으면 예전 임시 도형(바닥 · 턱 큐브)을 쓴다.
     /// 모듈 배치는 _아트납품.md A09 표 — Config(레인 · 줄 · 길이 · 칸 크기)와 아래 칸 단위 오프셋으로 계산한다. 시작 때 한 번만.
+    /// G10: 복도 벽 바깥(Outer) — A11 데크 판 · 컨테이너 더미를 배치좌표.md 표(직렬화 배열) 그대로 깐다.
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
     {
@@ -98,6 +99,42 @@ namespace QL.Game.Stage
         [SerializeField] private bool mirrorByRotation;
         [Tooltip("스폰 게이트가 있으면 스폰선 띠를 끈다 (게이트 앞면과 같은 z — 판정과 무관)")]
         [SerializeField] private bool hideSpawnLineWithGate = true;
+
+        [Header("복도 바깥 — 화물 격납고 데크 (A11 배치좌표.md, 칸 단위)")]
+        [Tooltip("데크 판 4×4 — 비우면 데크 없음")]
+        [SerializeField] private GameObject outerDeck;
+        [Tooltip("컨테이너 더미 (높음, 경고등) — 비우면 그 더미 없음")]
+        [SerializeField] private GameObject outerStackHigh;
+        [Tooltip("컨테이너 더미 (낮음)")]
+        [SerializeField] private GameObject outerStackLow;
+        [Tooltip("색 B — 높은 더미에 바꿔 끼울 재질 (같은 메시)")]
+        [SerializeField] private Material outerStackHighMaterialB;
+        [Tooltip("색 B — 낮은 더미에 바꿔 끼울 재질")]
+        [SerializeField] private Material outerStackLowMaterialB;
+        [Tooltip("바깥 전체 높이 (복도 바닥보다 아래)")]
+        [SerializeField] private float outerYCells;
+        [Tooltip("데크 판 중심 |x| — 좌우 양쪽에 같은 값으로 깐다")]
+        [SerializeField] private float[] outerDeckX;
+        [Tooltip("데크 판 중심 z")]
+        [SerializeField] private float[] outerDeckZ;
+        [Tooltip("컨테이너 더미 자리 — 배치좌표.md 표 그대로 (x 는 납품 OBJ 좌표)")]
+        [SerializeField] private OuterStackSlot[] outerStacks;
+        [Tooltip("표의 x 를 뒤집어 놓는다. Unity 의 OBJ import 가 x 를 반전하므로, 납품 미리보기와 같은 쪽에 놓으려면 켠다 (메시도 이미 반전돼 있어 장면 전체가 미리보기와 같아진다)")]
+        [SerializeField] private bool outerFlipX = true;
+
+        /// <summary>바깥 컨테이너 더미 한 자리 (배치좌표.md 표 한 줄).</summary>
+        [System.Serializable]
+        public struct OuterStackSlot
+        {
+            [Tooltip("true = StackHigh · false = StackLow")]
+            public bool high;
+            [Tooltip("색 B 재질")]
+            public bool colorB;
+            public float x;
+            public float z;
+            [Tooltip("Y 회전 (도)")]
+            public float yaw;
+        }
 
         [Header("겹침 방지 y 오프셋 (월드)")]
         [SerializeField] private float laneYOffset = 0.005f;
@@ -273,6 +310,53 @@ namespace QL.Game.Stage
                         new Vector3(side * crateX, slot.y * crateHeightCells * cs, slot.z * cs), cs, false);
                 }
             }
+
+            BuildOuter(root, cs);
+        }
+
+        /// <summary>복도 벽 바깥 — 데크 판 · 컨테이너 더미 (A11). 판정과 무관한 배경, Collider 없음.</summary>
+        private void BuildOuter(Transform root, float cs)
+        {
+            bool hasDeck = outerDeck != null && outerDeckX != null && outerDeckZ != null;
+            bool hasStacks = outerStacks != null && (outerStackHigh != null || outerStackLow != null);
+            if (!hasDeck && !hasStacks) return;
+
+            Transform outer = CreateGroup("Outer", root);
+            float y = outerYCells * cs;
+            float flip = outerFlipX ? -1f : 1f;
+
+            if (hasDeck)
+            {
+                Transform decks = CreateGroup("Deck", outer);
+                for (int iz = 0; iz < outerDeckZ.Length; iz++)
+                for (int ix = 0; ix < outerDeckX.Length; ix++)
+                {
+                    float x = outerDeckX[ix] * cs;
+                    float z = outerDeckZ[iz] * cs;
+                    PlaceModule(outerDeck, decks, "Deck_L_" + ix + "_" + iz, new Vector3(-x, y, z), cs, false);
+                    PlaceModule(outerDeck, decks, "Deck_R_" + ix + "_" + iz, new Vector3(x, y, z), cs, false);
+                }
+            }
+
+            if (hasStacks)
+            {
+                Transform stacks = CreateGroup("Stacks", outer);
+                for (int i = 0; i < outerStacks.Length; i++)
+                {
+                    OuterStackSlot slot = outerStacks[i];
+                    GameObject prefab = slot.high ? outerStackHigh : outerStackLow;
+                    if (prefab == null) continue;
+                    GameObject go = PlaceModule(prefab, stacks, "Stack_" + i.ToString("00") + (slot.high ? "_High" : "_Low"),
+                        new Vector3(flip * slot.x * cs, y, slot.z * cs), cs, false);
+                    go.transform.localRotation = Quaternion.Euler(0f, flip * slot.yaw, 0f) * go.transform.localRotation;
+                    Material b = slot.high ? outerStackHighMaterialB : outerStackLowMaterialB;
+                    if (slot.colorB && b != null)
+                    {
+                        MeshRenderer[] renderers = go.GetComponentsInChildren<MeshRenderer>();
+                        for (int r = 0; r < renderers.Length; r++) renderers[r].sharedMaterial = b;
+                    }
+                }
+            }
         }
 
         /// <summary>좌우 ±x 에 z 범위를 length 간격으로 이어 붙인다 (벽 · 배관).</summary>
@@ -296,7 +380,7 @@ namespace QL.Game.Stage
         }
 
         /// <summary>모듈 프리팹 하나를 놓는다. mirror = 좌우 뒤집기 (scale.x = −1, mirrorByRotation 이면 Y 180°).</summary>
-        private void PlaceModule(GameObject prefab, Transform parent, string objectName, Vector3 localPosition,
+        private GameObject PlaceModule(GameObject prefab, Transform parent, string objectName, Vector3 localPosition,
             float scale, bool mirror)
         {
             GameObject go = Instantiate(prefab, parent);
@@ -312,6 +396,7 @@ namespace QL.Game.Stage
             t.localPosition = localPosition;
             t.localRotation = r;
             t.localScale = s;
+            return go;
         }
 
         private static Transform CreateGroup(string name, Transform parent)

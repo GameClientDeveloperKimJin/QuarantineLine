@@ -803,6 +803,106 @@ MonoBehaviour:
   mirrorLeftSide: 1
   mirrorByRotation: 0
   hideSpawnLineWithGate: 1
+  outerDeck: {fileID: 6220784918239956979, guid: 88d1441d97517fc48b642a44a211771e, type: 3}
+  outerStackHigh: {fileID: 7993497022503132867, guid: f92c71ab099f3904fa81e4f78e20edef, type: 3}
+  outerStackLow: {fileID: 6127203152307744731, guid: febd35dd147e7da4b951ffd581d98363, type: 3}
+  outerStackHighMaterialB: {fileID: 2100000, guid: 52b52624072ffdb4a937b721a21a2d72, type: 2}
+  outerStackLowMaterialB: {fileID: 2100000, guid: 34cbc849e7fcb6e4cb4dd3b0c1380dcd, type: 2}
+  outerYCells: -1
+  outerDeckX:
+  - 6
+  - 10
+  - 14
+  outerDeckZ:
+  - -8
+  - -4
+  - 0
+  - 4
+  - 8
+  - 12
+  - 16
+  outerStacks:
+  - high: 0
+    colorB: 0
+    x: -5.1
+    z: -3
+    yaw: 0
+  - high: 1
+    colorB: 0
+    x: -5.3
+    z: 0
+    yaw: 0
+  - high: 1
+    colorB: 1
+    x: -7.4
+    z: -1
+    yaw: 180
+  - high: 0
+    colorB: 1
+    x: -5.2
+    z: 3.4
+    yaw: 180
+  - high: 1
+    colorB: 1
+    x: -5.3
+    z: 6.6
+    yaw: 0
+  - high: 0
+    colorB: 0
+    x: -7.6
+    z: 5
+    yaw: 0
+  - high: 1
+    colorB: 0
+    x: -5.3
+    z: 9.6
+    yaw: 180
+  - high: 1
+    colorB: 0
+    x: -7.6
+    z: 10.5
+    yaw: 0
+  - high: 0
+    colorB: 1
+    x: 5.2
+    z: -2.4
+    yaw: 0
+  - high: 0
+    colorB: 0
+    x: 7.3
+    z: -3.6
+    yaw: 180
+  - high: 1
+    colorB: 1
+    x: 5.3
+    z: 1.6
+    yaw: 180
+  - high: 1
+    colorB: 0
+    x: 5.3
+    z: 4.8
+    yaw: 0
+  - high: 0
+    colorB: 1
+    x: 7.5
+    z: 3
+    yaw: 0
+  - high: 0
+    colorB: 0
+    x: 5.2
+    z: 8.2
+    yaw: 180
+  - high: 1
+    colorB: 1
+    x: 5.3
+    z: 11
+    yaw: 0
+  - high: 1
+    colorB: 0
+    x: 7.6
+    z: 8.6
+    yaw: 180
+  outerFlipX: 1
   laneYOffset: 0.005
   cellYOffset: 0.01
   spawnLineYOffset: 0.01

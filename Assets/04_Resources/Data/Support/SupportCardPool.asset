@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a905655abb6dfee4fb30408f5531f543, type: 3}
+  m_Name: SupportCardPool
+  m_EditorClassIdentifier: QL.Data::QL.Data.SupportCardPool
+  cards:
+  - {fileID: 11400000, guid: 066965cf9d2c9f1429d93bd6ba60814a, type: 2}
+  - {fileID: 11400000, guid: 7be7fa95cf1f88746b9dc27eb40d9ba3, type: 2}
+  - {fileID: 11400000, guid: 8b44a6de77a29f846be277722882ddf4, type: 2}
+  - {fileID: 11400000, guid: fd70fc9e1cb902d498b0a2a03de40cff, type: 2}
+  - {fileID: 11400000, guid: 7f20ab0a1394155458d37061899bb1d2, type: 2}
+  - {fileID: 11400000, guid: 44c68cab333fa9848b99ad4ed8362f0a, type: 2}
+  - {fileID: 11400000, guid: 2c5abc17fa7a64840afe367a68480700, type: 2}
+  - {fileID: 11400000, guid: f12c2d2976f3ce143ae79c56526651d7, type: 2}
+  - {fileID: 11400000, guid: ad1b00ff71c630e4e9b74df90a46ab8c, type: 2}
+  - {fileID: 11400000, guid: f74385fcb7609bd4b900098b1746a0ba, type: 2}
+  - {fileID: 11400000, guid: f5d5f311db0a6a244a760a3db3f749c2, type: 2}
+  - {fileID: 11400000, guid: 936800b58b4f8894588937757beef26a, type: 2}
+  - {fileID: 11400000, guid: 095fd3cfbc6c0914da7fa03bc3e2bc9a, type: 2}
+  - {fileID: 11400000, guid: 67546bf6773b3334d90a18804b43ce41, type: 2}
+  - {fileID: 11400000, guid: afb07170f930e444b92c79cbae02e9a7, type: 2}
+  - {fileID: 11400000, guid: a66847d74c52eb94fa84c51cc4c62057, type: 2}

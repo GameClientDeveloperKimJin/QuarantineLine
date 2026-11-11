@@ -1,5 +1,6 @@
 using System;
 using QL.Core.Stats;
+using QL.Core.Support;
 using QL.Core.Waves;
 
 namespace QL.Core.Flow
@@ -107,6 +108,21 @@ namespace QL.Core.Flow
                 throw new ArgumentOutOfRangeException(nameof(hatchDamage), hatchDamage, "해치 피해는 1 이상");
             RemoveOneSlime();
             Hatch.TakeDamage(hatchDamage);
+        }
+
+        /// <summary>
+        /// (K02 · C13) 남은 수 -1 + 해치 피해 — 지원 카드 HatchShield 가 남았으면 1회 써서 피해 무효.
+        /// 같은 프레임에 여러 마리면 먼저 부른 1마리만 막힌다. 막혔으면 true. mods 가 null 이면 기존과 같다.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">웨이브 중(멈춤 포함)이 아니거나 남은 점액이 없음</exception>
+        /// <exception cref="ArgumentOutOfRangeException">hatchDamage ≤ 0</exception>
+        public bool NotifySlimeReachedLine(int hatchDamage, RunModifiers mods)
+        {
+            if (hatchDamage <= 0)
+                throw new ArgumentOutOfRangeException(nameof(hatchDamage), hatchDamage, "해치 피해는 1 이상");
+            RemoveOneSlime();
+            Hatch.TakeDamage(hatchDamage, mods, out bool blocked);
+            return blocked;
         }
 
         /// <summary>

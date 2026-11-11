@@ -36,6 +36,23 @@ namespace QL.Core.Grid
             }
         }
 
+        /// <summary>(K02 · C15) 등급 올림 카드가 먹는 머지의 원래 등급 — 1등급끼리 (기획 수치가 아니라 규칙).</summary>
+        public const int BoostSourceGrade = 1;
+
+        /// <summary>
+        /// (K02 · C15) 머지 직후 등급에 extraGrades 를 더한 등급, 그 종류 최고 등급에서 멈춤. extraGrades ≤ 0 이면 그대로.
+        /// </summary>
+        /// <exception cref="ArgumentNullException">catalog 가 null</exception>
+        public static int BoostedGrade(UnitCatalog catalog, DroneType type, int mergedGrade, int extraGrades)
+        {
+            if (catalog == null) throw new ArgumentNullException(nameof(catalog));
+            if (extraGrades <= 0) return mergedGrade;
+
+            int max = catalog.MaxGrade(type);
+            int target = mergedGrade + extraGrades;
+            return target < max ? target : (max > mergedGrade ? max : mergedGrade);
+        }
+
         private static bool SameKind(in Cell from, in Cell to)
         {
             return from.Type == to.Type && from.Grade == to.Grade;

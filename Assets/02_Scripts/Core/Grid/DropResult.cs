@@ -12,13 +12,22 @@ namespace QL.Core.Grid
         /// <summary>Merge · MergeClean 이면 올라간 등급, 아니면 끌던 드론 등급 (SwapClean 은 그대로).</summary>
         public int NewGrade { get; }
 
+        /// <summary>(K02 · C15) 지원 카드로 등급이 한 번에 더 올랐음 (MergeGradeBoost 1회 소모됨).</summary>
+        public bool GradeBoosted { get; }
+
         public DropResult(DropOutcome outcome, int from, int to, DroneType type, int newGrade)
+            : this(outcome, from, to, type, newGrade, false)
+        {
+        }
+
+        public DropResult(DropOutcome outcome, int from, int to, DroneType type, int newGrade, bool gradeBoosted)
         {
             Outcome = outcome;
             From = from;
             To = to;
             Type = type;
             NewGrade = newGrade;
+            GradeBoosted = gradeBoosted;
         }
     }
 }

@@ -27,3 +27,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2bc3b9f0264b09149a14d4b707e5d4c4, type: 2}
   waves: {fileID: 11400000, guid: 64647aea89c89964d97cc83e48e34fac, type: 2}
   config: {fileID: 11400000, guid: 53431518c1fe08e4d828760e1656fc15, type: 2}
+  supportCards: {fileID: 11400000, guid: fcf05b7a17efa4c4789e70f388bb42c4, type: 2}

@@ -1,5 +1,6 @@
 using System;
 using QL.Core.Stats;
+using QL.Core.Support;
 using QL.Core.Units;
 
 namespace QL.Core.Grid
@@ -137,6 +138,17 @@ namespace QL.Core.Grid
         /// <exception cref="InvalidOperationException">드래그 중이 아님</exception>
         public DropResult Drop(int to)
         {
+            return Drop(to, null);
+        }
+
+        /// <summary>
+        /// (K02 · C15) <see cref="Drop(int)"/> + 지원 카드 MergeGradeBoost — 1등급끼리 머지 (Merge · MergeClean) 면
+        /// 1회 써서 등급을 효과 값만큼 더 올린다 (최고 등급에서 멈춤). 2등급 이상 머지 · Swap · SwapClean 에서는 쓰지 않는다.
+        /// 더 올릴 등급이 없으면 (최고 등급 = 머지 결과) 쓰지 않는다. mods 가 null 이면 Drop(int) 와 같다.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">드래그 중이 아님</exception>
+        public DropResult Drop(int to, RunModifiers mods)
+        {
             if (DraggingIndex == None) throw new InvalidOperationException("드래그 중이 아니다");
 
             int from = DraggingIndex;
@@ -150,6 +162,7 @@ namespace QL.Core.Grid
 
             DroneType type = fromCell.Type;
             int grade = fromCell.Grade;
+            bool boosted = false;
 
             switch (outcome)
             {
@@ -160,6 +173,7 @@ namespace QL.Core.Grid
 
                 case DropOutcome.Merge:
                     grade += 1;
+                    boosted = TryBoost(mods, type, ref grade);
                     ClearDrone(from);
                     SetDrone(to, type, grade);
                     _lockRemaining[to] = _mergeLockDuration;
@@ -172,6 +186,7 @@ namespace QL.Core.Grid
 
                 case DropOutcome.MergeClean:
                     grade += 1;
+                    boosted = TryBoost(mods, type, ref grade);
                     ClearDrone(from);
                     SetDrone(to, type, grade);
                     _contaminated[to] = false;
@@ -190,7 +205,22 @@ namespace QL.Core.Grid
                 // Reject · Return: 칸 상태 그대로
             }
 
-            return new DropResult(outcome, from, to, type, grade);
+            return new DropResult(outcome, from, to, type, grade, boosted);
+        }
+
+        /// <summary>grade = 머지 직후 등급 (원래 + 1). 올렸으면 소모하고 true.</summary>
+        private bool TryBoost(RunModifiers mods, DroneType type, ref int grade)
+        {
+            if (mods == null || grade - 1 != MergeRule.BoostSourceGrade) return false;
+            if (!mods.TryGetCounted(StatKey.MergeGradeBoost, out CardEffectSpec effect)) return false;
+
+            int extra = (int)Math.Round(effect.Value, MidpointRounding.AwayFromZero);
+            int target = MergeRule.BoostedGrade(_catalog, type, grade, extra);
+            if (target <= grade) return false;
+
+            mods.TryConsume(StatKey.MergeGradeBoost);
+            grade = target;
+            return true;
         }
 
         /// <summary>드래그 중이 아니어도 안전. 칸 상태는 바꾸지 않는다.</summary>

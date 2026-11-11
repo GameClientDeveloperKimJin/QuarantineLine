@@ -15,11 +15,15 @@ namespace QL.Data
         [SerializeField] private EnemyData[] enemies;
         [SerializeField] private WaveData waves;
         [SerializeField] private GameConfig config;
+        [Tooltip("업무 지원 카드 풀 (K01). 비어 있으면 카드 선택 없음")]
+        [SerializeField] private SupportCardPool supportCards;
 
         public IReadOnlyList<UnitData> Units => units ?? Array.Empty<UnitData>();
         public IReadOnlyList<EnemyData> Enemies => enemies ?? Array.Empty<EnemyData>();
         public WaveData Waves => waves;
         public GameConfig Config => config;
+        /// <summary>null 가능 (K01 에셋 만들기 전).</summary>
+        public SupportCardPool SupportCards => supportCards;
 
         /// <exception cref="InvalidOperationException">units 에 빈 칸이 있음</exception>
         /// <exception cref="ArgumentException">UnitCatalog 검증 실패</exception>

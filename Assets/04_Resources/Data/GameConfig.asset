@@ -25,3 +25,17 @@ MonoBehaviour:
   contaminateDuration: 5
   cleanReward: 10
   randomSeed: 20261110
+  supportOfferCount: 3
+  supportRank: 0
+  supportDamagePercentMax: 0.5
+  supportAttackIntervalPercentMin: -0.3
+  supportRangeAddMax: 1
+  supportSlowRateMax: 0.7
+  supportSummonCostMin: 10
+  supportAbsentDroneWeight: 0.4
+  supportHatchLowHp: 10
+  supportHatchLowWeight: 2
+  supportHatchDangerHp: 5
+  supportHatchDangerWeight: 3
+  supportRerollsPerRun: 1
+  supportRerollUnlockRank: 1

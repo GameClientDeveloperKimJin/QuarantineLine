@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f503e0118217f7d49b9ac9a8783e079e, type: 3}
+  m_Name: Card_C08
+  m_EditorClassIdentifier: QL.Data::QL.Data.SupportCardData
+  id: C08
+  displayName: "\uAE34\uAE09 \uC218\uB9AC"
+  category: 2
+  icon: {fileID: 0}
+  description: "\uD574\uCE58 HP {value} (\uCD5C\uB300 20\uC744 \uB118\uC9C0 \uC54A\uC74C)"
+  effects:
+  - kind: 2
+    stat: 8
+    targetAll: 1
+    targetType: 0
+    op: 0
+    value: 3
+    count: 0
+    activeWave: 0
+  maxStacks: 0
+  unlockRank: 0
+  baseWeight: 1
+  drawCondition: 9

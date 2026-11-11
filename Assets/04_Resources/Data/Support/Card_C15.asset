@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f503e0118217f7d49b9ac9a8783e079e, type: 3}
+  m_Name: Card_C15
+  m_EditorClassIdentifier: QL.Data::QL.Data.SupportCardData
+  id: C15
+  displayName: "\uC0AC\uB0B4 \uAD50\uC721 \uC774\uC218"
+  category: 3
+  icon: {fileID: 0}
+  description: "\uB2E4\uC74C 1\uB4F1\uAE09\uB07C\uB9AC \uBA38\uC9C0 1\uD68C\uAC00
+    \uBC14\uB85C 3\uB4F1\uAE09"
+  effects:
+  - kind: 1
+    stat: 13
+    targetAll: 1
+    targetType: 0
+    op: 0
+    value: 1
+    count: 1
+    activeWave: 0
+  maxStacks: 1
+  unlockRank: 0
+  baseWeight: 1
+  drawCondition: 0

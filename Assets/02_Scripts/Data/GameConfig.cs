@@ -1,4 +1,5 @@
 using QL.Core.Stats;
+using QL.Core.Support;
 using UnityEngine;
 
 namespace QL.Data
@@ -31,6 +32,33 @@ namespace QL.Data
         [Header("난수")]
         [SerializeField] private int randomSeed;
 
+        [Header("업무 지원 카드 (K01)")]
+        [Tooltip("한 번에 보여 주는 카드 수")]
+        [SerializeField] private int supportOfferCount;
+        [Tooltip("현재 직급 — 승진 시스템 전까지 고정 (인턴)")]
+        [SerializeField] private JobRank supportRank;
+        [Tooltip("Damage 백분율 합계 최대 (+50% = 0.5)")]
+        [SerializeField] private float supportDamagePercentMax;
+        [Tooltip("AttackInterval 백분율 합계 최소 (-30% = -0.3)")]
+        [SerializeField] private float supportAttackIntervalPercentMin;
+        [Tooltip("Range 더하기 합계 최대 (칸)")]
+        [SerializeField] private float supportRangeAddMax;
+        [Tooltip("최종 감속률 최대 (0.7)")]
+        [SerializeField] private float supportSlowRateMax;
+        [Tooltip("할인 뒤 최소 소환 비용")]
+        [SerializeField] private int supportSummonCostMin;
+        [Tooltip("대상 종류 드론 0대일 때 가중치 배율")]
+        [SerializeField] private float supportAbsentDroneWeight;
+        [Tooltip("해치 HP 이 값 이하 → 수리 카드 가중치 supportHatchLowWeight")]
+        [SerializeField] private int supportHatchLowHp;
+        [SerializeField] private float supportHatchLowWeight;
+        [Tooltip("해치 HP 이 값 이하 → 수리 카드 반드시 포함")]
+        [SerializeField] private int supportHatchDangerHp;
+        [SerializeField] private float supportHatchDangerWeight;
+        [Tooltip("판당 다시 뽑기 횟수")]
+        [SerializeField] private int supportRerollsPerRun;
+        [SerializeField] private JobRank supportRerollUnlockRank;
+
         public int LaneCount => laneCount;
         public int RowCount => rowCount;
         public float PathLength => pathLength;
@@ -44,6 +72,8 @@ namespace QL.Data
         public float ContaminateDuration => contaminateDuration;
         public int CleanReward => cleanReward;
         public int RandomSeed => randomSeed;
+        public int SupportOfferCount => supportOfferCount;
+        public JobRank SupportRank => supportRank;
 
         public RuleConfig ToRuleConfig()
         {
@@ -53,6 +83,18 @@ namespace QL.Data
                 startCoin, summonBaseCost, summonCostStep,
                 mergeLockDuration, contaminateDuration, cleanReward,
                 randomSeed);
+        }
+
+        public SupportRules ToSupportRules()
+        {
+            return new SupportRules(
+                supportOfferCount,
+                supportDamagePercentMax, supportAttackIntervalPercentMin, supportRangeAddMax,
+                supportSlowRateMax, supportSummonCostMin,
+                supportAbsentDroneWeight,
+                supportHatchLowHp, supportHatchLowWeight,
+                supportHatchDangerHp, supportHatchDangerWeight,
+                supportRerollsPerRun, supportRerollUnlockRank);
         }
     }
 }

@@ -39,6 +39,8 @@
 - `GameLoop.Step`: `CellCleaned(false)` → `SlimeSpawned` → `SlimeReachedHatch` → `HatchHpChanged` → `RemainingSlimesChanged` → `CellContaminated` → `SlimeKilled` → `KillRewarded` → `CoinChanged` · `RemainingSlimesChanged` (구독 순) → `PrepTick` → `WaveStarted` → `RemainingSlimesChanged` → `WaveCleared` → `CoinChanged`(수당) → `StateChanged` → `WavePrepStarted` | `GameEnded`
 - 시작: `StateChanged(Prep)` → `WavePrepStarted` (첫 `PrepTick` 은 다음 Step)
 - 드롭: `DroneMerged` → `CellCleaned(true)` → `DragEnded`
+- 드롭 SwapClean (G11 — 오염 칸 최고 등급 위 같은 종류 최고 등급): `DroneSwapped(from,to)` → `CellCleaned(to,true)` → `DragEnded(from, SwapClean)` · `DroneMerged` 없음 (`DragController.cs:167`)
+- 바로 시작 (G11): `RequestStartWave` 다음 Step = `WaveStarted` → `RemainingSlimesChanged` → `StateChanged(Wave)` · `PrepTick` 없음 (`GameLoop.cs:133` PrepTick · `:139` WaveStarted)
 
 ## 시작값 — 이벤트가 없는 값은 직접 읽는다
 - 해치 HP: `HatchHpChanged` 는 피해 때만 온다 → HUD 는 시작 때 `GameLoop.Flow.Hatch.Hp / MaxHp` 를 읽는다
@@ -50,6 +52,7 @@
 - `CameraRig.SetShakeOffset(Vector3 local)` (U06 추가 — 흔들림 전용, zero = 원위치)
 - `SlimeCombat.Burning` (U05 추가 — 잔열 중 true, 읽기 전용)
 - `GameLoop`: `Flow`(GameFlow, 읽기) · `CanAct`(Prep · Wave 일 때만) · `LastResult` · `Step(dt)` · `HandleEscape()` (결과 상태면 `GoToTitle`) · `Restart()` · `HandleRestartKey()` (결과 상태에서만 Restart — R 키) · `GoToTitle()` (U11, timeScale 1 → Title 씬) · `IsReady`
+- `GameLoop.RequestStartWave()` · `IsPrep` · `PrepRemaining` (G11) — Prep 에서만 바로 웨이브 시작, Enter (숫자패드 포함). 그 밖 상태는 무시
 - 진짜 소환 버튼은 `SummonController.RequestSummon()` 을 부른다 (G03)
 - R4 슬롯: `Game.unity` 루트 빈 오브젝트 `[UI]` · `[FX]` · `[Audio]` (컴포넌트 없음)
 

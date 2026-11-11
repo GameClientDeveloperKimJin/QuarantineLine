@@ -550,6 +550,153 @@ namespace QL.Tests.PlayMode
             }
         }
 
+        // ── 준비 시간 잡아 두기 (G12) ─────────────────────────
+
+        [UnityTest]
+        public IEnumerator PrepHold_TenSeconds_PrepFrozen_SummonAndMergeWork()
+        {
+            var held = new List<bool>();
+            GameEvents.PrepHoldChanged += h => held.Add(h);
+            _loop.Step(Dt); // 첫 PrepTick
+            Assert.IsTrue(_loop.SetPrepHold(true));
+            Assert.IsTrue(_loop.IsPrepHeld);
+            Assert.IsTrue(_loop.SetPrepHold(true), "두 번 불러도 true");
+            CollectionAssert.AreEqual(new[] { true }, held, "바뀔 때만 PrepHoldChanged");
+
+            float before = _loop.PrepRemaining;
+            int ticks = _prepTicks.Count;
+            int steps = Mathf.CeilToInt(10f / Dt);
+            for (int i = 0; i < steps; i++) _loop.Step(Dt);
+            Assert.AreEqual(before, _loop.PrepRemaining, "10초 흘려도 그대로");
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.AreEqual(ticks, _prepTicks.Count, "잡혀 있는 동안 PrepTick 없음 (HUD = 마지막 값)");
+            Assert.AreEqual(0, _waveStartIndex.Count);
+
+            // 소환 · 머지 그대로 (머지 칸을 먼저 채워 소환이 그 칸에 들어가지 않게)
+            int from = PlaceDrone(Grid.CellCount - 1, DroneType.Suction, 1);
+            int to = PlaceDrone(Grid.CellCount - 2, DroneType.Suction, 1);
+            _bootstrap.Wallet.Add(_bootstrap.Config.SummonBaseCost * 10);
+            Assert.IsTrue(_loop.CanAct);
+            Assert.IsTrue(_summon.RequestSummon(), "잡혀 있어도 소환");
+            Assert.AreEqual(1, _droneSpawned);
+            Assert.IsTrue(_drag.BeginAt(from));
+            _drag.HoverAt(to, _bootstrap.Space.CellToWorld(to));
+            Assert.AreEqual(DropOutcome.Merge, _drag.ReleaseAt(to).Outcome, "잡혀 있어도 머지");
+            Assert.AreEqual(2, Grid.Get(to).Grade);
+            Assert.IsTrue(_loop.IsPrepHeld);
+
+            // 일시정지 · 재개 뒤에도 잡힌 채
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            Assert.IsFalse(_loop.SetPrepHold(true), "Paused 에서 새로 켜지 않음");
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+            Assert.IsTrue(_loop.IsPrepHeld, "일시정지로 풀리지 않는다");
+            _loop.Step(Dt);
+            Assert.AreEqual(before, _loop.PrepRemaining);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator PrepHold_Released_CountsDown_StartsWaveAsUsual()
+        {
+            var held = new List<bool>();
+            GameEvents.PrepHoldChanged += h => held.Add(h);
+            _loop.Step(Dt);
+            Assert.IsTrue(_loop.SetPrepHold(true));
+            for (int i = 0; i < 40; i++) _loop.Step(Dt);
+            float frozen = _loop.PrepRemaining;
+
+            Assert.IsTrue(_loop.SetPrepHold(false));
+            Assert.IsFalse(_loop.IsPrepHeld);
+            CollectionAssert.AreEqual(new[] { true, false }, held);
+            Assert.IsTrue(_loop.SetPrepHold(false), "이미 풀린 것을 또 풀어도 이벤트 없음");
+            Assert.AreEqual(2, held.Count);
+
+            _loop.Step(Dt);
+            Assert.Less(_loop.PrepRemaining, frozen, "다시 줄어든다");
+            int ticks = _prepTicks.Count;
+            StepToWave();
+            Assert.Greater(_prepTicks.Count, ticks, "PrepTick 다시 온다");
+            Assert.AreEqual(1, _waveStartIndex.Count, "0 이 되면 평소처럼 WaveStarted");
+            Assert.AreEqual(0, _waveStartIndex[0]);
+
+            // Wave 에선 무시
+            Assert.IsFalse(_loop.SetPrepHold(true), "Wave 에서 hold 무시");
+            Assert.IsFalse(_loop.IsPrepHeld);
+            Assert.AreEqual(2, held.Count);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator PrepHold_RequestStartWave_StartsNow_ReleasesHold()
+        {
+            var held = new List<bool>();
+            GameEvents.PrepHoldChanged += h => held.Add(h);
+            _loop.Step(Dt);
+            Assert.IsTrue(_loop.SetPrepHold(true));
+            int ticks = _prepTicks.Count;
+
+            Assert.IsTrue(_loop.RequestStartWave());
+            Assert.IsFalse(_loop.IsPrepHeld, "바로 시작 = hold 풀림");
+            CollectionAssert.AreEqual(new[] { true, false }, held);
+
+            _loop.Step(Dt);
+            Assert.AreEqual(GameState.Wave, Flow.State, "다음 Step 에 바로 시작");
+            Assert.AreEqual(1, _waveStartIndex.Count);
+            Assert.AreEqual(ticks, _prepTicks.Count, "PrepTick 없이 시작 (G11 과 같음)");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator PrepHold_ResultRestartGoToTitle_Released()
+        {
+            var held = new List<bool>();
+            GameEvents.PrepHoldChanged += h => held.Add(h);
+
+            // 결과 — 잡힌 채로 끝나는 길은 없다 (Prep 에서 판이 끝나지 않음) → 결과 뒤 켜기 무시만
+            StepToWave();
+            Flow.Hatch.TakeDamage(Flow.Hatch.Hp);
+            _loop.Step(Dt);
+            Assert.AreEqual(GameState.Result, Flow.State);
+            Assert.IsFalse(_loop.SetPrepHold(true), "Result 에서 hold 무시");
+            Assert.IsFalse(_loop.IsPrepHeld);
+
+            // Restart — 잡힌 채로 다시 하기 → 풀림 (이벤트) · 새 판도 false
+            GameLoop old = _loop;
+            ClearRecords();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            _loop.Restart();
+            yield return WaitForLoop(old);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Assert.IsFalse(_loop.IsPrepHeld, "새 판은 hold false");
+
+            GameEvents.PrepHoldChanged += h => held.Add(h); // 씬 재시작으로 ClearAll 됐다
+            held.Clear();
+            Assert.IsTrue(_loop.SetPrepHold(true));
+            old = _loop;
+            ClearRecords();
+            SceneManager.sceneLoaded += OnSceneLoaded;
+            _loop.Restart();
+            Assert.IsFalse(old.IsPrepHeld, "Restart → hold 풀림");
+            CollectionAssert.AreEqual(new[] { true, false }, held);
+            yield return WaitForLoop(old);
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Assert.IsFalse(_loop.IsPrepHeld);
+
+            // GoToTitle
+            GameEvents.PrepHoldChanged += h => held.Add(h);
+            held.Clear();
+            Assert.IsTrue(_loop.SetPrepHold(true));
+            GameLoop last = _loop;
+            last.GoToTitle();
+            Assert.IsFalse(last.IsPrepHeld, "GoToTitle → hold 풀림");
+            CollectionAssert.AreEqual(new[] { true, false }, held);
+            Assert.AreEqual(1f, Time.timeScale);
+            for (int i = 0; i < MaxWaitFrames && SceneManager.GetActiveScene().name == SceneName; i++) yield return null;
+            Assert.AreNotEqual(SceneName, SceneManager.GetActiveScene().name, "타이틀 씬으로");
+        }
+
         [UnityTest]
         public IEnumerator Pause_InWave_TimeStops_ResumeRestores()
         {

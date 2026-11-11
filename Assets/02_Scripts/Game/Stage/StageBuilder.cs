@@ -9,6 +9,7 @@ namespace QL.Game.Stage
     /// G07: 무대 모듈 프리팹(루트 + 자식 Model) 칸이 차 있으면 그것을 깔고, 비어 있으면 예전 임시 도형(바닥 · 턱 큐브)을 쓴다.
     /// 모듈 배치는 _아트납품.md A09 표 — Config(레인 · 줄 · 길이 · 칸 크기)와 아래 칸 단위 오프셋으로 계산한다. 시작 때 한 번만.
     /// G10: 복도 벽 바깥(Outer) — A11 데크 판 · 컨테이너 더미를 배치좌표.md 표(직렬화 배열) 그대로 깐다.
+    /// G12: U10 카메라에서 비던 바닥 — 데크 격자 한 줄씩 더 (직렬화 값) + 격자 밖 빈 곳 판(outerDeckFill).
     /// G09: 레인 경계마다 가는 발광 선(LaneLines) — 레인 바닥은 어둡게(Mat_Lane), 구분은 선으로 (시안 ingame_reference).
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
@@ -122,6 +123,8 @@ namespace QL.Game.Stage
         [SerializeField] private float[] outerDeckX;
         [Tooltip("데크 판 중심 z")]
         [SerializeField] private float[] outerDeckZ;
+        [Tooltip("격자 밖에 더 까는 데크 판 (G12) — x = 중심 |x| (좌우 양쪽에 깐다, 0 보다 크게), y = 중심 z. 화면에 바닥이 비는 곳(해치 앞 가운데 · 21:9 위 모서리)만")]
+        [SerializeField] private Vector2[] outerDeckFill;
         [Tooltip("컨테이너 더미 자리 — 배치좌표.md 표 그대로 (x 는 납품 OBJ 좌표)")]
         [SerializeField] private OuterStackSlot[] outerStacks;
         [Tooltip("표의 x 를 뒤집어 놓는다. Unity 의 OBJ import 가 x 를 반전하므로, 납품 미리보기와 같은 쪽에 놓으려면 켠다 (메시도 이미 반전돼 있어 장면 전체가 미리보기와 같아진다)")]
@@ -392,6 +395,18 @@ namespace QL.Game.Stage
                     float z = outerDeckZ[iz] * cs;
                     PlaceModule(outerDeck, decks, "Deck_L_" + ix + "_" + iz, new Vector3(-x, y, z), cs, false);
                     PlaceModule(outerDeck, decks, "Deck_R_" + ix + "_" + iz, new Vector3(x, y, z), cs, false);
+                }
+
+                // G12: 격자 밖 빈 곳 — 같은 판을 좌우 대칭으로 (outerDeckFill 표 순서)
+                if (outerDeckFill != null)
+                {
+                    for (int i = 0; i < outerDeckFill.Length; i++)
+                    {
+                        float x = outerDeckFill[i].x * cs;
+                        float z = outerDeckFill[i].y * cs;
+                        PlaceModule(outerDeck, decks, "Deck_FL_" + i, new Vector3(-x, y, z), cs, false);
+                        PlaceModule(outerDeck, decks, "Deck_FR_" + i, new Vector3(x, y, z), cs, false);
+                    }
                 }
             }
 

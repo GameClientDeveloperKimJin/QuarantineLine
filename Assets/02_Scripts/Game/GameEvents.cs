@@ -69,6 +69,8 @@ namespace QL.Game
         public static event Action<int, bool> CellCleaned;
         /// <summary>slime, reward — 처치 보상 지급 (KillRewarder, 그 CoinChanged 바로 앞 · 보류함 21).</summary>
         public static event Action<SlimeView, int> KillRewarded;
+        /// <summary>held — 준비 시간 잡아 두기가 켜졌다 · 풀렸다 (G12, 커서 가이드 중). 바뀔 때만. 잡혀 있는 동안 PrepTick 은 새로 오지 않는다.</summary>
+        public static event Action<bool> PrepHoldChanged;
 
         internal static void RaiseDroneMoved(int from, int to) => DroneMoved?.Invoke(from, to);
         internal static void RaiseDroneSwapped(int a, int b) => DroneSwapped?.Invoke(a, b);
@@ -97,6 +99,7 @@ namespace QL.Game
         internal static void RaiseCellContaminated(int cell, int lane, float duration) => CellContaminated?.Invoke(cell, lane, duration);
         internal static void RaiseCellCleaned(int cell, bool byMerge) => CellCleaned?.Invoke(cell, byMerge);
         internal static void RaiseKillRewarded(SlimeView slime, int reward) => KillRewarded?.Invoke(slime, reward);
+        internal static void RaisePrepHoldChanged(bool held) => PrepHoldChanged?.Invoke(held);
 
         /// <summary>모든 구독 해제 (씬 재시작 대비 — GameBootstrap.OnDestroy).</summary>
         public static void ClearAll()
@@ -128,6 +131,7 @@ namespace QL.Game
             CellContaminated = null;
             CellCleaned = null;
             KillRewarded = null;
+            PrepHoldChanged = null;
         }
     }
 }

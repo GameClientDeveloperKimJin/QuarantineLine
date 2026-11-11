@@ -18,6 +18,7 @@ namespace QL.Game.Flow
     /// 테스트는 <see cref="Step"/> 을 직접 부른다.
     /// O02: 점액이 뚫은 레인 칸 오염 · 머지 청소 알림 · 자연 청소 · 준비 예보(WavePrepStarted) · 수당(WaveCleared → Pay.Total 지급)도 여기서 낸다.
     /// G11: Enter = 바로 시작 (<see cref="RequestStartWave"/>). Space 는 소환이라 쓰지 않는다.
+    /// G12: 준비 시간 잡아 두기 (<see cref="SetPrepHold"/>, 커서 가이드 중) — 잡혀 있으면 GameFlow.Tick 에 dt 0 을 넘긴다 (준비 시간만 멈춤, 나머지 Step 은 그대로).
     /// </summary>
     public sealed class GameLoop : MonoBehaviour
     {
@@ -35,6 +36,9 @@ namespace QL.Game.Flow
         private int _bonusEarned;
         private int[] _laneBreaches;
 
+        // 준비 시간 잡아 두기 (G12) — Prep 에서만 켜진다. 웨이브 시작 · 판 끝 · 재시작 · 타이틀 이동 때 풀린다
+        private bool _prepHeld;
+
         // 오염 이벤트를 낸 칸 (O02) — CellContaminated 를 낸 칸만 true, CellCleaned 를 내면 false. 같은 칸 청소 이벤트를 두 번 내지 않는다
         private bool[] _contaminatedCells;
 
@@ -51,6 +55,9 @@ namespace QL.Game.Flow
 
         /// <summary>남은 준비 시간 (초). <see cref="IsPrep"/> 이 아니면 0.</summary>
         public float PrepRemaining => IsPrep ? _flow.PrepRemaining : 0f;
+
+        /// <summary>준비 시간을 잡아 두고 있으면 true (G12 — 커서 가이드 중). 잡혀 있어도 일시정지되면 State 는 Paused, 재개하면 다시 잡힌 Prep.</summary>
+        public bool IsPrepHeld => _prepHeld;
 
         /// <summary>판이 끝났을 때 집계한 값 (끝나기 전 default).</summary>
         public ResultSummary LastResult { get; private set; }
@@ -120,7 +127,9 @@ namespace QL.Game.Flow
             registry.Advance(dt);
             combat.Advance(dt);
 
-            FlowStep step = _flow.Tick(dt);
+            // G12: 잡혀 있으면 준비 시간만 흐르지 않는다 — Tick(0) 은 PrepRemaining 그대로, 올림 초가 그대로라 PrepTick 도 새로 안 낸다
+            float flowDt = _prepHeld && _flow.State == GameState.Prep ? 0f : dt;
+            FlowStep step = _flow.Tick(flowDt);
             Publish(in step);
         }
 
@@ -134,6 +143,7 @@ namespace QL.Game.Flow
 
             if (step.WaveStarted)
             {
+                ReleasePrepHold(); // 잡힌 채로 웨이브가 시작될 길은 없지만 (바로 시작이 먼저 푼다) 다음 준비를 막지 않게
                 // 준비 시간에 만든 그 시간표 그대로 — 실제 스폰 = WavePrepStarted 예보 (O02)
                 waves.StartWave(step.WaveIndex, _flow.CurrentSchedule);
                 GameEvents.RaiseWaveStarted(step.WaveIndex, step.WaveCount, step.BannerText);
@@ -162,6 +172,7 @@ namespace QL.Game.Flow
 
             if (step.Outcome != GameOutcome.None)
             {
+                ReleasePrepHold();
                 drag.Cancel(); // 드래그 중 게임 종료 — 시스템 기획서 예외 표 (드래그 중이 아니면 아무 일 없음)
                 LastResult = ResultSummary.Collect(_flow, bootstrap.Grid, bootstrap.Catalog, _bonusEarned, _laneBreaches);
                 GameEvents.RaiseGameEnded(LastResult);
@@ -241,7 +252,36 @@ namespace QL.Game.Flow
         /// </summary>
         public bool RequestStartWave()
         {
-            return _flow != null && _flow.StartWaveNow();
+            if (_flow == null || !_flow.StartWaveNow()) return false;
+            ReleasePrepHold(); // G12: 가이드를 건너뛰고 바로 시작 — 다음 Step 의 Tick 이 평소 dt 로 웨이브를 연다
+            return true;
+        }
+
+        /// <summary>
+        /// 준비 시간 잡아 두기 (G12 · R4 커서 가이드). hold = true 는 Prep 에서만 받는다 (Wave · Paused · Result 는 무시, false).
+        /// 잡혀 있으면 PrepRemaining 이 줄지 않고 PrepTick 도 새로 오지 않는다 — HUD 는 마지막 PrepTick 값(남은 초)을 그대로 보여 준다.
+        /// 소환 · 드래그 · 머지 · 일시정지 · 바로 시작은 그대로 (바로 시작 = 풀고 시작). hold = false 는 언제든 받는다.
+        /// 바뀔 때만 PrepHoldChanged. 돌려주는 값 = 호출 뒤 IsPrepHeld 가 hold 와 같은가.
+        /// </summary>
+        public bool SetPrepHold(bool hold)
+        {
+            if (!hold)
+            {
+                ReleasePrepHold();
+                return true;
+            }
+            if (!IsPrep) return false;
+            if (_prepHeld) return true;
+            _prepHeld = true;
+            GameEvents.RaisePrepHoldChanged(true);
+            return true;
+        }
+
+        private void ReleasePrepHold()
+        {
+            if (!_prepHeld) return;
+            _prepHeld = false;
+            GameEvents.RaisePrepHoldChanged(false);
         }
 
         /// <summary>창이 포커스를 잃으면 (Alt+Tab) Prep · Wave 에서만 일시정지 — 드래그 취소 뒤 HandleEscape 의 Pause 길 (U12). 돌아와도 자동 재개하지 않는다.</summary>
@@ -255,6 +295,7 @@ namespace QL.Game.Flow
         /// <summary>다시 하기 — 씬을 다시 불러 모든 모델(GameFlow 포함)을 새로 만든다. 구독 해제는 GameBootstrap.OnDestroy.</summary>
         public void Restart()
         {
+            ReleasePrepHold();
             Time.timeScale = 1f;
             SceneManager.LoadScene(gameObject.scene.buildIndex);
         }
@@ -268,6 +309,7 @@ namespace QL.Game.Flow
         /// <summary>타이틀로 — 시간을 되돌리고 Title 씬을 불러온다 (결과 화면 「타이틀로」 · 결과 중 Esc).</summary>
         public void GoToTitle()
         {
+            ReleasePrepHold();
             Time.timeScale = 1f;
             SceneManager.LoadScene(titleSceneName);
         }

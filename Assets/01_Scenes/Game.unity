@@ -530,10 +530,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: QL.Game::QL.Game.Stage.CameraRig
   bootstrap: {fileID: 916952042}
-  pitch: 55
+  pitch: 45
   yaw: 0
-  fieldOfView: 40
-  margin: 0.08
+  fieldOfView: 55
+  margin: 0.16
 --- !u!114 &472742590
 MonoBehaviour:
   m_ObjectHideFlags: 0

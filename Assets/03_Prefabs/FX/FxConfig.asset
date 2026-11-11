@@ -473,3 +473,7 @@ MonoBehaviour:
   guideDragAngle: 12
   guideMergeLabelWorldZ: 0.15
   guideMergeLabelOffset: {x: 0, y: 0}
+  canvasMatchWidthOrHeight: 1
+  displayToFullscreenLabel: "\uC804\uCCB4 \uD654\uBA74"
+  displayToWindowLabel: "\uCC3D \uBAA8\uB4DC"
+  displayWindowedSize: {x: 1280, y: 720}

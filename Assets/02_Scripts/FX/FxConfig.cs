@@ -795,6 +795,16 @@ namespace QL.FX
         public float guideMergeLabelWorldZ = 0.15f;
         public Vector2 guideMergeLabelOffset = new Vector2(0f, 0f);
 
+        [Header("U10 화면비 · 창 모드")]
+        [Tooltip("모든 Screen Space 캔버스 Canvas Scaler 의 match (0 = 가로 · 1 = 세로 기준). 1 = 높이 기준 — 카메라(CameraRig)가 세로로 맞추므로 HUD 와 무대의 위아래 관계가 16:9 · 16:10 · 21:9 에서 같다. 프리팹 스케일러도 이 값과 같아야 한다 (AspectTests)")]
+        [Range(0f, 1f)] public float canvasMatchWidthOrHeight = 1f;
+        [Tooltip("일시정지 「창 / 전체 화면」 버튼 — 지금 창 모드일 때 글자 (누르면 전체 화면)")]
+        public string displayToFullscreenLabel = "전체 화면";
+        [Tooltip("지금 전체 화면일 때 글자 (누르면 창 모드)")]
+        public string displayToWindowLabel = "창 모드";
+        [Tooltip("전체 화면 → 창 모드로 바꿀 때 창 크기 (px). 모니터보다 크면 모니터 크기로 줄인다")]
+        public Vector2Int displayWindowedSize = new Vector2Int(1280, 720);
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {

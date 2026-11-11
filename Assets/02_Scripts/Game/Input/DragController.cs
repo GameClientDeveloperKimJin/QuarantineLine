@@ -155,6 +155,12 @@ namespace QL.Game.Input
                     if (loop != null) loop.NotifyMergeClean(r.To);
                     else GameEvents.RaiseCellCleaned(r.To, true);
                     break;
+                case DropOutcome.SwapClean:
+                    // 최고 등급끼리 오염 칸 청소 (G11 B안) — 자리 교환 알림 뒤 머지 청소와 같은 경로
+                    GameEvents.RaiseDroneSwapped(r.From, r.To);
+                    if (loop != null) loop.NotifyMergeClean(r.To);
+                    else GameEvents.RaiseCellCleaned(r.To, true);
+                    break;
             }
 
             ClearDragColors();

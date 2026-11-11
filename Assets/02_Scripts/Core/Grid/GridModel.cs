@@ -179,6 +179,14 @@ namespace QL.Core.Grid
                     _lockRemaining[to] = _mergeLockDuration;
                     break;
 
+                case DropOutcome.SwapClean:
+                    // 같은 종류 · 같은 등급이라 교환해도 칸 내용은 같다 — 놓은 칸 오염만 씻는다 (잠금 없음, Swap 과 같게)
+                    SetDrone(from, toCell.Type, toCell.Grade);
+                    SetDrone(to, type, grade);
+                    _contaminated[to] = false;
+                    _contaminateRemaining[to] = 0f;
+                    break;
+
                 // Reject · Return: 칸 상태 그대로
             }
 

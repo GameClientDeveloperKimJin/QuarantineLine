@@ -3,6 +3,7 @@ using NUnit.Framework;
 using QL.Core;
 using QL.Core.Flow;
 using QL.Core.Stats;
+using QL.Core.Waves;
 using static QL.Tests.EditMode.TestFixtures;
 
 namespace QL.Tests.EditMode
@@ -138,6 +139,108 @@ namespace QL.Tests.EditMode
             Assert.AreEqual(GameState.Wave, flow.State);
             Assert.AreEqual(0f, flow.PrepRemaining);
             Assert.AreEqual(SlimeCountOf(waves[0]), flow.RemainingInWave);
+        }
+
+        // ── 바로 시작 (G11) ──
+
+        [Test]
+        public void StartWaveNow_InPrep_NextTickStartsWave_SameStepAsElapsed()
+        {
+            // 비교용: 시간을 끝까지 흘려 시작한 판
+            var normal = NewFlow();
+            normal.StartGame();
+            FlowStep expected = RunPrepToWave(normal);
+
+            var flow = NewFlow();
+            flow.StartGame();
+            flow.Tick(FlowDt); // 준비 중간
+            SpawnEvent[] scheduleBefore = flow.CurrentSchedule;
+            WaveForecast forecastBefore = flow.Forecast;
+
+            Assert.IsTrue(flow.StartWaveNow());
+            Assert.AreEqual(GameState.Prep, flow.State, "부른 순간은 아직 Prep — 시작은 다음 Tick");
+            Assert.AreEqual(0f, flow.PrepRemaining);
+
+            FlowStep step = flow.Tick(FlowDt);
+            Assert.IsTrue(step.WaveStarted, "다음 Tick 에 WaveStarted");
+            Assert.IsTrue(step.StateChanged);
+            Assert.IsFalse(step.PrepSecondChanged, "PrepTick 없음");
+            Assert.AreEqual(expected.State, step.State);
+            Assert.AreEqual(expected.WaveIndex, step.WaveIndex);
+            Assert.AreEqual(expected.WaveCount, step.WaveCount);
+            Assert.AreEqual(expected.BannerText, step.BannerText);
+            Assert.AreEqual(normal.RemainingInWave, flow.RemainingInWave);
+
+            // 예보 = 실제 스폰 — 준비 때 만든 시간표를 그대로 쓴다 (다시 만들지 않음)
+            Assert.AreSame(scheduleBefore, flow.CurrentSchedule);
+            Assert.AreEqual(forecastBefore.SlimeCount, flow.Forecast.SlimeCount);
+            Assert.AreEqual(normal.CurrentSchedule.Length, flow.CurrentSchedule.Length);
+            for (int i = 0; i < flow.CurrentSchedule.Length; i++)
+            {
+                Assert.AreEqual(normal.CurrentSchedule[i].Time, flow.CurrentSchedule[i].Time, "시간표 " + i);
+                Assert.AreEqual(normal.CurrentSchedule[i].Lane, flow.CurrentSchedule[i].Lane, "레인 " + i);
+                Assert.AreEqual(normal.CurrentSchedule[i].Slime, flow.CurrentSchedule[i].Slime, "종류 " + i);
+            }
+
+            // WaveStarted 는 한 번만
+            AssertEmpty(flow.Tick(FlowDt));
+        }
+
+        [Test]
+        public void StartWaveNow_SecondPrep_StartsNextWave()
+        {
+            WaveSpec[] waves = FlowWaves();
+            var flow = FlowInFirstWave();
+            KillAll(flow);
+            flow.Tick(FlowDt); // 클리어 → Prep(1)
+            Assert.AreEqual(GameState.Prep, flow.State);
+
+            Assert.IsTrue(flow.StartWaveNow());
+            FlowStep step = flow.Tick(FlowDt);
+            Assert.IsTrue(step.WaveStarted);
+            Assert.AreEqual(1, step.WaveIndex);
+            Assert.AreEqual(waves[1].BannerText, step.BannerText);
+        }
+
+        [Test]
+        public void StartWaveNow_NotInPrep_DoesNothing()
+        {
+            // Title
+            var flow = NewFlow();
+            Assert.IsFalse(flow.StartWaveNow(), "Title");
+            Assert.AreEqual(GameState.Title, flow.State);
+
+            // Paused (준비 중 멈춤) — 남은 시간 그대로, 재개 뒤에도 바로 시작하지 않는다
+            flow.StartGame();
+            flow.Tick(FlowDt);
+            float before = flow.PrepRemaining;
+            Assert.IsTrue(flow.Pause());
+            Assert.IsFalse(flow.StartWaveNow(), "Paused");
+            Assert.AreEqual(before, flow.PrepRemaining);
+            Assert.IsTrue(flow.Resume());
+            Assert.IsFalse(flow.Tick(FlowDt).WaveStarted);
+
+            // Wave
+            RunPrepToWave(flow);
+            int remaining = flow.RemainingInWave;
+            Assert.IsFalse(flow.StartWaveNow(), "Wave");
+            Assert.AreEqual(GameState.Wave, flow.State);
+            Assert.AreEqual(0f, flow.PrepRemaining);
+            AssertEmpty(flow.Tick(FlowDt));
+            Assert.AreEqual(remaining, flow.RemainingInWave);
+
+            // Result
+            for (int w = 0; w < flow.WaveCount; w++)
+            {
+                if (flow.State == GameState.Prep) RunPrepToWave(flow);
+                KillAll(flow);
+                flow.Tick(FlowDt);
+            }
+
+            Assert.AreEqual(GameState.Result, flow.State);
+            Assert.IsFalse(flow.StartWaveNow(), "Result");
+            Assert.AreEqual(GameState.Result, flow.State);
+            AssertEmpty(flow.Tick(FlowDt));
         }
 
         // ── 웨이브 ──

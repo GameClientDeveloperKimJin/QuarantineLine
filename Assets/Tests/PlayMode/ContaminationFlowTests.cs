@@ -422,6 +422,78 @@ namespace QL.Tests.PlayMode
             yield return null;
         }
 
+        /// <summary>G11 B안 — 오염 칸의 최고 등급 위에 같은 종류 최고 등급: 자리 교환 · 등급 그대로 · 청소 · 수당 1회분.</summary>
+        [UnityTest]
+        public IEnumerator SwapCleanOnContaminatedMaxGrade_Cleans_PayCleanCountOne()
+        {
+            int max = _bootstrap.Catalog.MaxGrade(DroneType.Suction);
+            Assert.IsFalse(_bootstrap.Catalog.CanUpgrade(DroneType.Suction, max));
+            for (int row = 0; row < Grid.RowCount; row++) PlaceDrone(CellOf(TestLane, row), DroneType.Suction, max);
+            int spare = PlaceDrone(CellOf(0, 0), DroneType.Suction, max);
+            int spare2 = PlaceDrone(CellOf(0, 1), DroneType.Suction, max);
+            int other = PlaceDrone(CellOf(0, 2), DroneType.Plasma, _bootstrap.Catalog.MaxGrade(DroneType.Plasma));
+
+            var swapped = new List<int>();
+            int merged = 0;
+            GameEvents.DroneSwapped += (a, b) => { swapped.Add(a); swapped.Add(b); };
+            GameEvents.DroneMerged += (f, t, ty, g) => merged++;
+
+            StepToWave();
+            int wave = Flow.WaveIndex;
+            Assert.Less(wave, _specs.Length - 1, "다음 준비로 가는 웨이브");
+
+            // 오염 아닌 칸의 최고 등급끼리 → 그냥 Swap · 청소 이벤트 없음
+            Assert.IsTrue(_drag.BeginAt(spare2));
+            DropResult plain = _drag.ReleaseAt(spare);
+            Assert.AreEqual(DropOutcome.Swap, plain.Outcome);
+            Assert.AreEqual(0, _cleanedCell.Count, "오염 아닌 칸 — CellCleaned 없음");
+            Assert.AreEqual(0, Flow.CleanCountInWave);
+            swapped.Clear();
+
+            BreachLane(TestLane);
+            Assert.AreEqual(1, _contaminatedCell.Count);
+            int dirty = _contaminatedCell[0];
+
+            // 다른 종류 최고 등급 → Reject 그대로
+            Assert.IsTrue(_drag.BeginAt(other));
+            Assert.AreEqual(DropOutcome.Reject, _drag.ReleaseAt(dirty).Outcome);
+            Assert.IsTrue(Grid.Get(dirty).IsContaminated);
+            Assert.AreEqual(0, _cleanedCell.Count);
+
+            // 같은 종류 최고 등급 → SwapClean
+            int orderBefore = _order.Count;
+            Assert.IsTrue(_drag.BeginAt(spare));
+            DropResult r = _drag.ReleaseAt(dirty);
+            Assert.AreEqual(DropOutcome.SwapClean, r.Outcome);
+            Assert.AreEqual(max, r.NewGrade, "등급 그대로");
+            Assert.IsTrue(Grid.Get(spare).HasDrone, "원래 칸에 상대 드론");
+            Assert.AreEqual(max, Grid.Get(spare).Grade);
+            Assert.AreEqual(max, Grid.Get(dirty).Grade);
+            Assert.IsFalse(Grid.Get(dirty).IsContaminated, "씻김");
+            Assert.AreEqual(0, merged, "머지 아님");
+            CollectionAssert.AreEqual(new[] { spare, dirty }, swapped, "DroneSwapped(from, to) 1번");
+            Assert.AreEqual(1, _cleanedCell.Count, "CellCleaned 1번");
+            Assert.AreEqual(dirty, _cleanedCell[0]);
+            Assert.IsTrue(_cleanedByMerge[0], "byMerge = true");
+            Assert.AreEqual(1, Flow.CleanCountInWave, "GameFlow.NotifyMergeClean");
+            Assert.AreEqual("CellCleaned", _order[_order.Count - 1]);
+            Assert.AreEqual(orderBefore + 1, _order.Count, "그 밖의 기록 이벤트 없음");
+
+            // 웨이브 클리어 → Pay.CleanCount 1
+            for (int i = 0; i < MaxSteps; i++)
+            {
+                _loop.Step(Dt);
+                if (Flow.State != GameState.Wave) break;
+                KillAllAlive();
+            }
+
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.AreEqual(1, _clearedPay.Count, "WaveCleared 1번");
+            Assert.AreEqual(1, _clearedPay[0].CleanCount, "Pay.CleanCount 1");
+            Assert.AreEqual(_specs[wave].ClearBonus + Config.CleanReward, _clearedPay[0].Total);
+            yield return null;
+        }
+
         [UnityTest]
         public IEnumerator DragOriginContaminated_Return_StaysOnContaminatedCell()
         {

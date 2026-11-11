@@ -113,7 +113,8 @@ namespace QL.Game.Input
             {
                 case DropOutcome.Move: return move;
                 case DropOutcome.Merge:
-                case DropOutcome.MergeClean: return merge;
+                case DropOutcome.MergeClean:
+                case DropOutcome.SwapClean: return merge; // 오염 칸을 씻는 드롭 (G11)
                 case DropOutcome.Swap: return swap;
                 default: return reject; // Reject · Return(같은 칸 · 잠긴 칸)
             }

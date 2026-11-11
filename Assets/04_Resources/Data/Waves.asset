@@ -18,7 +18,7 @@ MonoBehaviour:
       count: 15
       spawnInterval: 1
       startRatio: 0
-    prepTime: 8
+    prepTime: 12
     clearBonus: 50
     bannerText: "C-1 \uD654\uBB3C\uCE78, \uC810\uC561 \uB204\uCD9C"
   - entries:
@@ -30,7 +30,7 @@ MonoBehaviour:
       count: 3
       spawnInterval: 0.8
       startRatio: 0.66
-    prepTime: 5
+    prepTime: 20
     clearBonus: 50
     bannerText: "C-2 \uD654\uBB3C\uCE78, \uBCC0\uC774 \uBC18\uC751 \uAC10\uC9C0"
   - entries:
@@ -42,6 +42,6 @@ MonoBehaviour:
       count: 8
       spawnInterval: 3
       startRatio: 0
-    prepTime: 5
+    prepTime: 20
     clearBonus: 50
     bannerText: "C-3 \uD654\uBB3C\uCE78, \uB300\uB7C9 \uBC94\uB78C"

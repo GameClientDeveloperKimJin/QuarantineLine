@@ -17,6 +17,7 @@ namespace QL.Game.Flow
     /// Esc 는 이 컴포넌트 한 곳에서만 읽는다 (드래그 중이면 드래그 취소가 우선). 결과 상태에서만 R = 다시 하기 · Esc = 타이틀로 (U11).
     /// 테스트는 <see cref="Step"/> 을 직접 부른다.
     /// O02: 점액이 뚫은 레인 칸 오염 · 머지 청소 알림 · 자연 청소 · 준비 예보(WavePrepStarted) · 수당(WaveCleared → Pay.Total 지급)도 여기서 낸다.
+    /// G11: Enter = 바로 시작 (<see cref="RequestStartWave"/>). Space 는 소환이라 쓰지 않는다.
     /// </summary>
     public sealed class GameLoop : MonoBehaviour
     {
@@ -44,6 +45,12 @@ namespace QL.Game.Flow
 
         /// <summary>Prep · Wave 에서만 true. 소환 · 드래그 시작은 이것을 본다 (일시정지 · 결과 중 금지).</summary>
         public bool CanAct => _flow != null && (_flow.State == GameState.Prep || _flow.State == GameState.Wave);
+
+        /// <summary>준비 시간 중이면 true (G11 — 「바로 시작」 버튼 표시용). 일시정지 · 결과 중은 false.</summary>
+        public bool IsPrep => _flow != null && _flow.State == GameState.Prep;
+
+        /// <summary>남은 준비 시간 (초). <see cref="IsPrep"/> 이 아니면 0.</summary>
+        public float PrepRemaining => IsPrep ? _flow.PrepRemaining : 0f;
 
         /// <summary>판이 끝났을 때 집계한 값 (끝나기 전 default).</summary>
         public ResultSummary LastResult { get; private set; }
@@ -92,6 +99,7 @@ namespace QL.Game.Flow
             {
                 if (kb.escapeKey.wasPressedThisFrame) HandleEscape();
                 else if (kb.rKey.wasPressedThisFrame) HandleRestartKey();
+                else if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) RequestStartWave();
             }
 
             Step(Time.deltaTime);
@@ -224,6 +232,16 @@ namespace QL.Game.Flow
                 Time.timeScale = 0f;
                 GameEvents.RaiseStateChanged(GameState.Paused);
             }
+        }
+
+        /// <summary>
+        /// 바로 시작 (G11 · Enter · R4 버튼). 준비 시간 중에만 남은 시간을 0 으로 하고 true — 웨이브 시작은 다음 Step 의 GameFlow.Tick 이
+        /// 평소 경로로 낸다 (PrepTick 없이 WaveStarted → RemainingSlimesChanged → StateChanged, 시간표 = WavePrepStarted 예보).
+        /// 일시정지 · 웨이브 · 결과 중에는 false, 아무 일 없음.
+        /// </summary>
+        public bool RequestStartWave()
+        {
+            return _flow != null && _flow.StartWaveNow();
         }
 
         /// <summary>창이 포커스를 잃으면 (Alt+Tab) Prep · Wave 에서만 일시정지 — 드래그 취소 뒤 HandleEscape 의 Pause 길 (U12). 돌아와도 자동 재개하지 않는다.</summary>

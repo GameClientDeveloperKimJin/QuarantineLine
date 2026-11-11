@@ -29,17 +29,21 @@ namespace QL.Core.Grid
                         : DropOutcome.Swap;                         // 3
 
                 default: // CellState.Contaminated
-                    return to.HasDrone && CanMerge(from, to, catalog)
+                    if (!to.HasDrone || !SameKind(from, to)) return DropOutcome.Reject; // 5
+                    return catalog.CanUpgrade(from.Type, from.Grade)
                         ? DropOutcome.MergeClean                    // 4
-                        : DropOutcome.Reject;                       // 5
+                        : DropOutcome.SwapClean;                    // 4-b 최고 등급끼리 (G11 B안)
             }
+        }
+
+        private static bool SameKind(in Cell from, in Cell to)
+        {
+            return from.Type == to.Type && from.Grade == to.Grade;
         }
 
         private static bool CanMerge(in Cell from, in Cell to, UnitCatalog catalog)
         {
-            return from.Type == to.Type
-                && from.Grade == to.Grade
-                && catalog.CanUpgrade(from.Type, from.Grade);
+            return SameKind(from, to) && catalog.CanUpgrade(from.Type, from.Grade);
         }
     }
 }

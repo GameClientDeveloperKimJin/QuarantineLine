@@ -16,6 +16,8 @@ using QL.Game.Input;
 using QL.Game.Slimes;
 using QL.Game.Summon;
 using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 using Object = UnityEngine.Object;
@@ -437,6 +439,115 @@ namespace QL.Tests.PlayMode
             Assert.AreEqual(0, r.MostBreachedCount);
             Assert.AreEqual(0f, Time.timeScale);
             yield return null;
+        }
+
+        // ── 바로 시작 (G11) ──────────────────────────────────
+
+        [UnityTest]
+        public IEnumerator RequestStartWave_InPrep_NextStepStartsWave_SpawnsAsForecast()
+        {
+            int spawned = 0;
+            GameEvents.SlimeSpawned += s => spawned++;
+            _loop.Step(Dt); // 준비 중간
+            Assert.IsTrue(_loop.IsPrep);
+            Assert.Greater(_loop.PrepRemaining, 0f);
+            int forecast = Flow.Forecast.SlimeCount;
+            int prepTicks = _prepTicks.Count;
+            int statesBefore = _states.Count;
+
+            Assert.IsTrue(_loop.RequestStartWave());
+            Assert.AreEqual(0, _waveStartIndex.Count, "부른 순간에는 아직 시작하지 않는다");
+            Assert.AreEqual(statesBefore, _states.Count);
+
+            _loop.Step(Dt);
+            Assert.AreEqual(1, _waveStartIndex.Count, "다음 Step 에 WaveStarted 1번");
+            Assert.AreEqual(0, _waveStartIndex[0]);
+            Assert.AreEqual(_specs[0].BannerText, _waveStartBanner[0]);
+            Assert.AreEqual(prepTicks, _prepTicks.Count, "PrepTick 없이 시작");
+            Assert.AreEqual(GameState.Wave, _states[_states.Count - 1]);
+            Assert.IsFalse(_loop.IsPrep);
+            Assert.AreEqual(0f, _loop.PrepRemaining);
+            Assert.AreEqual(0, _runner.WaveIndex);
+
+            // 예보 = 실제 스폰
+            for (int i = 0; i < MaxSteps && Flow.State == GameState.Wave; i++)
+            {
+                _loop.Step(Dt);
+                KillAllAlive();
+            }
+            Assert.AreEqual(forecast, spawned, "준비 예보 SlimeCount = 실제 스폰");
+            Assert.AreEqual(1, _waveStartIndex.Count, "WaveStarted 1번");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator RequestStartWave_PausedWaveResult_Ignored()
+        {
+            // Paused (준비 중)
+            _loop.Step(Dt);
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            float before = Flow.PrepRemaining;
+            Assert.IsFalse(_loop.RequestStartWave(), "Paused");
+            Assert.IsFalse(_loop.IsPrep);
+            Assert.AreEqual(before, Flow.PrepRemaining);
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+            _loop.Step(Dt);
+            Assert.AreEqual(GameState.Prep, Flow.State, "재개 뒤에도 바로 시작하지 않는다");
+
+            // Wave
+            StepToWave();
+            int remaining = Flow.RemainingInWave;
+            Assert.IsFalse(_loop.RequestStartWave(), "Wave");
+            Assert.AreEqual(GameState.Wave, Flow.State);
+            Assert.AreEqual(1, _waveStartIndex.Count);
+            Assert.AreEqual(remaining, Flow.RemainingInWave);
+
+            // Result (해치 0 패배)
+            StepUntil(() => Flow.State == GameState.Result, "결과");
+            int states = _states.Count;
+            Assert.IsFalse(_loop.RequestStartWave(), "Result");
+            Assert.AreEqual(GameState.Result, Flow.State);
+            Assert.AreEqual(states, _states.Count);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator EnterKey_InPrep_StartsWaveNow()
+        {
+            // 가상 키보드로 Enter — 에디터 Game 뷰 포커스와 상관없이 이벤트가 플레이어로 가게 설정을 잠시 바꾼다 (복사본, 끝나면 되돌림)
+            InputSettings oldSettings = InputSystem.settings;
+            InputSettings testSettings = Object.Instantiate(oldSettings);
+            testSettings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+            testSettings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+            InputSystem.settings = testSettings;
+            Keyboard kb = InputSystem.AddDevice<Keyboard>("G11TestKeyboard");
+            try
+            {
+                kb.MakeCurrent();
+                _loop.Step(Dt);
+                Assert.IsTrue(_loop.IsPrep);
+                Assert.Greater(Flow.PrepRemaining, 0f);
+
+                InputSystem.QueueStateEvent(kb, new KeyboardState(Key.Enter));
+                yield return null; // 이 프레임 입력 갱신 → GameLoop.Update 가 Enter 를 읽는다
+                Assert.AreEqual(0f, Flow.PrepRemaining, "Enter → 남은 준비 시간 0");
+                Assert.AreEqual(GameState.Prep, Flow.State, "시작은 다음 Step");
+
+                _loop.Step(Dt);
+                Assert.AreEqual(GameState.Wave, Flow.State);
+                Assert.AreEqual(1, _waveStartIndex.Count, "WaveStarted 1번");
+
+                InputSystem.QueueStateEvent(kb, new KeyboardState());
+                yield return null;
+            }
+            finally
+            {
+                InputSystem.RemoveDevice(kb);
+                InputSystem.settings = oldSettings;
+                Object.Destroy(testSettings);
+            }
         }
 
         [UnityTest]

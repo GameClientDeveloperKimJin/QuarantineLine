@@ -10,6 +10,7 @@ namespace QL.Core.Flow
     /// StartGame · Pause · Resume 으로 바뀐 상태는 FlowStep 에 담기지 않는다 — 부른 쪽이 바로 알린다.
     /// 이벤트 없음. 「다시 하기」 는 새 GameFlow.
     /// O01: 준비 시간에 들어갈 때 다음 웨이브 시간표를 미리 만들어 예보와 함께 보관하고, 청소 횟수를 웨이브 수당 내역에 쌓는다.
+    /// G11: StartWaveNow — 남은 준비 시간을 0 으로만 바꾼다. 웨이브 시작은 다음 Tick 의 평소 경로 (FlowStep · 시간표 · 예보 그대로).
     /// </summary>
     public sealed class GameFlow
     {
@@ -116,6 +117,17 @@ namespace QL.Core.Flow
         {
             if (State == GameState.Title || State == GameState.Result) return false;
             CleanCountInWave++;
+            return true;
+        }
+
+        /// <summary>
+        /// 바로 시작 (G11). Prep 에서만 남은 준비 시간을 0 으로 하고 true — 웨이브는 다음 Tick 에 평소와 같은 경로로 시작한다
+        /// (같은 FlowStep · 준비 때 만든 시간표 그대로). 그 밖(Title · Wave · Paused · Result)은 false, 아무것도 바뀌지 않는다.
+        /// </summary>
+        public bool StartWaveNow()
+        {
+            if (State != GameState.Prep) return false;
+            PrepRemaining = 0f;
             return true;
         }
 

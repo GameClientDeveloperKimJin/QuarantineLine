@@ -85,11 +85,34 @@ namespace QL.Tests.EditMode
         }
 
         [Test]
-        public void Resolve_ContaminatedBothMaxGrade_Rejects()
+        public void Resolve_ContaminatedBothMaxGrade_SwapCleans()
+        {
+            // G11 B안 — 최고 등급끼리는 머지 대신 자리 교환 + 청소
+            foreach (DroneType type in Enum.GetValues(typeof(DroneType)))
+            {
+                int max = _catalog.MaxGrade(type);
+                Assert.AreEqual(DropOutcome.SwapClean,
+                    Resolve(Drone(type, max), Drone(type, max, contaminated: true)), type.ToString());
+            }
+        }
+
+        [Test]
+        public void Resolve_ContaminatedMaxGradeDifferentType_Rejects()
+        {
+            int max = _catalog.MaxGrade(FirstType);
+            Assert.AreEqual(max, _catalog.MaxGrade(SecondType), "픽스처: 두 종류 최고 등급 같음");
+            Assert.AreEqual(DropOutcome.Reject,
+                Resolve(Drone(FirstType, max), Drone(SecondType, max, contaminated: true)));
+        }
+
+        [Test]
+        public void Resolve_ContaminatedMaxOnLowerGrade_Rejects()
         {
             int max = _catalog.MaxGrade(FirstType);
             Assert.AreEqual(DropOutcome.Reject,
-                Resolve(Drone(FirstType, max), Drone(FirstType, max, contaminated: true)));
+                Resolve(Drone(FirstType, max), Drone(FirstType, max - 1, contaminated: true)));
+            Assert.AreEqual(DropOutcome.Reject,
+                Resolve(Drone(FirstType, max - 1), Drone(FirstType, max, contaminated: true)));
         }
 
         [Test]

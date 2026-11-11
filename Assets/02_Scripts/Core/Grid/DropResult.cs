@@ -9,7 +9,7 @@ namespace QL.Core.Grid
         public int To { get; }
         /// <summary>끌던 드론의 종류.</summary>
         public DroneType Type { get; }
-        /// <summary>Merge · MergeClean 이면 올라간 등급, 아니면 끌던 드론 등급.</summary>
+        /// <summary>Merge · MergeClean 이면 올라간 등급, 아니면 끌던 드론 등급 (SwapClean 은 그대로).</summary>
         public int NewGrade { get; }
 
         public DropResult(DropOutcome outcome, int from, int to, DroneType type, int newGrade)

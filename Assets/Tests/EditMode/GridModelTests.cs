@@ -128,6 +128,43 @@ namespace QL.Tests.EditMode
         }
 
         [Test]
+        public void Drop_SwapClean_MaxGrade_SwapsKeepsGrade_RemovesContamination()
+        {
+            int max = _catalog.MaxGrade(FirstType);
+            _grid.Place(0, FirstType, max);
+            _grid.Place(1, FirstType, max);
+            _grid.Contaminate(1);
+
+            DropResult r = DragDrop(0, 1);
+
+            Assert.AreEqual(DropOutcome.SwapClean, r.Outcome);
+            Assert.AreEqual(0, r.From);
+            Assert.AreEqual(1, r.To);
+            Assert.AreEqual(FirstType, r.Type);
+            Assert.AreEqual(max, r.NewGrade, "등급 그대로");
+            AssertDrone(0, FirstType, max);
+            AssertDrone(1, FirstType, max);
+            Assert.IsFalse(_grid.Get(1).IsContaminated, "놓은 칸 씻김");
+            Assert.AreEqual(0f, _grid.ContaminationRemaining(1));
+            Assert.AreEqual(CellState.Occupied, _grid.Get(1).State);
+            Assert.IsFalse(_grid.Get(0).IsLocked, "잠금 없음 (Swap 과 같게)");
+            Assert.IsFalse(_grid.Get(1).IsLocked, "잠금 없음 (Swap 과 같게)");
+        }
+
+        [Test]
+        public void Drop_MaxGradeOnCleanCell_PlainSwap()
+        {
+            int max = _catalog.MaxGrade(FirstType);
+            _grid.Place(0, FirstType, max);
+            _grid.Place(1, FirstType, max);
+
+            Assert.AreEqual(DropOutcome.Swap, DragDrop(0, 1).Outcome);
+            AssertDrone(0, FirstType, max);
+            AssertDrone(1, FirstType, max);
+            Assert.IsFalse(_grid.Get(1).IsContaminated);
+        }
+
+        [Test]
         public void Drop_Reject_NothingChanges()
         {
             _grid.Place(0, FirstType, LowGrade);

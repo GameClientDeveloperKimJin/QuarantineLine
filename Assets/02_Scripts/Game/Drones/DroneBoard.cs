@@ -178,6 +178,7 @@ namespace QL.Game.Drones
                     break;
 
                 case DropOutcome.Swap:
+                case DropOutcome.SwapClean:
                     DroneView tmp = _views[to];
                     _views[to] = _views[from];
                     _views[from] = tmp;

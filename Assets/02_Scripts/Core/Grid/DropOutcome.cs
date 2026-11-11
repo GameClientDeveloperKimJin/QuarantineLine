@@ -14,6 +14,8 @@ namespace QL.Core.Grid
         /// <summary>오염 칸이라 거부, 원위치.</summary>
         Reject,
         /// <summary>놓을 수 없는 곳 (그리드 밖 · 같은 칸 · 잠긴 칸), 원위치.</summary>
-        Return
+        Return,
+        /// <summary>오염 칸 위 같은 종류 · 같은 최고 등급 — 두 드론 위치 교환(등급 그대로) + 놓은 칸 청소 (G11 B안).</summary>
+        SwapClean
     }
 }

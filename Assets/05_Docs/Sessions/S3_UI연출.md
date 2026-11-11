@@ -30,7 +30,7 @@
    - **카메라는 CameraRig 소유** → `MMCameraShaker` 를 메인 카메라에 붙이지 않는다. 흔들림은 `CameraShakeFx` (→ `CameraRig.SetShakeOffset`) 로만
    - 프리팹 루트 금지 그대로 — 드론 · 점액은 자식 `Model` 만 (U04 규칙)
    - 일시정지 · 결과 화면 UI 의 `MMF_Player` 는 Unscaled 시간
-   - `MMF_Player` 는 시작 때 초기화, **웨이브 중 할당 0** 테스트 유지 (Feel 이 할당하면 그 피드백은 빼거나 미리 데움)
+   - ~~웨이브 중 할당 0~~ → **사람 결정 2026-11-12 (C안): 웨이브 중에도 `MMF_Player` 허용**. 대신 ① `MMF_Player` 는 풀 · 프리팹 안에 미리 만들어 두고 재생만 (Instantiate 0 유지) ② 시작 때 `Initialization` · 한 번 데우기 ③ 할당 테스트는 「0」 → **「재생당 상한 + 오래 돌려도 늘지 않음」** 으로 바꿈 (상한 값 · 측정치 보고) ④ 우리 코드(Feel 밖)의 할당 0 은 그대로
    - 수치는 `MMF_Player` 인스펙터(프리팹)에 둬도 된다 — FxConfig 대신 허용. 어디에 뒀는지 보고에 적기
    - NiceVibrations · `MMSoundManager` 는 쓰지 않음 (소리는 U08 에서 정함)
    - **Feel 폴더는 git 제외** (유료 에셋 EULA) — Feel 파일을 고치지 않는다. 우리 asmdef 에서 Feel asmdef 참조 추가만 허용

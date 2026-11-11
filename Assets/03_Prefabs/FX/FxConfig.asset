@@ -212,11 +212,11 @@ MonoBehaviour:
   postWaveColor: {r: 1, g: 0.55, b: 0.1, a: 1}
   postCriticalPeriod: 1.2
   postCriticalColor: {r: 1, g: 0.12, b: 0.08, a: 1}
-  postEmissionIntensity: 4
+  postEmissionIntensity: 2.5
   postBaseTint: 0.5
   postGlowHeight: 1.1
   postGlowSize: 0.9
-  postGlowAlpha: 0.9
+  postGlowAlpha: 0.7
   postGlowCameraOffset: 0.3
   hitFlashDuration: 0.13
   hitFlashColor: {r: 1, g: 1, b: 1, a: 1}

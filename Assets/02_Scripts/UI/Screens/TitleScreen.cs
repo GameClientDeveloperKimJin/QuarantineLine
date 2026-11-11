@@ -7,12 +7,12 @@ using UnityEngine.UI;
 namespace QL.UI.Screens
 {
     /// <summary>
-    /// 타이틀 (Title.unity) — 시작 → 게임 씬. 해상도 드롭다운 = Screen.resolutions 의 크기(가로 × 세로) 중복 제거 · 큰 순,
+    /// 타이틀 (Title.unity) — 시작 → 메인 화면 씬 (U20). 해상도 드롭다운 = Screen.resolutions 의 크기(가로 × 세로) 중복 제거 · 큰 순,
     /// 창 모드 토글 = Windowed / FullScreenWindow → Screen.SetResolution. 저장은 Unity 기본(플레이어 설정 기억)에 맡긴다.
     /// </summary>
     public sealed class TitleScreen : MonoBehaviour
     {
-        [SerializeField] private string gameSceneName = "Game";
+        [SerializeField] private string mainSceneName = "Main"; // U20 — 시작 → 메인 화면 (Main → 출근하기 → Game)
         [SerializeField] private Button startButton;
         [SerializeField] private TMP_Dropdown resolutionDropdown;
         [SerializeField] private Toggle windowedToggle;
@@ -73,7 +73,7 @@ namespace QL.UI.Screens
 
         private void OnStartClicked()
         {
-            SceneManager.LoadScene(gameSceneName);
+            SceneManager.LoadScene(mainSceneName);
         }
     }
 }

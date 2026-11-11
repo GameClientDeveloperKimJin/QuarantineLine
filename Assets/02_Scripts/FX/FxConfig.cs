@@ -858,6 +858,40 @@ namespace QL.FX
         [Tooltip("안쪽 링 지름 = 바깥 링 × 이 값 (0 = 끔). 두 겹이 붙어 링이 굵어 보인다")]
         [Range(0f, 1f)] public float markerRingInnerScale = 0.86f;
 
+        [Header("U20 메인 화면 (Main.unity — MainScreen) · 실제 시간 SetUpdate(true)")]
+        [Tooltip("들어올 때 배경 페이드 (초)")]
+        [Min(0f)] public float mainBgFadeDuration = 0.4f;
+        [Tooltip("로고 · 버튼 · 메뉴 · 카드 순서대로 이만큼씩 늦게 올라옴 (초)")]
+        [Min(0f)] public float mainIntroStagger = 0.08f;
+        [Tooltip("한 덩어리가 올라오는 시간 (초) · 아래에서 올라오는 거리 (px)")]
+        [Min(0f)] public float mainIntroItemDuration = 0.35f;
+        public float mainIntroRise = 40f;
+        [Tooltip("배경 Glow 숨쉬기 한 주기 (초) · 알파 범위")]
+        [Min(0.1f)] public float mainGlowPeriod = 3f;
+        [Range(0f, 1f)] public float mainGlowAlphaMin = 0.6f;
+        [Range(0f, 1f)] public float mainGlowAlphaMax = 1f;
+        [Tooltip("CCTV 주사선 띠가 창 위 → 아래로 한 번 흐르는 시간 (초)")]
+        [Min(0.1f)] public float mainScanBandPeriod = 4f;
+        [Tooltip("CCTV REC 깜빡임 한 주기 (초) — 반은 켜짐, 반은 꺼짐")]
+        [Min(0.1f)] public float mainRecBlinkPeriod = 1f;
+        [Tooltip("메뉴 선택 표시 — 막대 · 글자 (선택 / 아님)")]
+        public Color mainMenuSelectedColor = Color.white;
+        public Color mainMenuIdleColor = new Color(0.62f, 0.68f, 0.72f, 1f);
+        public Color mainMenuBarSelectedColor = new Color(0.2f, 0.95f, 0.82f, 1f);
+        public Color mainMenuBarIdleColor = new Color(0.35f, 0.4f, 0.45f, 1f);
+        [Tooltip("비활성 메뉴 (근무 기록) 글자 알파")]
+        [Range(0f, 1f)] public float mainMenuDisabledAlpha = 0.4f;
+        [Tooltip("출근하기 버튼이 선택 아닐 때 그림 색 (선택이면 흰색 = 원래 색)")]
+        public Color mainStartIdleTint = new Color(0.78f, 0.82f, 0.82f, 1f);
+        [Tooltip("「준비 중」 토스트 — 나타남 · 머묾 · 사라짐 (초)")]
+        [Min(0f)] public float mainToastFadeIn = 0.12f;
+        [Min(0f)] public float mainToastHold = 1.2f;
+        [Min(0f)] public float mainToastFadeOut = 0.3f;
+        [Tooltip("출근하기 누름 — 버튼 펀치 크기 · 시간, 그 뒤 화면 어두워짐 (초)")]
+        public float mainStartPunch = 0.12f;
+        [Min(0f)] public float mainStartPunchDuration = 0.2f;
+        [Min(0f)] public float mainExitFadeDuration = 0.4f;
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {

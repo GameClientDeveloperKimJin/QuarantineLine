@@ -32,7 +32,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5893757994891924437}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8918266514116723335
@@ -98,3 +99,55 @@ MonoBehaviour:
   ringMaterial: {fileID: 2100000, guid: 2edffa8e8580ed647945453b8b8a7467, type: 2}
   ringMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   bootstrap: {fileID: 0}
+--- !u!1 &5370850614246768935
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5893757994891924437}
+  - component: {fileID: 9181964688600077775}
+  m_Layer: 0
+  m_Name: ContaminationFx
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5893757994891924437
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5370850614246768935}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1503839434922224404}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &9181964688600077775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5370850614246768935}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eee948580592f1d4789a1e3c24e55b2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Contamination.ContaminationFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  quadMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  puddleMaterial: {fileID: 2100000, guid: a4bb2d541722c2b45b3b30cf06e1b5f8, type: 2}
+  ringMaterial: {fileID: 2100000, guid: 2edffa8e8580ed647945453b8b8a7467, type: 2}
+  font: {fileID: 11400000, guid: 87b34aa4aa9b8aa409592cc45862b9c8, type: 2}
+  labelBackground: {fileID: 21300000, guid: 6022a8217e933bb4abd5b4ba4413028a, type: 3}
+  bootstrap: {fileID: 0}
+  pool: {fileID: 0}

@@ -12,7 +12,8 @@ namespace QL.FX.Motion
     /// F01 드론 표식 (MotionFx.prefab, Game.unity [FX] 아래). 두 가지를 바닥에 눕힌 쿼드로 그린다 — 판정 없음, GridModel · DroneBoard 읽기만.
     /// <list type="number">
     /// <item><b>종류색 링</b> — 드론이 있는 칸마다 발밑에 상시 (흡입 청록 · 소각 주황 · 냉각 하늘, FX_Ring 가산 재질, 작게 · 은은하게).
-    /// 위에서 봐도 세 종류가 한눈에 갈리게. 뷰가 움직이면(집기 · 끌기) x · z 를 따라간다.</item>
+    /// 위에서 봐도 세 종류가 한눈에 갈리게. 뷰가 움직이면(집기 · 끌기) x · z 를 따라간다.
+    /// 오염 칸(공격 멈춤)이면 알파 × <see cref="FxConfig.contamMarkerDim"/> 로 흐리게 (O03).</item>
     /// <item><b>머지 가능 표시</b> — DragStarted(from) 순간 같은 종류 · 같은 등급 · 올릴 등급 있음 · 잠기지 않은 드론 칸에
     /// 초록 테두리(U03 칸 외곽선 그림) + 드론 밑 초록 링(U04 링 그림), 은은히 숨 쉬듯 깜빡. 하나도 없으면 아무것도 안 뜬다. DragEnded → 전부 끔.</item>
     /// </list>
@@ -43,6 +44,7 @@ namespace QL.FX.Motion
         private Transform[] _hintRingT;
         private DroneView[] _ringView;
         private DroneType[] _ringColorType;
+        private bool[] _ringDim;
         private bool[] _hinted;
         private int _hintCount;
         private MaterialPropertyBlock _block;
@@ -152,22 +154,14 @@ namespace QL.FX.Motion
                     _ringView[i] = null;
                     continue;
                 }
-                if (_ringView[i] != v || !r.enabled)
+                bool dim = grid.Get(i).IsContaminated; // O03 — 오염 칸 드론은 공격을 멈춘다 → 링을 흐리게
+                if (_ringView[i] != v || !r.enabled || _ringColorType[i] != v.Type || _ringDim[i] != dim)
                 {
+                    // 새 뷰 · 다시 켬 · 같은 뷰가 다른 종류로 재사용 (스왑 · 머지 동기화) · 오염 여부 바뀜
                     _ringView[i] = v;
-                    Color c = TypeColor(v.Type);
-                    c = new Color(c.r * fx.markerRingIntensity, c.g * fx.markerRingIntensity, c.b * fx.markerRingIntensity, fx.markerRingAlpha);
-                    _block.SetColor(BaseColorId, c);
-                    r.SetPropertyBlock(_block);
-                    r.enabled = true;
-                }
-                else if (_ringColorType[i] != v.Type)
-                {
-                    // 같은 뷰가 다른 종류로 재사용 (스왑 · 머지 동기화)
-                    Color c = TypeColor(v.Type);
-                    c = new Color(c.r * fx.markerRingIntensity, c.g * fx.markerRingIntensity, c.b * fx.markerRingIntensity, fx.markerRingAlpha);
-                    _block.SetColor(BaseColorId, c);
-                    r.SetPropertyBlock(_block);
+                    _ringDim[i] = dim;
+                    PaintTypeRing(r, v.Type, dim);
+                    if (!r.enabled) r.enabled = true;
                 }
                 _ringColorType[i] = v.Type;
                 Vector3 p = v.transform.position;
@@ -181,6 +175,18 @@ namespace QL.FX.Motion
                 PaintHints(_hintTime);
             }
         }
+
+        /// <summary>종류색 링 칠하기 — 오염 칸이면 알파 × contamMarkerDim (O03).</summary>
+        private void PaintTypeRing(Renderer r, DroneType type, bool dim)
+        {
+            Color c = TypeColor(type);
+            float a = fx.markerRingAlpha * (dim ? fx.contamMarkerDim : 1f);
+            _block.SetColor(BaseColorId, new Color(c.r * fx.markerRingIntensity, c.g * fx.markerRingIntensity, c.b * fx.markerRingIntensity, a));
+            r.SetPropertyBlock(_block);
+        }
+
+        /// <summary>그 칸 종류색 링이 오염으로 흐려져 있나 (O03).</summary>
+        public bool IsTypeRingDimmed(int cell) => _ringDim != null && cell >= 0 && cell < _ringDim.Length && _ringDim[cell] && IsTypeRingShown(cell);
 
         /// <summary>머지 표시 색 — 초록, 알파가 hintPulsePeriod 주기로 min ↔ 1 (숨 쉬듯).</summary>
         private void PaintHints(float t)
@@ -233,6 +239,7 @@ namespace QL.FX.Motion
             _hintOutlines = new Renderer[n];
             _ringView = new DroneView[n];
             _ringColorType = new DroneType[n];
+            _ringDim = new bool[n];
             _hinted = new bool[n];
             _block = new MaterialPropertyBlock();
             for (int i = 0; i < n; i++)

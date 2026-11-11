@@ -1616,8 +1616,8 @@ MonoBehaviour:
   bootstrap: {fileID: 916952042}
   plateMaterial: {fileID: 2100000, guid: a4bb2d541722c2b45b3b30cf06e1b5f8, type: 2}
   color: {r: 0.35, g: 1, b: 0.2, a: 1}
-  maxAlpha: 0.85
-  minAlpha: 0.25
+  maxAlpha: 0
+  minAlpha: 0
   sizeRatio: 0.95
   yOffset: 0.03
 --- !u!4 &79228830

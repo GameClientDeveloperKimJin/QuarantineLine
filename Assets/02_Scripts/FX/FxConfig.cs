@@ -17,6 +17,7 @@ namespace QL.FX
     /// U14: 수당 영수증 — 시퀀스 시점 · 문구 (팀 · 항목 이름) · 종이 색 · 클리어 배너 · HUD 코인 「+합계」.
     /// U15: 작업 지시서 — 시퀀스 시점 (슬롯 · 출력 · 흔들림 · 도장 · Punch · 카메라 · 흡수) · 웨이브 패널 Punch (문구는 WaveOrderText SO).
     /// U16: 관제실 메신저 — 쿨다운 · 입력 중 · 말풍선 팝 / 밀림 / 접힘 · 레인 핑 링 (대사 · 우선순위 · 핑 여부는 OpsLineTable SO).
+    /// O03: 오염 웅덩이 번짐 · 출렁임 · 튐 방울 · 오염 칸 드론 링 흐리게 · 타이머 말풍선 · 청소 충격파 링 · 튐 / 마름.
     /// (U06 웨이브 경고 배너 수치는 U15 에서 배너와 함께 지움 — 웨이브 시작 알림 = 작업 지시서)
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
@@ -677,6 +678,68 @@ namespace QL.FX
         [Header("F01 처치 대역 첫 번쩍 — 처치 타격은 점액이 같은 프레임에 풀로 돌아가 히트 플래시가 안 그려지므로 대역이 이어받는다")]
         [Tooltip("대역 첫 이 시간 (초) 동안 히트 플래시와 같은 흰색 (0 = 끔)")]
         [Min(0f)] public float deathFlashDuration;
+
+        [Header("O03 오염 웅덩이 — FX_Slime_Puddle (Mat_FX_Puddle 알파) · 칸 바닥 · 드론 밑 (ContaminationFx · 게임 시간)")]
+        [Tooltip("웅덩이 지름 = cellSize × 이 값 · 바닥 높이 (월드 — 종류색 링 worldFxHeight 와 비슷, 링이 재질 큐 3001 이라 위에 그려짐)")]
+        [Min(0f)] public float contamPuddleSize;
+        [Min(0f)] public float contamPuddleHeight;
+        [Tooltip("흰 바탕 × 이 색 (그림이 이미 초록) — 알파 = 진하기")]
+        public Color contamPuddleColor;
+        [Tooltip("번짐 Scale 시작 → 꼭대기 → 1 (원본 0.3 → 1.1 → 1.0 · 0.25초 OutBack) · 꼭대기 도달 비율")]
+        public float contamSpreadFrom;
+        public float contamSpreadPeak;
+        [Min(0.01f)] public float contamSpreadDuration;
+        [Range(0.05f, 0.95f)] public float contamSpreadPeakRatio;
+        public Ease contamSpreadEase;
+        [Tooltip("출렁임 Scale 1 ± 이 값 · 한 주기 (초) — 위상은 칸마다 무작위, 첫 주기 동안 세기가 0 → 1")]
+        [Min(0f)] public float contamWobbleAmount;
+        [Min(0.01f)] public float contamWobblePeriod;
+        [Header("O03 오염 — 번짐 튐 방울 (FxPool Spark, 초록 · 가산)")]
+        [Min(0)] public int contamDropCount;
+        [Tooltip("방울 지름 (칸 ×) · 퍼지는 거리 (칸 ×) · 솟는 높이 (칸 ×) · 수명 (초)")]
+        [Min(0f)] public float contamDropSize;
+        [Min(0f)] public float contamDropDistance;
+        [Min(0f)] public float contamDropRise;
+        [Min(0.01f)] public float contamDropDuration;
+        public Color contamDropColor;
+        [Header("O03 오염 — 그 칸 드론 종류색 링 흐리게 (F01 DroneMarkerFx — 공격 멈춤 표시)")]
+        [Tooltip("오염 칸 드론의 종류색 링 알파 × 이 값")]
+        [Range(0f, 1f)] public float contamMarkerDim;
+        [Header("O03 오염 타이머 「오염 3.2초」 — 오버레이 캔버스 말풍선 (Bagel Fat One · 게임 시간)")]
+        [Tooltip("형식 — {0:1} = 남은 초 소수 1자리 (TMP SetText 무할당)")]
+        public string contamLabelFormat;
+        [Tooltip("말풍선 가운데 = 칸 중심 + 이 값 × cellSize (월드) — 드론 몸체를 가리지 않게 칸 앞쪽(카메라 쪽) 웅덩이 위")]
+        public Vector3 contamLabelOffset;
+        [Tooltip("글자 크기 (1920×1080 기준 px, 최소 24 — S3 규칙 8) · 말풍선 안쪽 여백 (px)")]
+        [Min(24f)] public float contamLabelFontSize;
+        public Vector2 contamLabelPadding;
+        public Color contamLabelTextColor;
+        public Color contamLabelBgColor;
+        [Tooltip("캔버스 정렬 — 데미지 숫자(5) · HUD(10) 밑")]
+        public int contamLabelSortingOrder;
+        [Tooltip("남은 시간이 이 값 이하면 깜빡 (곧 마름) · 한 주기 (초) · 가장 옅을 때 알파")]
+        [Min(0f)] public float contamBlinkThreshold;
+        [Min(0.01f)] public float contamBlinkPeriod;
+        [Range(0f, 1f)] public float contamBlinkAlphaMin;
+        [Header("O03 청소 (머지) — 충격파 링 (Mat_FX_Ring 가산, 칸마다 하나) + 웅덩이 튀며 사라짐")]
+        [Tooltip("링 지름 = cellSize × 이 값 × Scale (원본 Scale 0.5 → 2.5 · Fade 0.35초)")]
+        [Min(0f)] public float contamRingSize;
+        public float contamRingScaleFrom;
+        public float contamRingScaleTo;
+        [Min(0.01f)] public float contamRingDuration;
+        public Ease contamRingEase;
+        [Tooltip("초록 → 흰 (가산 — 색 × 밝기, 알파 = 시작 세기)")]
+        public Color contamRingColorFrom;
+        public Color contamRingColorTo;
+        [Min(0f)] public float contamRingIntensity;
+        [Min(0f)] public float contamRingHeight;
+        [Tooltip("웅덩이 튐 Scale 1 → 이 값 → 0 (원본 1.2 · 0.2초) · 꼭대기 도달 비율")]
+        public float contamPopPeak;
+        [Min(0.01f)] public float contamPopDuration;
+        [Range(0.05f, 0.95f)] public float contamPopPeakRatio;
+        [Header("O03 자연 마름 — 웅덩이 Scale 1 → 이 값 + Fade (원본 0.6 · 0.5초), 링 없음")]
+        public float contamDryScale;
+        [Min(0.01f)] public float contamDryDuration;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

@@ -403,3 +403,44 @@ MonoBehaviour:
   markerHintAlphaMin: 0.45
   markerHintLift: 0.004
   deathFlashDuration: 0.1
+  contamPuddleSize: 1.05
+  contamPuddleHeight: 0.025
+  contamPuddleColor: {r: 0.6, g: 0.7, b: 0.6, a: 0.85}
+  contamSpreadFrom: 0.3
+  contamSpreadPeak: 1.1
+  contamSpreadDuration: 0.25
+  contamSpreadPeakRatio: 0.6
+  contamSpreadEase: 6
+  contamWobbleAmount: 0.03
+  contamWobblePeriod: 1.4
+  contamDropCount: 5
+  contamDropSize: 0.22
+  contamDropDistance: 0.55
+  contamDropRise: 0.25
+  contamDropDuration: 0.35
+  contamDropColor: {r: 0.45, g: 1, b: 0.3, a: 0.9}
+  contamMarkerDim: 0.6
+  contamLabelFormat: "\uC624\uC5FC {0:1}\uCD08"
+  contamLabelOffset: {x: 0, y: 0, z: -0.42}
+  contamLabelFontSize: 24
+  contamLabelPadding: {x: 10, y: 2}
+  contamLabelTextColor: {r: 0.55, g: 1, b: 0.35, a: 1}
+  contamLabelBgColor: {r: 1, g: 1, b: 1, a: 0.92}
+  contamLabelSortingOrder: 4
+  contamBlinkThreshold: 1
+  contamBlinkPeriod: 0.25
+  contamBlinkAlphaMin: 0.25
+  contamRingSize: 1
+  contamRingScaleFrom: 0.5
+  contamRingScaleTo: 2.5
+  contamRingDuration: 0.35
+  contamRingEase: 9
+  contamRingColorFrom: {r: 0.4, g: 1, b: 0.3, a: 1}
+  contamRingColorTo: {r: 1, g: 1, b: 1, a: 1}
+  contamRingIntensity: 1.5
+  contamRingHeight: 0.03
+  contamPopPeak: 1.2
+  contamPopDuration: 0.2
+  contamPopPeakRatio: 0.35
+  contamDryScale: 0.6
+  contamDryDuration: 0.5

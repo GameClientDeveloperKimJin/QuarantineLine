@@ -48,3 +48,7 @@ crashlytics-build.properties
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# 유료 에셋 (Asset Store EULA — 공개 저장소에 올리지 않음). 새 PC 에서는 Package Manager 로 Feel 다시 임포트
+/Assets/Feel/
+/Assets/Feel.meta

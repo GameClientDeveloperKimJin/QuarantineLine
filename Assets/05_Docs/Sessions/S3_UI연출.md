@@ -25,6 +25,15 @@
 6. 색 · 크기 · 시간 같은 연출 수치는 연출용 SO(`FxConfig`, R4 소유, `Data/` 아님 `FX/` 아래)에 둔다
 7. 연출 하나 끝날 때마다 포폴 GIF 대상인지 ② 에 적는다 (머지 · 처치 · 보급 · 웨이브 배너 · 피격)
 8. **UI 글자는 최소 24px** (1920×1080 기준, Bagel Fat One 18px 은 받침 한글이 뭉개짐 — U01 실측). 보조 폰트는 쓰지 않는다
+9. **Feel (More Mountains) 사용 가능** (사람 2026-11-11, `Assets/Feel/`). 새 연출에 써도 되고, 기존 DOTween 연출을 Feel 로 더 좋게 바꿔도 된다 (바꿀 땐 보고에 「무엇을 왜」). 단:
+   - **timeScale 은 GameLoop 소유** → `MMF_TimescaleModifier` · `MMF_FreezeFrame` · `MMTimeManager` (히트스톱 포함) 쓰지 않는다
+   - **카메라는 CameraRig 소유** → `MMCameraShaker` 를 메인 카메라에 붙이지 않는다. 흔들림은 `CameraShakeFx` (→ `CameraRig.SetShakeOffset`) 로만
+   - 프리팹 루트 금지 그대로 — 드론 · 점액은 자식 `Model` 만 (U04 규칙)
+   - 일시정지 · 결과 화면 UI 의 `MMF_Player` 는 Unscaled 시간
+   - `MMF_Player` 는 시작 때 초기화, **웨이브 중 할당 0** 테스트 유지 (Feel 이 할당하면 그 피드백은 빼거나 미리 데움)
+   - 수치는 `MMF_Player` 인스펙터(프리팹)에 둬도 된다 — FxConfig 대신 허용. 어디에 뒀는지 보고에 적기
+   - NiceVibrations · `MMSoundManager` 는 쓰지 않음 (소리는 U08 에서 정함)
+   - **Feel 폴더는 git 제외** (유료 에셋 EULA) — Feel 파일을 고치지 않는다. 우리 asmdef 에서 Feel asmdef 참조 추가만 허용
 
 ## 목표 화면
 `Assets/05_Docs/Reference/ingame_reference.png` + `레퍼런스_메모.md` 「R4 연출」 표. 기획서에 없던 요소(변이 점액 레인 경고 · 드론 범례 · 머지 결과 말풍선 · 빈 칸 수 · 종류색 데미지 숫자)는 R1 이 해당 U 지시서에 넣을 때만 만든다.

@@ -7,7 +7,7 @@
 | 선행 | **G12 마감** (가이드 중 준비 시간 멈춤 API) · F03 마감 (Unity 한 세션) · Feel 임포트됨 (`Assets/Feel/`, git 제외) |
 | 소유 파일 | R4 파일 (`02_Scripts/UI/**` · `02_Scripts/FX/**` · `03_Prefabs/UI/**` · `03_Prefabs/FX/**` · FxConfig) · R4 asmdef 의 Feel 참조 (`MoreMountains.Feedbacks` 추가 허용) · R4 테스트 · `_Verify/U18/` |
 | 쓰지 않는 것 | Feel 폴더 파일 · R3 · Core · timeScale (`MMF_TimescaleModifier` · `MMF_FreezeFrame` · `MMTimeManager` 금지 그대로) · 메인 카메라 `MMCameraShaker` (흔들림은 `CameraShakeFx` 경로) · 프리팹 루트 (자식 `Model` 만) · `MMSoundManager` · NiceVibrations |
-| 예상 | 2시간 |
+| 예상 | 3시간 (8번 발사 이펙트 포함) |
 | 함께 받는 규격 | `Sessions/S3_UI연출.md` 규칙 9 (개정) · 10 · `V02_GameEvents_목록.md` · README 8장 |
 
 ---
@@ -32,6 +32,19 @@
 - 기존 DOTween · MMTween 연출을 **MMF_Player 로 옮기거나 그 위에 덧붙이거나** 자유. 옮긴 것마다 「무엇을 왜 · 값이 어느 프리팹 인스펙터에 있나」 보고
 - 타이밍이 다른 연출의 기다림 기준인 것(U14 1.9초 · U15 1.7초 · 머지 0.3초)은 길이 유지 — 바꾸면 테스트 · 보고
 - 과하면 실패 — 여러 마리 동시 처치 때 눈이 피곤하지 않게 (같은 피드백 동시 재생 수 상한 · 풀)
+
+## 8. 드론 발사 이펙트 업그레이드 (사람 요청 2026-11-12 「발사 이펙트가 더 화려했으면」)
+- 지금: R3 `Game/Combat/AttackFxView.cs` 의 자리표시 (선 1개 + 바닥 쿼드 1장, 0.1초) — 흡입 빔 · 소각 부채꼴 · 냉각 분사 · 빙결 링
+- **R3 파일 예외 (R1 승인)**: `AttackFxView.cs` · 그 프리팹 · `Mat_AttackFx` 를 R4 가 고쳐도 됨. 타겟 · 사거리 · 피해 계산 (`DroneCombat` · `*Attack.cs`) 은 손대지 않음 — 받은 위치에 그리기만
+- 종류별로 화려하게 (종류색 유지):
+  - 공통: **발사구 머즐 플래시** (드론 `Model` 노즐 쪽 작은 섬광 + 펀치) · **맞은 곳 임팩트** (스파크 · 작은 링)
+  - 흡입: 빔 두께 펄스 + 빔 위를 타고 흐르는 입자 (점액 → 드론 방향, 「빨아들임」) · 끝에 소용돌이
+  - 소각: 부채꼴 안 불꽃 입자 · 열기 아지랑이 느낌 (가산 · 노이즈 스크롤) · 끝에 불씨
+  - 냉각: 분사 입자 (눈송이 · 서리 가루) · 맞은 점액에 서리 반짝 · 3등급 빙결 링은 얼음 파편 터짐
+  - 등급이 오를수록 조금씩 더 굵고 밝게 (2 · 3등급 차이가 보이게)
+- **발사는 초당 수십 번** → 여기선 MMF_Player 를 매 발사마다 쓰지 말고 **풀링한 ParticleSystem · MPB** 위주 (할당 0 유지 — 우리 코드 규칙). Feel 은 곡선 · 머즐 펀치 정도만
+- 블룸(U07)에 걸리게 HDR 색 · 과하면 실패 (동시 15대 발사 화면이 하얗게 뒤덮이지 않게)
+- 📷 p8: 3종 × 1 · 3등급 발사 순간 전 · 후 + 동시 다수 발사 화면 1장
 
 ## 할당 (규칙 9 개정)
 - `MMF_Player` 는 풀 · 프리팹 안에 미리 (Instantiate 0) · 시작 때 Initialization + 한 번 데우기

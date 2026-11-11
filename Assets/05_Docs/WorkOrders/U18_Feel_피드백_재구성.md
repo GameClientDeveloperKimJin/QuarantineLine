@@ -4,13 +4,20 @@
 | | |
 |---|---|
 | 역할 | R4 연출 (`S3_UI연출.md` — **규칙 9 개정판**: 웨이브 중 MMF_Player 허용, 할당은 「재생당 상한 + 증가 없음」) |
-| 선행 | F03 마감 (Unity 한 세션) · Feel 임포트됨 (`Assets/Feel/`, git 제외) |
+| 선행 | **G12 마감** (가이드 중 준비 시간 멈춤 API) · F03 마감 (Unity 한 세션) · Feel 임포트됨 (`Assets/Feel/`, git 제외) |
 | 소유 파일 | R4 파일 (`02_Scripts/UI/**` · `02_Scripts/FX/**` · `03_Prefabs/UI/**` · `03_Prefabs/FX/**` · FxConfig) · R4 asmdef 의 Feel 참조 (`MoreMountains.Feedbacks` 추가 허용) · R4 테스트 · `_Verify/U18/` |
 | 쓰지 않는 것 | Feel 폴더 파일 · R3 · Core · timeScale (`MMF_TimescaleModifier` · `MMF_FreezeFrame` · `MMTimeManager` 금지 그대로) · 메인 카메라 `MMCameraShaker` (흔들림은 `CameraShakeFx` 경로) · 프리팹 루트 (자식 `Model` 만) · `MMSoundManager` · NiceVibrations |
 | 예상 | 2시간 |
 | 함께 받는 규격 | `Sessions/S3_UI연출.md` 규칙 9 (개정) · 10 · `V02_GameEvents_목록.md` · README 8장 |
 
 ---
+
+## 0. 커서 가이드 중 카운트다운 멈춤 (사람 요청 2026-11-12 — G12 API)
+- U09 가이드가 1단계를 시작할 때 `GameLoop.SetPrepHold(true)`, 첫 머지(가이드 끝)에 `false` → 그때부터 웨이브 1 카운트다운이 흐름
+- 멈춘 동안 HUD 카운트다운 자리에 숫자 대신 짧게 「연습 중 · Enter 로 시작」 (Bagel Fat One · 24px 이상, 문구 SO)
+- Enter · 바로 시작 버튼 → 가이드 건너뛰기: 가이드 끝 처리 (`QL.GuideDone` 저장) + 바로 시작
+- 가이드가 안 뜨는 판(이미 끝남)에서는 hold 를 걸지 않음
+- 테스트: 가이드 판 → 10초 동안 PrepRemaining 그대로 · 첫 머지 뒤 감소 / Enter → 건너뛰기 + 시작 / 가이드 끝난 판 → hold 없음
 
 ## 바꿀 순간 (위에서부터, 시간 안에)
 | # | 순간 | 이벤트 | MMF_Player 구성 예 |

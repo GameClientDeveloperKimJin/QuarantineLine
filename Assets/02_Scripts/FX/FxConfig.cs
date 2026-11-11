@@ -16,6 +16,7 @@ namespace QL.FX
     /// U13: 결재 도장 결과 — 어둡게 · 패널 부팅 · 스캔라인 띠 · 숫자 올라감 · 도장 · Punch · 버튼 잠금 해제 시점.
     /// U14: 수당 영수증 — 시퀀스 시점 · 문구 (팀 · 항목 이름) · 종이 색 · 클리어 배너 · HUD 코인 「+합계」.
     /// U15: 작업 지시서 — 시퀀스 시점 (슬롯 · 출력 · 흔들림 · 도장 · Punch · 카메라 · 흡수) · 웨이브 패널 Punch (문구는 WaveOrderText SO).
+    /// U16: 관제실 메신저 — 쿨다운 · 입력 중 · 말풍선 팝 / 밀림 / 접힘 · 레인 핑 링 (대사 · 우선순위 · 핑 여부는 OpsLineTable SO).
     /// (U06 웨이브 경고 배너 수치는 U15 에서 배너와 함께 지움 — 웨이브 시작 알림 = 작업 지시서)
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
@@ -603,6 +604,54 @@ namespace QL.FX
         [Min(0.01f)] public float wavePanelPunchDuration;
         [Min(1)] public int wavePanelPunchVibrato;
         [Range(0f, 1f)] public float wavePanelPunchElasticity;
+
+        [Header("U16 관제실 메신저 — 규칙 (게임 시간 · 대사 · 우선순위 · 핑 여부는 OpsLineTable SO)")]
+        [Tooltip("전체 쿨다운 (원본 8초). 쿨다운 중엔 마지막으로 띄운 것보다 우선순위가 높은 (숫자 작은) 트리거만 끼어든다")]
+        [Min(0f)] public float opsCooldown;
+        [Tooltip("「입력 중」 → 말풍선 팝 · 핑 시점 (원본 0.50)")]
+        [Min(0f)] public float opsTypingDuration;
+        [Tooltip("말풍선이 팝 뒤 떠 있는 시간 (원본 4.50 − 0.50 = 4.0) → 접힘")]
+        [Min(0f)] public float opsBubbleLife;
+        [Header("U16 관제실 메신저 — 입력 줄 점 3개 (Fade 루프)")]
+        [Tooltip("점 하나 깜빡 한 주기 (초) · 점마다 어긋남 (원본 0.1초) · 가장 옅을 때 알파")]
+        [Min(0.01f)] public float opsDotPeriod;
+        [Min(0f)] public float opsDotStagger;
+        [Range(0f, 1f)] public float opsDotAlphaMin;
+        [Header("U16 관제실 메신저 — 말풍선")]
+        [Tooltip("새 말풍선 팝 — Scale 시작 (원본 0.6) · 시간 (0.25) · 이징 (OutBack)")]
+        public float opsPopScaleFrom;
+        [Min(0.01f)] public float opsPopDuration;
+        public Ease opsPopEase;
+        [Tooltip("이전 말풍선이 위로 밀림 — 거리 (px, 원본 +84 · 우리는 24px 두 줄 말풍선 한 칸 높이) · 시간 (0.2) · 흐려진 알파 (0.45)")]
+        public float opsPushShift;
+        [Min(0.01f)] public float opsPushDuration;
+        public Ease opsPushEase;
+        [Range(0f, 1f)] public float opsDimAlpha;
+        [Tooltip("접힘 — Fade 0 + 높이 0 시간 (원본 0.25) → 풀 반납")]
+        [Min(0.01f)] public float opsCollapseDuration;
+        public Ease opsCollapseEase;
+        [Tooltip("이름 글자색 — 새 말풍선 (주황) · 흐려진 말풍선")]
+        public Color opsNameColor;
+        public Color opsNameDimColor;
+        [Header("U16 레인 핑 — 바닥 링 3개 (Mat_FX_Ring 가산, LanePingFx · 게임 시간)")]
+        [Tooltip("동시에 퍼질 수 있는 핑 수 (모자라면 가장 오래된 것을 다시 씀)")]
+        [Min(1)] public int opsPingSlots;
+        [Tooltip("링 수 (원본 3) · 링마다 시작 어긋남 (초)")]
+        [Min(1)] public int opsPingRings;
+        [Min(0f)] public float opsPingRingStagger;
+        [Tooltip("링 지름 = cellSize × 이 값 × Scale (원본 Scale 0.5 → 2)")]
+        [Min(0f)] public float opsPingSize;
+        public float opsPingScaleFrom;
+        public float opsPingScaleTo;
+        public Ease opsPingScaleEase;
+        [Tooltip("한 번 퍼지는 시간 (원본 1초) · 반복 (2회)")]
+        [Min(0.01f)] public float opsPingPeriod;
+        [Min(1)] public int opsPingLoops;
+        [Tooltip("주황 — 가산 재질이라 색 × 밝기, 알파 = 시작 세기 (Fade 1 → 0)")]
+        public Color opsPingColor;
+        [Min(0f)] public float opsPingIntensity;
+        [Tooltip("변이 등장 핑 — 그 점액 위치(격리선까지 남은 칸)를 이 칸 수 안쪽으로 당긴다. 스폰선(10칸)은 해치 패널 밑이라 보이지 않음 (1920×1080 실측: 8칸 = 화면 위에서 178px)")]
+        [Min(0f)] public float opsPingPathMaxDist;
 
         [Header("F01 드론 표식 — 종류색 링 (발밑 상시, Mat_FX_Ring 가산 · DroneMarkerFx)")]
         public Color markerSuctionColor;

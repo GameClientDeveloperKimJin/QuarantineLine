@@ -360,6 +360,35 @@ MonoBehaviour:
   wavePanelPunchDuration: 0.2
   wavePanelPunchVibrato: 6
   wavePanelPunchElasticity: 0.5
+  opsCooldown: 8
+  opsTypingDuration: 0.5
+  opsBubbleLife: 4
+  opsDotPeriod: 0.6
+  opsDotStagger: 0.1
+  opsDotAlphaMin: 0.2
+  opsPopScaleFrom: 0.6
+  opsPopDuration: 0.25
+  opsPopEase: 27
+  opsPushShift: 136
+  opsPushDuration: 0.2
+  opsPushEase: 6
+  opsDimAlpha: 0.45
+  opsCollapseDuration: 0.25
+  opsCollapseEase: 5
+  opsNameColor: {r: 1, g: 0.66, b: 0.22, a: 1}
+  opsNameDimColor: {r: 0.55, g: 0.63, b: 0.68, a: 1}
+  opsPingSlots: 3
+  opsPingRings: 3
+  opsPingRingStagger: 0.2
+  opsPingSize: 1
+  opsPingScaleFrom: 0.5
+  opsPingScaleTo: 2
+  opsPingScaleEase: 6
+  opsPingPeriod: 1
+  opsPingLoops: 2
+  opsPingColor: {r: 1, g: 0.55, b: 0.15, a: 0.9}
+  opsPingIntensity: 2
+  opsPingPathMaxDist: 8
   markerSuctionColor: {r: 0.15, g: 0.95, b: 0.9, a: 1}
   markerPlasmaColor: {r: 1, g: 0.5, b: 0.12, a: 1}
   markerCryoColor: {r: 0.4, g: 0.7, b: 1, a: 1}

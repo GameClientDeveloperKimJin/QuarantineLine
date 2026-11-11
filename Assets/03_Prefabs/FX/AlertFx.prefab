@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8918266514116723335}
   - component: {fileID: 2531135635447947976}
   - component: {fileID: 8524098475895287378}
+  - component: {fileID: 5796051236479699824}
   m_Layer: 0
   m_Name: AlertFx
   m_TagString: Untagged
@@ -81,3 +82,19 @@ MonoBehaviour:
   glowMaterial: {fileID: 2100000, guid: 148b8908db36a2147b4392c9f91c018e, type: 2}
   glowMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
   postsGroupName: Posts
+--- !u!114 &5796051236479699824
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 256068098827723847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 21ed1aa3fdec0e1459f0946fe0171216, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Alert.LanePingFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  ringMaterial: {fileID: 2100000, guid: 2edffa8e8580ed647945453b8b8a7467, type: 2}
+  ringMesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+  bootstrap: {fileID: 0}

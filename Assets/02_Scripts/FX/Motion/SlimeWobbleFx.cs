@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DG.Tweening;
+using MoreMountains.Tools;
 using QL.Core;
 using QL.Game;
 using QL.Game.Slimes;
@@ -13,6 +14,9 @@ namespace QL.FX.Motion
     /// 변이 점액은 더 느리고 묵직하게 (<see cref="FxConfig.slimeWobbleMutantAmp"/>). 위상 = 점액 풀 번호(Id) — 무작위 없음.
     /// SlimeKilled · SlimeReachedHatch → Kill 이 아니라 <b>Pause + 스케일 원복</b> — 뷰가 풀 안에서 재사용되므로 트윈도 재사용
     /// (S3 규칙 4 「풀 반납 시 Kill」 대신, U04 의 드론 · 이펙트와 같은 방식으로 통일). 처치 납작 · 흩어짐은 U05.
+    /// F03 (T1 3 「맞았다가 한눈에」): SlimeDamaged(view) — 드론 직접 공격만 — 때 같은 Model 크기에 작은 펀치를 곱한다
+    /// (가로 × (1 + p) · 세로 × (1 − p), p = hitPunchAmount × (1 − Feel MMTween 감쇠 곡선(지난 비율))). 출렁임 트윈의 setter 안에서 같이 계산 —
+    /// 트윈 · 코루틴을 새로 만들지 않는다 (할당 0 · TotalActiveTweens 그대로). 시간은 게임 시간 (Time.time).
     /// </summary>
     public sealed class SlimeWobbleFx : MonoBehaviour
     {
@@ -25,11 +29,16 @@ namespace QL.FX.Motion
             private float _w;   // -1 … 1
             private float _amp;
             private Tween _tween;
+            private float _punchStart = float.NegativeInfinity;
 
             public SlimeView View { get; }
             public Transform Model => _model;
             public Vector3 BaseScale => _base;
             public bool IsPlaying => _tween != null && _tween.IsActive() && _tween.IsPlaying();
+            /// <summary>F03 — 지금 펀치 몫 (0 = 없음).</summary>
+            public float Punch => PunchAt(Time.time);
+            /// <summary>F03 — 펀치 시작 총수.</summary>
+            public int PunchCount { get; private set; }
 
             public Wobble(SlimeView view, Transform model, FxConfig fx)
             {
@@ -61,11 +70,28 @@ namespace QL.FX.Motion
                 _tween.Goto(Mathf.Repeat(id * _fx.slimeWobblePhaseStep, 1f) * 2f, true);
             }
 
+            /// <summary>F03 — 맞은 순간 펀치 (또 맞으면 처음부터).</summary>
+            public void Hit()
+            {
+                if (_model == null || _fx.hitPunchAmount <= 0f) return;
+                _punchStart = Time.time;
+                PunchCount++;
+                SetW(_w); // 맞은 그 프레임부터 (다음 트윈 갱신을 기다리지 않음)
+            }
+
+            private float PunchAt(float now)
+            {
+                float k = (now - _punchStart) / _fx.hitPunchDuration;
+                if (k < 0f || k >= 1f) return 0f;
+                return _fx.hitPunchAmount * (1f - MMTween.Evaluate(k, _fx.hitPunchCurve));
+            }
+
             /// <summary>멈춤 + 원래 크기.</summary>
             public void Park()
             {
                 if (_tween != null && _tween.IsActive()) _tween.Pause();
                 _w = 0f;
+                _punchStart = float.NegativeInfinity;
                 if (_model != null) _model.localScale = _base;
             }
 
@@ -81,7 +107,8 @@ namespace QL.FX.Motion
             {
                 _w = w;
                 float k = _amp * w;
-                _model.localScale = new Vector3(_base.x * (1f + k), _base.y * (1f - k), _base.z * (1f + k));
+                float p = PunchAt(Time.time);
+                _model.localScale = new Vector3(_base.x * (1f + k) * (1f + p), _base.y * (1f - k) * (1f - p), _base.z * (1f + k) * (1f + p));
             }
         }
 
@@ -98,6 +125,7 @@ namespace QL.FX.Motion
         private void OnEnable()
         {
             GameEvents.SlimeSpawned += OnSpawned;
+            GameEvents.SlimeDamaged += OnDamaged;
             GameEvents.SlimeKilled += OnGone;
             GameEvents.SlimeReachedHatch += OnGone;
         }
@@ -105,6 +133,7 @@ namespace QL.FX.Motion
         private void OnDisable()
         {
             GameEvents.SlimeSpawned -= OnSpawned;
+            GameEvents.SlimeDamaged -= OnDamaged;
             GameEvents.SlimeKilled -= OnGone;
             GameEvents.SlimeReachedHatch -= OnGone;
         }
@@ -129,6 +158,12 @@ namespace QL.FX.Motion
                 _all.Add(w);
             }
             w.Play(view.Type);
+        }
+
+        private void OnDamaged(SlimeView view, int damage, DroneType source)
+        {
+            Wobble w = Find(view);
+            if (w != null) w.Hit();
         }
 
         private void OnGone(SlimeView view)

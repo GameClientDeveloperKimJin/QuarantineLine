@@ -33,8 +33,7 @@ namespace QL.Tests.PlayMode.UI
         private const int MaxWaitFrames = 300;
         private const float PixelTolerance = 10f;
 
-        private bool _hadKey;
-        private int _oldValue;
+        private GuidePrefsGuard _guidePrefs;
 
         private GameLoop _loop;
         private GameBootstrap _bootstrap;
@@ -52,8 +51,7 @@ namespace QL.Tests.PlayMode.UI
         [UnitySetUp]
         public IEnumerator SetUp()
         {
-            _hadKey = PlayerPrefs.HasKey(CursorGuide.PrefsKey);
-            _oldValue = PlayerPrefs.GetInt(CursorGuide.PrefsKey, 0);
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             PlayerPrefs.DeleteKey(CursorGuide.PrefsKey); // 첫 판
             yield return LoadGame();
         }
@@ -64,9 +62,7 @@ namespace QL.Tests.PlayMode.UI
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
-            if (_hadKey) PlayerPrefs.SetInt(CursorGuide.PrefsKey, _oldValue);
-            else PlayerPrefs.DeleteKey(CursorGuide.PrefsKey);
-            PlayerPrefs.Save();
+            _guidePrefs.Restore();
             yield return null;
         }
 
@@ -133,8 +129,7 @@ namespace QL.Tests.PlayMode.UI
         private IEnumerator SkipOrderCard()
         {
             _card.SkipToAbsorb();
-            float guard = Time.realtimeSinceStartup + 3f;
-            while ((_card.IsShowing || _card.IsWaiting) && Time.realtimeSinceStartup < guard) yield return null;
+            yield return WaitFor(() => !_card.IsShowing && !_card.IsWaiting);
             Assert.IsFalse(_card.IsShowing, "지시서가 끝나지 않았다");
             yield return null;
         }
@@ -165,6 +160,16 @@ namespace QL.Tests.PlayMode.UI
         /// <summary>Overlay 캔버스 — RectTransform 월드 위치 = 화면 px.</summary>
         private static Vector2 ScreenOf(Transform t) => t.position;
 
+        /// <summary>
+        /// 조건이 될 때까지 (F03 · 보류함 34) — 실시간 3초 상한은 포커스 없는 에디터(프레임이 느리고 DOTween 무시간 단계가 0.15초로 잘림)에서
+        /// 흡수 · 사라짐이 끝나기 전에 끊겼다. 상한은 프레임 수 (연출이 얼마나 느리게 돌든 조건으로 끝남) + 멈춤 방지 실시간 60초.
+        /// </summary>
+        private static IEnumerator WaitFor(Func<bool> done, int maxFrames = 3000)
+        {
+            float hardEnd = Time.realtimeSinceStartup + 60f;
+            for (int i = 0; i < maxFrames && !done() && Time.realtimeSinceStartup < hardEnd; i++) yield return null;
+        }
+
         private IEnumerator WaitFrames(int n)
         {
             for (int i = 0; i < n; i++) yield return null;
@@ -172,8 +177,7 @@ namespace QL.Tests.PlayMode.UI
 
         private IEnumerator WaitFade()
         {
-            float guard = Time.realtimeSinceStartup + 3f;
-            while (_guide.Stage == GStage.Fading && Time.realtimeSinceStartup < guard) yield return null;
+            yield return WaitFor(() => _guide.Stage != GStage.Fading);
         }
 
         // ── 1단계 ────────────────────────────────────────────

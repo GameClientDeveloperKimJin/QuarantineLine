@@ -14,13 +14,16 @@ namespace QL.UI.Hud
 {
     /// <summary>
     /// U16 관제실 메신저 (InGameScreen/Hud/OpsMessenger — 화면 왼쪽 아래, 앵커 Bottom Left). 시안 1-3 · 원본 WO-UI-03.
+    /// F03 (T1 5 「빈 창 거슬림」): 사각 패널(배경 · 머리 줄 채널 · 시간 · 입력 줄)을 없앴다 — 말풍선(아바타 · 이름 · 본문)만 떴다가 사라지고,
+    /// 「입력 중」 은 말풍선 자리(아래 칸)에 작은 점 풍선(아바타 + ●●●)으로 opsTypingDuration 뒤 말풍선으로 바뀐다. 말풍선이 없으면 화면에 아무것도 없다.
     /// 기존 이벤트 5종을 트리거로 (<see cref="OpsTrigger"/>) 관제실 대사 한 줄을 「입력 중 ●●●」 뒤에 말풍선으로 띄우고, 대사에 나온 위치 바닥에 핑 (<see cref="LanePingFx"/>).
     /// <list type="bullet">
     /// <item>대사 · 우선순위 · 핑 여부는 <see cref="OpsLineTable"/> SO, 시점 · 세기는 FxConfig 「U16」. 같은 트리거 대사는 목록 순서대로 돌림. <c>{lane}</c> = 1부터</item>
     /// <item>같은 프레임에 여러 개 → 가장 높은 것 하나 (LateUpdate 에서 결정). 전체 쿨다운 8초 — 그 안엔 마지막으로 띄운 것보다 우선순위가 높을 때만 바로, 같거나 낮으면 버림 (쌓지 않음)</item>
     /// <item>해치 위기 · 최고 등급 결합은 판에 1번 (다시 하기 = 씬 재로드로 초기화)</item>
     /// <item>휴게(Paused) · 결과(Result) 중엔 새 메시지 없음 (<see cref="GameLoop.CanAct"/>). 떠 있는 것은 게임 시간이라 같이 멈춤</item>
-    /// <item>0.00 입력 줄 · 0.50 이전 말풍선 위로 밀림 + 흐려짐, 새 말풍선 팝, 핑 · 팝 + 4.0 접힘 → 풀 반납. 말풍선은 화면에 최대 2개 (세 번째가 오면 가장 오래된 것부터 접힘)</item>
+    /// <item>0.00 점 풍선(아래 칸) · 이전 말풍선 위로 밀림 + 흐려짐 (F03 — 점 풍선과 겹치지 않게 팝에서 앞당김) · 0.50 새 말풍선 팝, 핑 · 팝 + 4.0 접힘 → 풀 반납.
+    /// 말풍선은 화면에 최대 2개 (세 번째가 오면 가장 오래된 것부터 접힘)</item>
     /// </list>
     /// 위치 = R3 <c>GridSpace</c> 읽기 (변이 = 그 점액 레인 · 위치, 격리선에서 최대 opsPingPathMaxDist 칸 (U17 — 10 = 스폰선, 게이트가 보임) · 피격 = 그 레인 격리선 <c>PathToWorld(lane, 0)</c> · 오염 = <c>CellToWorld(cell)</c>).
     /// 할당: 메시지마다 {lane} 치환 문자열 1회만. 대기 · 연출 프레임 0. 클릭은 받지 않는다 (raycastTarget 끔).
@@ -35,13 +38,10 @@ namespace QL.UI.Hud
         [SerializeField] private OpsLineTable table;
 
         [Header("구조")]
-        [SerializeField] private TMP_Text channelText;
-        [Tooltip("플레이 시간 mm:ss (Time.timeSinceLevelLoad — U12 근무 시간과 같은 값)")]
-        [SerializeField] private TMP_Text clockText;
         [Tooltip("말풍선 풀 (미리 3개 — 2개 + 접히는 중 1개). 아래 칸 위치 = 첫 말풍선의 위치")]
         [SerializeField] private OpsBubble[] bubbles;
+        [Tooltip("F03 — 말풍선 아래 칸 자리의 작은 점 풍선 (아바타 + 「●●●」). 입력 중에만 켜짐")]
         [SerializeField] private GameObject typingRow;
-        [SerializeField] private TMP_Text typingText;
         [Tooltip("「●●●」 점 3개 — 알파 Fade 루프")]
         [SerializeField] private Graphic[] typingDots;
         [Tooltip("비어 있으면 처음 한 번 찾는다 ([FX]/AlertFx)")]
@@ -54,7 +54,6 @@ namespace QL.UI.Hud
         private float _lastShownAt = float.NegativeInfinity;
         private int _lastPriority = int.MaxValue;
         private int _serial;
-        private int _clockSeconds = -1;
         private bool _usedCritical;
         private bool _usedTopMerge;
 
@@ -79,9 +78,6 @@ namespace QL.UI.Hud
         public float TypingElapsed => _typingT;
         public GameObject TypingRow => typingRow;
         public Graphic TypingDot(int i) => typingDots[i];
-        public TMP_Text ChannelText => channelText;
-        public TMP_Text ClockText => clockText;
-        public TMP_Text TypingText => typingText;
         public int BubbleCount => bubbles.Length;
         public OpsBubble BubbleAt(int i) => bubbles[i];
         public float BottomY => _bottomY;
@@ -132,11 +128,6 @@ namespace QL.UI.Hud
             Graphic[] gs = GetComponentsInChildren<Graphic>(true);
             for (int i = 0; i < gs.Length; i++) gs[i].raycastTarget = false; // 소환 · 드래그를 막지 않는다
 
-            if (table != null)
-            {
-                channelText.SetText(table.Channel);
-                typingText.SetText(table.Typing);
-            }
             string speaker = table != null ? table.Speaker : string.Empty;
             string longest = LongestLine();
             for (int i = 0; i < bubbles.Length; i++) bubbles[i].Init(fx, speaker, longest);
@@ -289,7 +280,9 @@ namespace QL.UI.Hud
 
             _typing = true; // 입력 중에 다른 메시지가 끼어들면 그것으로 바꾸고 0.00 부터
             _typingT = 0f;
+            MakeRoom(); // F03 — 점 풍선이 아래 칸에 뜨므로 앞 말풍선은 입력 시작 때 밀린다 (팝 때 하던 것을 앞당김)
             if (!typingRow.activeSelf) typingRow.SetActive(true);
+            PlaceTypingRow();
             ApplyDots();
         }
 
@@ -297,13 +290,6 @@ namespace QL.UI.Hud
 
         private void Update()
         {
-            int secs = Mathf.FloorToInt(Time.timeSinceLevelLoad);
-            if (secs != _clockSeconds)
-            {
-                _clockSeconds = secs;
-                clockText.SetText("{0:00}:{1:00}", secs / 60, secs % 60);
-            }
-
             float dt = Time.deltaTime;
             if (dt <= 0f) return; // 일시정지 · 결과 — 그대로 멈춤
             _now += dt;
@@ -323,6 +309,16 @@ namespace QL.UI.Hud
                 if (_typingT >= fx.opsTypingDuration) Pop();
                 else ApplyDots();
             }
+        }
+
+        /// <summary>F03 — 점 풍선은 새 말풍선이 뜰 자리(아래 칸). 앞 말풍선은 그대로 (팝 때 밀림).</summary>
+        private void PlaceTypingRow()
+        {
+            var rt = (RectTransform)typingRow.transform;
+            Vector2 p = rt.anchoredPosition;
+            if (p.y == _bottomY) return;
+            p.y = _bottomY;
+            rt.anchoredPosition = p;
         }
 
         private void ApplyDots()
@@ -346,16 +342,7 @@ namespace QL.UI.Hud
         private void Pop()
         {
             StopTyping();
-
-            // 떠 있는 것이 이미 MaxVisible 개면 가장 오래된 것부터 접는다
-            while (VisibleCount >= MaxVisible)
-            {
-                OpsBubble oldest = Oldest(OpsBubble.Phase.Shown);
-                if (oldest == null) break;
-                oldest.Collapse();
-            }
-            for (int i = 0; i < bubbles.Length; i++)
-                if (bubbles[i].State == OpsBubble.Phase.Shown && !bubbles[i].IsDim) bubbles[i].Push();
+            MakeRoom(); // 보통은 입력 시작 때 이미 했다 — 그 사이 새로 뜬 것이 없으면 아무것도 안 함
 
             OpsBubble next = Free();
             if (next == null)
@@ -372,6 +359,19 @@ namespace QL.UI.Hud
                 LanePingFx p = EnsurePing();
                 if (p != null) p.Ping(_msgPos);
             }
+        }
+
+        /// <summary>아래 칸 비우기 — 떠 있는 것이 이미 MaxVisible 개면 가장 오래된 것부터 접고, 아래 칸 말풍선은 위로 밀며 흐리게.</summary>
+        private void MakeRoom()
+        {
+            while (VisibleCount >= MaxVisible)
+            {
+                OpsBubble oldest = Oldest(OpsBubble.Phase.Shown);
+                if (oldest == null) break;
+                oldest.Collapse();
+            }
+            for (int i = 0; i < bubbles.Length; i++)
+                if (bubbles[i].State == OpsBubble.Phase.Shown && !bubbles[i].IsDim) bubbles[i].Push();
         }
 
         private OpsBubble Free()

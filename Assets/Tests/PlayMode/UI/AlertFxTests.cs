@@ -41,9 +41,12 @@ namespace QL.Tests.PlayMode.UI
 
         private FxConfig Fx => _flash.Config;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -82,6 +85,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
@@ -237,6 +241,81 @@ namespace QL.Tests.PlayMode.UI
             yield return Wait(Fx.hitFlashDuration);
             // 흡입 1등급 간격 0.5초 > 번쩍 시간 — 다음 타격 전에 꺼진다
             Assert.IsFalse(_flash.IsFlashing(hit), "시간이 지나면 원래대로");
+        }
+
+        [UnityTest]
+        public IEnumerator F03_RealAttack_SeveralSlimes_FlashWhiterAndPunch_ZeroAlloc()
+        {
+            // T1 3 「깜빡이긴 하나 직관적이지 않음」 — 더 길게 · 더 하얗게 + 맞는 순간 Model 펀치
+            Assert.GreaterOrEqual(Fx.hitFlashDuration, 0.16f, "F03: F01 0.13 보다 길게");
+            Assert.LessOrEqual(Fx.hitFlashDuration, 0.25f, "흡입 1등급 간격(0.5초)보다 충분히 짧게 — 계속 하얗게 붙어 있지 않게");
+            Assert.LessOrEqual(Fx.hitFlashTypeMix, 0.05f, "흰 비율 올림 (종류색 섞임 ≤ 5%)");
+            Assert.Greater(Fx.hitPunchAmount, 0f);
+            var wobble = Object.FindAnyObjectByType<QL.FX.Motion.SlimeWobbleFx>();
+            Assert.IsNotNull(wobble, "[FX] 아래 MotionFx(SlimeWobbleFx) 가 없다");
+
+            var board = Object.FindAnyObjectByType<DroneBoard>();
+            for (int lane = 0; lane < _bootstrap.Space.LaneCount; lane++)
+            {
+                int cell = _bootstrap.Grid.IndexOf(lane, 0);
+                _bootstrap.Grid.Place(cell, DroneType.Suction, 1);
+                board.SyncCell(cell);
+                _slimes.Spawn(SlimeType.Blob, lane);
+            }
+
+            var hit = new System.Collections.Generic.HashSet<SlimeView>();
+            int punchedAtEvent = 0, flashingAtEvent = 0;
+            float maxPunch = 0f;
+            System.Action<SlimeView, int, DroneType> onHit = (v, d, t) =>
+            {
+                hit.Add(v);
+                if (_flash.IsFlashing(v)) flashingAtEvent++; // HitFlashFx · SlimeWobbleFx 는 씬 시작 때 먼저 구독
+                QL.FX.Motion.SlimeWobbleFx.Wobble w = wobble.Find(v);
+                if (w != null && w.Punch > 0f)
+                {
+                    punchedAtEvent++;
+                    maxPunch = Mathf.Max(maxPunch, w.Punch);
+                }
+            };
+            GameEvents.SlimeDamaged += onHit;
+            float end = Time.time + 20f; // 게임 시간 상한 (보류함 34 — 실시간 아님)
+            for (int f = 0; f < 20000 && hit.Count < 3 && Time.time < end; f++) yield return null; // GameLoop 가 실제로 돈다 (준비 중에도 전투)
+            GameEvents.SlimeDamaged -= onHit;
+
+            Assert.GreaterOrEqual(hit.Count, 3, "여러 마리가 실제 공격으로 맞음");
+            Assert.AreEqual(punchedAtEvent, flashingAtEvent, "맞을 때마다 번쩍 + 펀치");
+            Assert.Greater(punchedAtEvent, 0);
+            Assert.AreEqual(Fx.hitPunchAmount, maxPunch, 1e-4f, "맞은 그 프레임 펀치 최대");
+
+            // 펀치는 hitPunchDuration 뒤 0 (출렁임만 남음)
+            SlimeView any = null;
+            foreach (SlimeView v in hit) if (v != null && v.gameObject.activeInHierarchy) { any = v; break; }
+            if (any != null)
+            {
+                QL.FX.Motion.SlimeWobbleFx.Wobble w = wobble.Find(any);
+                Raise("RaiseSlimeDamaged", any, 1, DroneType.Suction);
+                Assert.AreEqual(Fx.hitPunchAmount, w.Punch, 1e-4f);
+                yield return Wait(Fx.hitPunchDuration + 0.02f);
+                Assert.AreEqual(0f, w.Punch, 1e-6f, "펀치 끝");
+
+                // 할당 0 — 맞음 처리 (번쩍 + 펀치) · 프레임 갱신
+                const BindingFlags F = BindingFlags.Instance | BindingFlags.NonPublic;
+                var flashHit = (System.Action<SlimeView, int, DroneType>)typeof(HitFlashFx).GetMethod("OnDamaged", F)
+                    .CreateDelegate(typeof(System.Action<SlimeView, int, DroneType>), _flash);
+                var punchHit = (System.Action<SlimeView, int, DroneType>)typeof(QL.FX.Motion.SlimeWobbleFx).GetMethod("OnDamaged", F)
+                    .CreateDelegate(typeof(System.Action<SlimeView, int, DroneType>), wobble);
+                var flashUpdate = (System.Action)typeof(HitFlashFx).GetMethod("Update", F).CreateDelegate(typeof(System.Action), _flash);
+                for (int i = 0; i < 3; i++) { flashHit(any, 1, DroneType.Cryo); punchHit(any, 1, DroneType.Cryo); flashUpdate(); } // 데우기
+                long before = System.GC.GetAllocatedBytesForCurrentThread();
+                for (int i = 0; i < 300; i++)
+                {
+                    flashHit(any, 1, (DroneType)(i % 3));
+                    punchHit(any, 1, (DroneType)(i % 3));
+                    flashUpdate();
+                }
+                long bytes = System.GC.GetAllocatedBytesForCurrentThread() - before;
+                Assert.AreEqual(0L, bytes, "번쩍 + 펀치 할당 0");
+            }
         }
 
         [UnityTest]

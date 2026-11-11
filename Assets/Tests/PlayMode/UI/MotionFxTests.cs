@@ -43,9 +43,12 @@ namespace QL.Tests.PlayMode.UI
         private FxConfig Fx => _pool.Config;
         private float MergeLock => _bootstrap.Data.Config.MergeLockDuration;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -86,6 +89,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
@@ -473,6 +477,58 @@ namespace QL.Tests.PlayMode.UI
         }
 
         [UnityTest]
+        public IEnumerator F03_TypeRing_StrongerThanF01()
+        {
+            // T1 2 「구분은 되나 잘 안 보임」 — F01 값(알파 0.6 · 밝기 1.2 · 지름 0.82, 한 겹)보다 세게
+            Assert.Greater(Fx.markerRingAlpha, 0.6f);
+            Assert.Greater(Fx.markerRingIntensity, 1.2f);
+            Assert.Greater(Fx.markerRingSize, 0.82f);
+            Assert.LessOrEqual(Fx.markerRingSize, 1f, "옆 칸으로 넘치지 않음");
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator F03_TopGrade_HintsOnlyContaminatedSameTopGrade_SwapClean()
+        {
+            var marker = Object.FindAnyObjectByType<DroneMarkerFx>();
+            int top = _bootstrap.Catalog.MaxGrade(DroneType.Suction);
+            int from = Place(0, 0, DroneType.Suction, top);
+            int cleanTop = Place(1, 0, DroneType.Suction, top);          // 오염 아님 — 최고 등급끼리 표시 없음
+            int dirtyTop = Place(2, 1, DroneType.Suction, top);          // 오염 · 같은 종류 · 최고 등급 → 초록
+            int dirtyLower = Place(3, 1, DroneType.Suction, top - 1);    // 오염 · 등급 다름 → 없음
+            int dirtyOther = Place(4, 2, DroneType.Plasma, _bootstrap.Catalog.MaxGrade(DroneType.Plasma)); // 오염 · 종류 다름 → 없음
+            Grid.Contaminate(dirtyTop);
+            Grid.Contaminate(dirtyLower);
+            Grid.Contaminate(dirtyOther);
+            yield return null;
+
+            Assert.IsTrue(_drag.BeginAt(from), "최고 등급 집기");
+            Assert.AreEqual(1, marker.HintCount, "오염 칸의 같은 종류 · 최고 등급만");
+            Assert.IsTrue(marker.IsHinted(dirtyTop));
+            Assert.IsFalse(marker.IsHinted(cleanTop), "오염 아닌 최고 등급끼리는 없음");
+            Assert.IsFalse(marker.IsHinted(dirtyLower));
+            Assert.IsFalse(marker.IsHinted(dirtyOther));
+            var probe = new MaterialPropertyBlock();
+            marker.HintOutlineAt(dirtyTop).GetPropertyBlock(probe);
+            Color c = probe.GetColor("_BaseColor");
+            Assert.Greater(c.g, c.r + 0.3f, "머지와 같은 초록");
+
+            DropResult r = _drag.ReleaseAt(dirtyTop);
+            Assert.AreEqual(DropOutcome.SwapClean, r.Outcome, "표시된 칸에 놓으면 자리 바꾸고 청소 (G11)");
+            Assert.AreEqual(0, marker.HintCount, "놓으면 0");
+            Assert.IsFalse(Grid.Get(dirtyTop).IsContaminated);
+
+            // 최고 등급 아래는 그대로 — 오염 칸 같은 등급 (MergeClean) 도 초록
+            yield return Wait(MergeLock + 0.05f);
+            int g1 = Place(0, 2, DroneType.Cryo, 1);
+            int g1Dirty = Place(1, 2, DroneType.Cryo, 1);
+            Grid.Contaminate(g1Dirty);
+            Assert.IsTrue(_drag.BeginAt(g1));
+            Assert.IsTrue(marker.IsHinted(g1Dirty), "오염 칸 머지 청소도 초록 (F01 그대로)");
+            _drag.Cancel();
+        }
+
+        [UnityTest]
         public IEnumerator F01_Markers_ZeroAllocPerFrame()
         {
             var marker = Object.FindAnyObjectByType<DroneMarkerFx>();
@@ -516,6 +572,17 @@ namespace QL.Tests.PlayMode.UI
             Vector3 rp = marker.TypeRingAt(cell).transform.position;
             Assert.AreEqual(cp.x, rp.x, 0.05f, "발밑");
             Assert.AreEqual(cp.z, rp.z, 0.05f);
+
+            // F03 — 굵기: 안쪽 한 겹 더 (같은 색 · 같은 자리 · 바깥 × markerRingInnerScale)
+            Assert.Greater(Fx.markerRingInnerScale, 0f, "F03 안쪽 링 켬");
+            Renderer inner = marker.InnerRingAt(cell);
+            Assert.IsNotNull(inner);
+            Assert.IsTrue(inner.enabled, "칸 " + cell + " 안쪽 링");
+            inner.GetPropertyBlock(probe);
+            Assert.AreEqual(got, probe.GetColor("_BaseColor"), "안쪽 링 같은 색");
+            Assert.AreEqual(rp.x, inner.transform.position.x, 1e-4f);
+            Assert.AreEqual(rp.z, inner.transform.position.z, 1e-4f);
+            Assert.AreEqual(marker.TypeRingAt(cell).transform.localScale.x * Fx.markerRingInnerScale, inner.transform.localScale.x, 1e-4f);
         }
     }
 }

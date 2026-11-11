@@ -58,9 +58,12 @@ namespace QL.Tests.PlayMode.UI
 
         private GameFlow Flow => _loop.Flow;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -108,6 +111,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             if (_card != null)
             {

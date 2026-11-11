@@ -8,7 +8,7 @@ namespace QL.Tests.EditMode
     /// <summary>
     /// U07 발광 재질 검사 — 발광 마스크(<c>QL_Stage_*_Emission.png</c>)가 있는 무대 재질과 점액 재질은
     /// <c>_EMISSION</c> 이 켜져 있고 <c>_EmissionMap</c> 이 연결돼 있으며 <c>_EmissionColor</c> 가 검정이 아니다.
-    /// (드론 A13 마스크는 아직 납품 전 — 납품되면 드론 재질을 여기에 더한다.)
+    /// 드론 재질(<c>M_Drone_&lt;종류&gt;_&lt;부위&gt;</c>, A13 마스크 <c>QL_Drone_*_Emission.png</c>)도 같은 검사 + RealtimeEmissive + 종류별 세기.
     /// </summary>
     public class MaterialEmissionTests
     {
@@ -33,6 +33,16 @@ namespace QL.Tests.EditMode
         };
 
         private static readonly string[] Slimes = { "M_Slime_Basic_A", "M_Slime_Basic_B", "M_Slime_Mutant_A", "M_Slime_Mutant_B" };
+
+        private const string DroneTexDir = "Assets/04_Resources/Model/Drone/";
+
+        // 드론 종류 → 발광 세기 (F03 지시서 4장). 흡입은 Tool 부위 없음.
+        private static readonly object[][] DroneKinds =
+        {
+            new object[] { "Suction", 1.6f, new[] { "Body", "Part_G2", "Part_G3" } },
+            new object[] { "Incinerator", 1.6f, new[] { "Body", "Part_G2", "Part_G3", "Tool" } },
+            new object[] { "Cryo", 1.0f, new[] { "Body", "Part_G2", "Part_G3", "Tool" } },
+        };
 
         private static Material Load(string name)
         {
@@ -74,6 +84,48 @@ namespace QL.Tests.EditMode
                 string mask = file.Substring("QL_Stage_".Length, file.Length - "QL_Stage_".Length - "_Emission".Length);
                 bool listed = false;
                 foreach (string[] pair in StageMasks) if (pair[1] == mask) listed = true;
+                Assert.IsTrue(listed, file + " 를 쓰는 재질이 검사 목록에 없다 (새 마스크 납품 → 재질 연결)");
+            }
+        }
+
+        [Test]
+        public void DroneMaterials_WithA13Mask_AreEmissiveAtKindIntensity()
+        {
+            int count = 0;
+            foreach (object[] kind in DroneKinds)
+            {
+                string type = (string)kind[0];
+                float intensity = (float)kind[1];
+                foreach (string part in (string[])kind[2])
+                {
+                    string key = type + "_" + part;
+                    string maskPath = DroneTexDir + "QL_Drone_" + key + "_Emission.png";
+                    var mask = AssetDatabase.LoadAssetAtPath<Texture>(maskPath);
+                    Assert.IsNotNull(mask, maskPath + " 없음");
+                    Material m = Load("M_Drone_" + key);
+                    AssertEmissive(m);
+                    Assert.AreSame(mask, m.GetTexture("_EmissionMap"), m.name + ": _EmissionMap 이 " + Path.GetFileName(maskPath) + " 가 아님");
+                    Assert.AreNotEqual(0, (int)(m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.RealtimeEmissive),
+                        m.name + ": RealtimeEmissive 아님");
+                    Assert.AreEqual(intensity, m.GetColor("_EmissionColor").maxColorComponent, 1e-3f, m.name + ": 발광 세기");
+                    count++;
+                }
+            }
+            Assert.AreEqual(11, count, "드론 재질 수 (흡입 3 + 소각 4 + 냉각 4)");
+        }
+
+        [Test]
+        public void EveryDroneEmissionMask_IsUsedByAMaterial()
+        {
+            foreach (string guid in AssetDatabase.FindAssets("_Emission t:Texture", new[] { DroneTexDir.TrimEnd('/') }))
+            {
+                string file = Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid));
+                if (!file.StartsWith("QL_Drone_") || !file.EndsWith("_Emission")) continue;
+                string key = file.Substring("QL_Drone_".Length, file.Length - "QL_Drone_".Length - "_Emission".Length);
+                bool listed = false;
+                foreach (object[] kind in DroneKinds)
+                    foreach (string part in (string[])kind[2])
+                        if ((string)kind[0] + "_" + part == key) listed = true;
                 Assert.IsTrue(listed, file + " 를 쓰는 재질이 검사 목록에 없다 (새 마스크 납품 → 재질 연결)");
             }
         }

@@ -44,9 +44,12 @@ namespace QL.Tests.PlayMode.UI
         private int Wallet => _bootstrap.Wallet.Coins;
         private int WaveCount => _loop.Flow.WaveCount;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -84,6 +87,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             if (_receipt != null) _receipt.Finished -= OnFinished;
             Time.timeScale = 1f;
@@ -123,6 +127,14 @@ namespace QL.Tests.PlayMode.UI
                 Raise("RaiseCoinChanged", Wallet, pay.Total);
             }
             return pay;
+        }
+
+        /// <summary>조건이 될 때까지 — 상한은 게임 시간 (실시간 60초는 멈춤 방지 안전판만, 보류함 34).</summary>
+        private static IEnumerator WaitUntilGame(Func<bool> done, float gameSeconds)
+        {
+            float gameEnd = Time.time + gameSeconds;
+            float hardEnd = Time.realtimeSinceStartup + 60f;
+            while (!done() && Time.time < gameEnd && Time.realtimeSinceStartup < hardEnd) yield return null;
         }
 
         private static IEnumerator Wait(float seconds)
@@ -276,15 +288,24 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(pay, _coin.Held, "수당은 붙잡힘");
             Assert.AreEqual(Wallet - (_flyer != null ? _flyer.Pending : 0) - pay, _coin.Target, "목표 = 지갑 − 날고 있는 처치 몫 − 수당");
 
+            // F03 (보류함 34): 실시간 · 고정 게임 시간 기다림 대신 영수증 자기 시간(Elapsed) 기준 — 포커스 없는 에디터에서 한 프레임이
+            // maximumDeltaTime 만큼 커져 「1.9초 직전」 을 건너뛰어도, 1.9초 전에 본 모든 프레임에서 붙잡혀 있는지를 본다
             int expectedBeforeRelease = Wallet - pay; // 처치 코인은 도착 때 올라가도 된다 (R1) — 수당만 끝까지
-            yield return Wait(_fx.payslipCoinAt - 0.05f);
-            Assert.AreEqual(pay, _coin.Held, "1.9초 직전까지 수당 붙잡음");
-            Assert.LessOrEqual(_coin.Shown, expectedBeforeRelease, "1.9초 전 HUD 에 수당이 들어가지 않음");
+            int framesBefore = 0;
+            for (int f = 0; f < 100000 && _receipt.IsPlaying && _receipt.Elapsed < _fx.payslipCoinAt; f++)
+            {
+                Assert.AreEqual(pay, _coin.Held, "1.9초 전까지 수당 붙잡음 (영수증 " + _receipt.Elapsed + "초)");
+                Assert.LessOrEqual(_coin.Shown, expectedBeforeRelease, "1.9초 전 HUD 에 수당이 들어가지 않음");
+                framesBefore++;
+                yield return null;
+            }
+            Assert.Greater(framesBefore, 0, "1.9초 전 프레임을 봤다");
 
-            yield return Wait(2.0f - (_fx.payslipCoinAt - 0.05f));
+            yield return WaitUntilGame(() => !_receipt.IsPlaying, _fx.payslipEndAt + 3f);
+            Assert.IsFalse(_receipt.IsPlaying, "영수증 끝 (2.0초)");
             Assert.AreEqual(0, _coin.Held);
             Assert.AreEqual(Wallet, _coin.Target, "2.0초 — 목표 = 지갑");
-            yield return Wait(_fx.coinRollDuration + Slack);
+            yield return WaitUntilGame(() => !_coin.IsRolling, _fx.coinRollDuration + 3f);
             Assert.AreEqual(Wallet, _coin.Shown, "굴림 끝 — 표시 = 지갑");
         }
 

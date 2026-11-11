@@ -42,9 +42,12 @@ namespace QL.Tests.PlayMode.UI
         private GridModel Grid => _bootstrap.Grid;
         private GridSpace Space => _bootstrap.Space;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -85,6 +88,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();

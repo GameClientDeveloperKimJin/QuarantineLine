@@ -49,9 +49,12 @@ namespace QL.Tests.PlayMode.UI
         private GameFlow Flow => _loop.Flow;
         private GridSpace Space => _bootstrap.Space;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -93,6 +96,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
@@ -394,21 +398,28 @@ namespace QL.Tests.PlayMode.UI
 
             _slimes.Spawn(SlimeType.Mutant, 4); // 2 > 3
             yield return null;
+            // F03: 점 풍선이 아래 칸에 뜨므로 밀림 · 접힘은 입력 시작 때 (팝 때 하던 것을 앞당김)
+            Assert.IsTrue(_ops.IsTyping);
+            Assert.AreEqual(OpsBubble.Phase.Collapsing, a.State, "세 번째 입력 시작 → 가장 오래된 것 접힘");
+            Assert.IsTrue(b.IsDim, "아래 칸 말풍선은 입력 시작 때 위로 밀림 — 점 풍선과 겹치지 않음");
+            // 접힘(0.25초)이 입력 중(0.5초)에 끝나 a 는 이미 풀로 돌아왔다 → 팝에서 바로 재사용
             yield return WaitPop();
             OpsBubble c = Newest();
-            Assert.AreEqual(OpsBubble.Phase.Collapsing, a.State, "세 번째 → 가장 오래된 것 접힘");
+            Assert.AreSame(a, c, "접혀 반납된 가장 오래된 말풍선을 바로 재사용");
             Assert.AreEqual(2, _ops.VisibleCount, "화면엔 최대 2개");
-            yield return WaitGame(Mathf.Max(_fx.opsCollapseDuration, _fx.opsPushDuration) + 0.05f);
-            Assert.AreEqual(OpsBubble.Phase.Free, a.State, "풀 반납");
-            Assert.IsFalse(a.gameObject.activeSelf);
+            yield return WaitGame(Mathf.Max(_fx.opsPopDuration, _fx.opsPushDuration) + 0.05f);
             Assert.IsTrue(b.IsDim);
             Assert.AreEqual(_ops.BottomY + _fx.opsPushShift, b.Rect.anchoredPosition.y, 0.01f);
+            Assert.AreEqual(_ops.BottomY, c.Rect.anchoredPosition.y, 0.01f, "새 말풍선은 아래 칸");
             Assert.AreEqual(2, _ops.ActiveBubbleCount);
 
-            Critical(); // 1 > 2 — 풀 3개 재사용
+            Critical(); // 1 > 2 — 입력 시작에 b 접힘 · c 밀림 → 팝은 남은 풀(세 번째 말풍선)
             yield return null;
+            Assert.AreEqual(OpsBubble.Phase.Collapsing, b.State);
             yield return WaitPop();
-            Assert.AreSame(a, Newest(), "반납된 말풍선 재사용");
+            OpsBubble d = Newest();
+            Assert.AreNotSame(c, d);
+            Assert.AreEqual(2, _ops.VisibleCount);
             Assert.AreEqual(3, _ops.BubbleCount, "풀 크기 그대로");
         }
 
@@ -426,6 +437,49 @@ namespace QL.Tests.PlayMode.UI
             yield return WaitGame(0.3f + _fx.opsCollapseDuration + 0.1f);
             Assert.AreEqual(OpsBubble.Phase.Free, a.State, "접힘 → 반납");
             Assert.AreEqual(0, _ops.ActiveBubbleCount);
+        }
+
+        // ── F03 빈 창 없앰 (T1 5) ────────────────────────────
+
+        [UnityTest]
+        public IEnumerator F03_NoBubble_NothingOnScreen_TriggerShowsBubble_GoneAfter4_5s()
+        {
+            yield return null;
+            Assert.AreEqual(0, VisibleGraphics(), "말풍선 없을 땐 화면에 아무것도 없음 (패널 · 채널 · 시간 · 입력 줄 없음)");
+            Assert.IsNull(_ops.GetComponent<UnityEngine.UI.Graphic>(), "사각 패널 배경 없음");
+
+            float t0 = Time.time;
+            Contaminate(2, 0);
+            yield return null;
+            Assert.IsTrue(_ops.IsTyping);
+            Assert.Greater(VisibleGraphics(), 0, "입력 중 점 풍선");
+            var typing = (RectTransform)_ops.TypingRow.transform;
+            Assert.AreEqual(_ops.BottomY, typing.anchoredPosition.y, 0.01f, "점 풍선 = 말풍선 아래 칸 자리");
+            Assert.IsNull(typing.GetComponentInChildren<TMPro.TMP_Text>(), "점 풍선엔 글자 없음 (작은 ●●●)");
+
+            yield return WaitPop();
+            Assert.IsFalse(_ops.TypingRow.activeSelf, "점 풍선 → 말풍선");
+            OpsBubble a = Newest();
+            Assert.AreEqual(_ops.BottomY, a.Rect.anchoredPosition.y, 0.01f, "같은 자리에 말풍선");
+            Assert.Greater(VisibleGraphics(), 0);
+
+            // 트리거 + 4.5초 = 접힘 시작 → 접힘 끝나면 다시 아무것도 없음
+            float collapseAt = t0 + _fx.opsTypingDuration + _fx.opsBubbleLife;
+            yield return WaitGame(collapseAt - Time.time - 0.15f, 4f);
+            Assert.AreEqual(OpsBubble.Phase.Shown, a.State, "4.5초 전엔 그대로");
+            yield return WaitGame(0.15f + _fx.opsCollapseDuration + 0.1f);
+            Assert.AreEqual(OpsBubble.Phase.Free, a.State, "4.5초 뒤 사라짐");
+            Assert.AreEqual(0, VisibleGraphics(), "사라진 뒤 화면에 아무것도 없음");
+        }
+
+        /// <summary>메신저 아래 켜진 그림 · 글자 수 (Graphic.IsActive — 켜진 오브젝트 · 켜진 컴포넌트).</summary>
+        private int VisibleGraphics()
+        {
+            var gs = _ops.GetComponentsInChildren<UnityEngine.UI.Graphic>(false);
+            int n = 0;
+            for (int i = 0; i < gs.Length; i++)
+                if (gs[i].IsActive()) n++;
+            return n;
         }
 
         // ── 휴게 · 결과 ──────────────────────────────────────

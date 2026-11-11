@@ -17,7 +17,7 @@ namespace QL.FX.Contamination
     /// <list type="bullet">
     /// <item><b>CellContaminated</b> → 그 칸 바닥(<c>GridSpace.CellToWorld</c>)에 FX_Slime_Puddle 웅덩이: 번짐 0.3 → 1.1 → 1 · 무작위 Y 회전 ·
     /// 초록 방울 튐(FxPool Spark) · 은은한 출렁임(칸마다 위상 다르게). 웅덩이는 드론 밑 — 재질 큐(3000)가 종류색 링(3001)보다 먼저라 링이 위에 보인다.</item>
-    /// <item><b>타이머</b> — 오버레이 캔버스 말풍선 「오염 3.2초」, 값 = <c>GridModel.ContaminationRemaining</c> 읽기만 · 0.1초 단위가 바뀔 때만 SetText (무할당) ·
+    /// <item><b>타이머</b> — 오버레이 캔버스 말풍선 「3.2」 (F03 — 숫자만, 칸 안쪽 웅덩이 위), 값 = <c>GridModel.ContaminationRemaining</c> 읽기만 · 0.1초 단위가 바뀔 때만 SetText (무할당) ·
     /// <see cref="FxConfig.contamBlinkThreshold"/> 이하면 깜빡.</item>
     /// <item><b>CellCleaned(true)</b> → 충격파 링(초록 → 흰 · 0.5 → 2.5 · Fade) + 웅덩이 튀며 사라짐 / <b>(false)</b> → 웅덩이 0.6 으로 줄며 Fade, 링 없음.</item>
     /// <item>판 시작(WavePrepStarted 0) · 결과(GameEnded) → 전부 즉시 반납. 판 재시작은 씬을 다시 읽어 새로 시작.</item>

@@ -56,9 +56,12 @@ namespace QL.Tests.PlayMode.UI
 
         private GameFlow Flow => _loop.Flow;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             _ended.Clear();
             Array.Clear(_reachedPerLane, 0, _reachedPerLane.Length);
@@ -71,6 +74,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= OnSceneLoaded;
             Time.timeScale = 1f;
             GameEvents.ClearAll();

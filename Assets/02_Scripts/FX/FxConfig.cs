@@ -364,7 +364,7 @@ namespace QL.FX
         [Min(0f)] public float postGlowCameraOffset;
 
         [Header("U06 점액 히트 플래시 — 켜진 Model_A/B 렌더러 MPB _BaseMap(흰 텍스처) · _BaseColor (게임 시간)")]
-        [Tooltip("번쩍 시간 (초) — 같은 점액이 또 맞으면 이 시간을 다시 센다. F01: 0.08 은 60fps 5프레임이라 실제 플레이에서 안 보임 → 0.13")]
+        [Tooltip("번쩍 시간 (초) — 같은 점액이 또 맞으면 이 시간을 다시 센다. F01: 0.08 은 60fps 5프레임이라 실제 플레이에서 안 보임 → 0.13 · F03 (T1 3): 더 길게")]
         [Min(0.01f)] public float hitFlashDuration;
         [Tooltip("번쩍 색 — 흰색에 드론 종류색(1등급 tintColor)을 이 비율만큼 섞는다 (0 = 흰색)")]
         public Color hitFlashColor;
@@ -705,10 +705,10 @@ namespace QL.FX
         [Header("O03 오염 — 그 칸 드론 종류색 링 흐리게 (F01 DroneMarkerFx — 공격 멈춤 표시)")]
         [Tooltip("오염 칸 드론의 종류색 링 알파 × 이 값")]
         [Range(0f, 1f)] public float contamMarkerDim;
-        [Header("O03 오염 타이머 「오염 3.2초」 — 오버레이 캔버스 말풍선 (Bagel Fat One · 게임 시간)")]
-        [Tooltip("형식 — {0:1} = 남은 초 소수 1자리 (TMP SetText 무할당)")]
+        [Header("O03 오염 타이머 — 오버레이 캔버스 말풍선 (Bagel Fat One · 게임 시간). F03: 숫자만 「3.2」")]
+        [Tooltip("형식 — {0:1} = 남은 초 소수 1자리 (TMP SetText 무할당). F03 (T1 4): 「오염 · 초」 글자 없이 숫자만")]
         public string contamLabelFormat;
-        [Tooltip("말풍선 가운데 = 칸 중심 + 이 값 × cellSize (월드) — 드론 몸체를 가리지 않게 칸 앞쪽(카메라 쪽) 웅덩이 위")]
+        [Tooltip("말풍선 가운데 = 칸 중심 + 이 값 × cellSize (월드). F03: 칸 안쪽 웅덩이 위 — 아래 줄(카메라 쪽) 드론 G2 링 뒤끝보다 위에 오게 칸 가운데보다 조금 뒤(+z)")]
         public Vector3 contamLabelOffset;
         [Tooltip("글자 크기 (1920×1080 기준 px, 최소 24 — S3 규칙 8) · 말풍선 안쪽 여백 (px)")]
         [Min(24f)] public float contamLabelFontSize;
@@ -843,6 +843,18 @@ namespace QL.FX
         [Min(0f)] public float contamRing2Delay = 0.1f;
         [Min(0f)] public float contamRing2Scale = 0.7f;
         [Min(0f)] public float contamRing2Intensity = 0.8f;
+
+        [Header("F03 히트 펀치 — 맞는 순간 점액 Model 작은 스쿼시 (SlimeWobbleFx 출렁임 위에 곱함, Feel MMTween 감쇠 곡선 · 게임 시간 · 할당 0)")]
+        [Tooltip("가로 × (1 + a), 세로 × (1 − a) — 맞은 순간 최대, 0 이면 끔")]
+        [Min(0f)] public float hitPunchAmount = 0.14f;
+        [Tooltip("펀치 시간 (초) — 같은 점액이 또 맞으면 처음부터")]
+        [Min(0.01f)] public float hitPunchDuration = 0.16f;
+        [Tooltip("세기 = a × (1 − 이 곡선(지난 비율)) (Feel MMTween)")]
+        public MoreMountains.Tools.MMTween.MMTweenCurve hitPunchCurve = MoreMountains.Tools.MMTween.MMTweenCurve.EaseOutQuadratic;
+
+        [Header("F03 종류색 링 굵기 — 같은 그림을 안쪽에 한 겹 더 (DroneMarkerFx)")]
+        [Tooltip("안쪽 링 지름 = 바깥 링 × 이 값 (0 = 끔). 두 겹이 붙어 링이 굵어 보인다")]
+        [Range(0f, 1f)] public float markerRingInnerScale = 0.86f;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

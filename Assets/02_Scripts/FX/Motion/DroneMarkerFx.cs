@@ -13,9 +13,11 @@ namespace QL.FX.Motion
     /// <list type="number">
     /// <item><b>종류색 링</b> — 드론이 있는 칸마다 발밑에 상시 (흡입 청록 · 소각 주황 · 냉각 하늘, FX_Ring 가산 재질, 작게 · 은은하게).
     /// 위에서 봐도 세 종류가 한눈에 갈리게. 뷰가 움직이면(집기 · 끌기) x · z 를 따라간다.
-    /// 오염 칸(공격 멈춤)이면 알파 × <see cref="FxConfig.contamMarkerDim"/> 로 흐리게 (O03).</item>
+    /// 오염 칸(공격 멈춤)이면 알파 × <see cref="FxConfig.contamMarkerDim"/> 로 흐리게 (O03).
+    /// F03 (T1 2 「잘 안 보임」): 같은 그림을 안쪽에 한 겹 더 (<see cref="FxConfig.markerRingInnerScale"/>) — 링이 굵어져 2 · 3등급 부품 밑에서도 보인다.</item>
     /// <item><b>머지 가능 표시</b> — DragStarted(from) 순간 같은 종류 · 같은 등급 · 올릴 등급 있음 · 잠기지 않은 드론 칸에
-    /// 초록 테두리(U03 칸 외곽선 그림) + 드론 밑 초록 링(U04 링 그림), 은은히 숨 쉬듯 깜빡. 하나도 없으면 아무것도 안 뜬다. DragEnded → 전부 끔.</item>
+    /// 초록 테두리(U03 칸 외곽선 그림) + 드론 밑 초록 링(U04 링 그림), 은은히 숨 쉬듯 깜빡. 하나도 없으면 아무것도 안 뜬다. DragEnded → 전부 끔.
+    /// F03: 최고 등급을 집으면 같은 종류 · 최고 등급이 있는 <b>오염 칸</b>에도 같은 초록 (SwapClean — 자리 바꾸고 청소). 오염 아닌 칸의 최고 등급끼리는 없음.</item>
     /// </list>
     /// 쿼드는 칸 수만큼 시작 때 한 번 만든다 (런타임 생성 없음). 색은 MaterialPropertyBlock 하나 재사용, 바뀐 칸만 칠한다 (웨이브 중 할당 0).
     /// 수치 · 색은 FxConfig 「F01 드론 표식」.
@@ -38,6 +40,8 @@ namespace QL.FX.Motion
         [SerializeField] private DroneBoard board;
 
         private Renderer[] _typeRings;
+        private Renderer[] _innerRings;
+        private Transform[] _innerRingT;
         private Renderer[] _hintRings;
         private Renderer[] _hintOutlines;
         private Transform[] _typeRingT;
@@ -58,6 +62,8 @@ namespace QL.FX.Motion
         public bool IsHinted(int cell) => _hinted != null && cell >= 0 && cell < _hinted.Length && _hinted[cell];
         /// <summary>그 칸 종류색 링이 보이나.</summary>
         public bool IsTypeRingShown(int cell) => _typeRings != null && cell >= 0 && cell < _typeRings.Length && _typeRings[cell].enabled;
+        /// <summary>F03 — 그 칸 안쪽 종류색 링 렌더러 (굵기용 두 번째 겹, 끄면 null).</summary>
+        public Renderer InnerRingAt(int cell) => _innerRings != null && cell >= 0 && cell < _innerRings.Length ? _innerRings[cell] : null;
         /// <summary>그 칸 종류색 링 렌더러 (테스트 · 확인용).</summary>
         public Renderer TypeRingAt(int cell) => _typeRings != null && cell >= 0 && cell < _typeRings.Length ? _typeRings[cell] : null;
         /// <summary>그 칸 머지 테두리 렌더러 (테스트 · 확인용).</summary>
@@ -101,7 +107,9 @@ namespace QL.FX.Motion
             HideHints();
             GridModel grid = bootstrap.Grid;
             Cell src = grid.Get(from);
-            if (!src.HasDrone || !bootstrap.Catalog.CanUpgrade(src.Type, src.Grade)) return;
+            if (!src.HasDrone) return;
+            // F03 (G11 5b): 최고 등급이면 머지 대신 SwapClean — 같은 종류 · 최고 등급이 있는 오염 칸만 (씻을 수 있음). 오염 아닌 칸은 표시 없음
+            bool canUpgrade = bootstrap.Catalog.CanUpgrade(src.Type, src.Grade);
 
             float cell = bootstrap.Space.CellSize;
             for (int i = 0; i < grid.CellCount; i++)
@@ -109,6 +117,7 @@ namespace QL.FX.Motion
                 if (i == from) continue;
                 Cell c = grid.Get(i);
                 if (!c.HasDrone || c.IsLocked || c.Type != src.Type || c.Grade != src.Grade) continue;
+                if (!canUpgrade && !c.IsContaminated) continue;
 
                 Vector3 p = bootstrap.Space.CellToWorld(i);
                 p.y = fx.worldFxHeight + fx.markerHintLift;
@@ -148,9 +157,11 @@ namespace QL.FX.Motion
                 DroneView v = board.ViewAt(i);
                 bool show = v != null && grid.Get(i).HasDrone && v.gameObject.activeInHierarchy;
                 Renderer r = _typeRings[i];
+                Renderer inner = _innerRings != null ? _innerRings[i] : null;
                 if (!show)
                 {
                     if (r.enabled) r.enabled = false;
+                    if (inner != null && inner.enabled) inner.enabled = false;
                     _ringView[i] = null;
                     continue;
                 }
@@ -162,11 +173,17 @@ namespace QL.FX.Motion
                     _ringDim[i] = dim;
                     PaintTypeRing(r, v.Type, dim);
                     if (!r.enabled) r.enabled = true;
+                    if (inner != null)
+                    {
+                        inner.SetPropertyBlock(_block); // 같은 색 · 알파 (PaintTypeRing 이 막 채운 블록)
+                        if (!inner.enabled) inner.enabled = true;
+                    }
                 }
                 _ringColorType[i] = v.Type;
                 Vector3 p = v.transform.position;
                 p.y = y;
                 _typeRingT[i].position = p;
+                if (inner != null) _innerRingT[i].position = p;
             }
 
             if (_hintCount > 0)
@@ -234,6 +251,9 @@ namespace QL.FX.Motion
             float cell = bootstrap.Space.CellSize;
             _typeRings = new Renderer[n];
             _typeRingT = new Transform[n];
+            bool useInner = fx.markerRingInnerScale > 0f;
+            _innerRings = useInner ? new Renderer[n] : null;
+            _innerRingT = useInner ? new Transform[n] : null;
             _hintRings = new Renderer[n];
             _hintRingT = new Transform[n];
             _hintOutlines = new Renderer[n];
@@ -246,6 +266,11 @@ namespace QL.FX.Motion
             {
                 _typeRings[i] = MakeQuad("TypeRing_" + i.ToString("00"), ringMaterial, cell * fx.markerRingSize);
                 _typeRingT[i] = _typeRings[i].transform;
+                if (useInner)
+                {
+                    _innerRings[i] = MakeQuad("TypeRingInner_" + i.ToString("00"), ringMaterial, cell * fx.markerRingSize * fx.markerRingInnerScale);
+                    _innerRingT[i] = _innerRings[i].transform;
+                }
                 _hintRings[i] = MakeQuad("MergeRing_" + i.ToString("00"), ringMaterial, cell * fx.markerHintRingSize);
                 _hintRingT[i] = _hintRings[i].transform;
                 _hintOutlines[i] = MakeQuad("MergeOutline_" + i.ToString("00"), outlineMaterial, cell * fx.markerHintOutlineSize);

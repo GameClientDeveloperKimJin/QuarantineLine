@@ -47,9 +47,12 @@ namespace QL.Tests.PlayMode.UI
 
         private GameFlow Flow => _loop.Flow;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += OnSceneLoaded;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -94,6 +97,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= OnSceneLoaded;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
@@ -330,6 +334,96 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual(GameState.Prep, Flow.State);
             Assert.AreEqual(0, _events, "이 구간에 이벤트가 없어야 한다");
             Assert.AreEqual(before, Snapshot(), "이벤트 없이 Step → HUD 글자 · 게이지 그대로");
+        }
+
+        // ── F03 바로 시작 버튼 (G11) ─────────────────────────
+
+        [UnityTest]
+        public IEnumerator F03_StartButton_PrepOnly_ClickStartsWave_HiddenOnPauseWaveResult()
+        {
+            var start = Object.FindAnyObjectByType<HudStartButton>();
+            Assert.IsNotNull(start, "UIRoot Hud/StartWave 에 HudStartButton 이 없다");
+            var card = Object.FindAnyObjectByType<WaveOrderCard>();
+            var receipt = Object.FindAnyObjectByType<PayslipReceipt>();
+
+            // 시작 지시서(U15)가 떠 있는 동안은 숨김 — 흡수가 끝나면 보임 (지시서 연출은 게임 시간: 잠깐 1배속, 준비 시간은 멈춘 루프로)
+            _loop.enabled = false;
+            yield return null;
+            Assert.IsTrue(card.IsShowing || card.IsWaiting, "시작 지시서");
+            Assert.IsFalse(start.IsShown, "지시서와 겹치지 않게 숨김");
+            card.SkipToAbsorb();
+            Time.timeScale = 1f;
+            for (int i = 0; i < 3000 && (card.IsShowing || card.IsWaiting); i++) yield return null;
+            Time.timeScale = 0f;
+            _loop.enabled = true;
+            yield return null;
+            ResumeIfFocusPaused();
+            yield return null;
+            Assert.AreEqual(GameState.Prep, Flow.State);
+            Assert.IsTrue(start.IsShown, "준비 시간 — 보임");
+            Assert.IsTrue(start.Button.gameObject.activeInHierarchy);
+            Assert.IsFalse(receipt.IsShowing);
+
+            // 글자 24px 이상 · Bagel Fat One · 투입 버튼 · 메신저와 겹침 없음
+            var texts = start.GetComponentsInChildren<TMPro.TMP_Text>(true);
+            Assert.Greater(texts.Length, 0);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                Assert.GreaterOrEqual(texts[i].fontSize, 24f, texts[i].name);
+                Assert.AreEqual("QL_BagelFatOne SDF", texts[i].font.name, texts[i].name);
+            }
+            Canvas.ForceUpdateCanvases();
+            Rect b = ScreenRectOf((RectTransform)start.Button.transform);
+            Assert.IsFalse(b.Overlaps(ScreenRectOf((RectTransform)_button.transform)), "드론 투입 버튼과 겹침");
+            Assert.IsFalse(b.Overlaps(ScreenRectOf((RectTransform)Object.FindAnyObjectByType<OpsMessenger>().transform)), "메신저와 겹침");
+            Assert.IsFalse(b.Overlaps(ScreenRectOf((RectTransform)_countdown.transform)), "카운트다운과 겹침");
+
+            // 일시정지 — 숨김, 재개 — 다시 보임
+            _loop.HandleEscape();
+            Assert.AreEqual(GameState.Paused, Flow.State);
+            yield return null;
+            Assert.IsFalse(start.IsShown, "일시정지 중 숨김");
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+            yield return null;
+            Assert.IsTrue(start.IsShown, "재개 — 다시 보임");
+
+            ResumeIfFocusPaused();
+            // 클릭 → GameLoop.RequestStartWave → 다음 Step 에 웨이브
+            int waveStarted = 0;
+            Action<int, int, string> onWave = (i, t, n) => waveStarted++;
+            GameEvents.WaveStarted += onWave;
+            start.Button.onClick.Invoke();
+            Assert.AreEqual(1, start.StartCount, "바로 시작 요청 받아들여짐");
+            _loop.Step(Dt);
+            GameEvents.WaveStarted -= onWave;
+            Assert.AreEqual(GameState.Wave, Flow.State, "클릭 → 웨이브 시작");
+            Assert.AreEqual(1, waveStarted);
+            yield return null;
+            Assert.IsFalse(start.IsShown, "웨이브 중 숨김");
+
+            // 결과 — 숨김 (드론 없이 패배까지)
+            StepUntil(() => Flow.State == GameState.Result, "결과");
+            yield return null;
+            Assert.IsFalse(start.IsShown, "결과 중 숨김");
+        }
+
+        /// <summary>
+        /// 에디터가 포커스를 잃으면 GameLoop.OnApplicationFocus 가 휴게(Paused)로 보낸다 (U12 Alt+Tab) — 테스트 흐름과 무관한 일시정지라 되돌린다.
+        /// (보류함 34 — 포커스 없이도 통과)
+        /// </summary>
+        private void ResumeIfFocusPaused()
+        {
+            if (Flow.State != GameState.Paused) return;
+            _loop.HandleEscape();
+            Time.timeScale = 0f;
+        }
+
+        private static Rect ScreenRectOf(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c);
+            return Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
         }
     }
 }

@@ -17,6 +17,7 @@ using QL.Game.Input;
 using QL.Game.Slimes;
 using QL.Game.Stage;
 using QL.Game.Summon;
+using QL.Tests.PlayMode.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
@@ -53,9 +54,12 @@ namespace QL.Tests.PlayMode.FX
         private GridModel Grid => _bootstrap.Grid;
         private GridSpace Space => _bootstrap.Space;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             yield return LoadGame(SceneName, null);
         }
@@ -63,6 +67,7 @@ namespace QL.Tests.PlayMode.FX
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             Time.timeScale = 1f;
             GameEvents.ClearAll();
@@ -237,6 +242,79 @@ namespace QL.Tests.PlayMode.FX
             Assert.Greater(max, 1.03f, "꼭대기 (1.1) 를 지나감");
             yield return WaitGame(_cfg.contamWobblePeriod * 1.5f);
             Assert.AreEqual(1f, _fx.PuddleScale(a), _cfg.contamWobbleAmount + 0.005f, "출렁임 1 ± amount");
+        }
+
+        [UnityTest]
+        public IEnumerator F03_Label_NumberOnly_InsideCell_NotOverLowerRowDrone()
+        {
+            // 레인 2 세 줄 모두 2등급 (링 · 부품이 있는 실제 크기) — 0 · 1 줄을 오염, 바로 아래 줄 드론을 가리지 않는지
+            PlaceLane(2, DroneType.Plasma, 2);
+            StepToWave();
+            Camera cam = Object.FindAnyObjectByType<CameraRig>().Camera;
+            for (int row = 0; row < Grid.RowCount - 1; row++)
+            {
+                int cell = Grid.IndexOf(2, row);
+                Grid.Contaminate(cell);
+                Raise("RaiseCellContaminated", cell, 2, Grid.ContaminationRemaining(cell));
+            }
+            yield return null;
+            yield return null;
+            Canvas.ForceUpdateCanvases();
+
+            for (int row = 0; row < Grid.RowCount - 1; row++)
+            {
+                int cell = Grid.IndexOf(2, row);
+                Assert.IsTrue(_fx.IsLabelShown(cell));
+                string text = _fx.LabelTextAt(cell).text;
+                StringAssert.IsMatch(@"^\d+\.\d$", text, "숫자만 (「오염」 · 「초」 없음)");
+                Assert.AreEqual(Grid.ContaminationRemaining(cell), float.Parse(text, System.Globalization.CultureInfo.InvariantCulture), 0.1f + Time.deltaTime + 0.0001f);
+
+                Rect label = ScreenRect(_fx.LabelAt(cell));
+                Rect cellRect = ProjectedRect(cam, Space.CellToWorld(cell), Space.CellSize * 0.5f);
+                Assert.IsTrue(cellRect.Contains(label.min) && cellRect.Contains(label.max), "줄 " + row + " 말풍선이 칸 사각형 안 " + label + " / 칸 " + cellRect);
+
+                // 아래 줄(카메라 쪽) 드론의 화면 위끝보다 위. 메시는 읽을 수 없어(OBJ isReadable 꺼짐) bounds 로 실루엣을 근사:
+                // 납작한 부품(G2 링 · G3 포드, 높이 < 0.1) = 윗면 타원 둘레 (링 뒤끝이 화면에서 가장 높다) · 몸체(돔) = 꼭대기 가운데
+                DroneView below = _board.ViewAt(cell + Space.LaneCount);
+                Assert.IsNotNull(below);
+                float top = float.MinValue;
+                Renderer[] rs = below.GetComponentsInChildren<Renderer>();
+                for (int i = 0; i < rs.Length; i++)
+                {
+                    Bounds b = rs[i].bounds;
+                    if (b.size.y < 0.1f)
+                    {
+                        for (int k = 0; k < 32; k++)
+                        {
+                            float a = k * Mathf.PI * 2f / 32f;
+                            Vector3 p = new Vector3(b.center.x + b.extents.x * Mathf.Cos(a), b.max.y, b.center.z + b.extents.z * Mathf.Sin(a));
+                            top = Mathf.Max(top, cam.WorldToScreenPoint(p).y);
+                        }
+                    }
+                    else top = Mathf.Max(top, cam.WorldToScreenPoint(new Vector3(b.center.x, b.max.y, b.center.z)).y);
+                }
+                Debug.Log("[F03] 줄 " + row + " 말풍선 " + label + " 칸 " + cellRect + " 아래 줄 드론 위끝 y " + top);
+                Assert.GreaterOrEqual(label.yMin, top, "줄 " + row + " 말풍선이 아래 줄 드론을 가림");
+            }
+        }
+
+        private static Rect ScreenRect(RectTransform rt)
+        {
+            var c = new Vector3[4];
+            rt.GetWorldCorners(c); // 오버레이 캔버스 = 화면 px
+            return Rect.MinMaxRect(c[0].x, c[0].y, c[2].x, c[2].y);
+        }
+
+        /// <summary>바닥 칸 네 모서리의 화면 사각형 (감싸는 사각형).</summary>
+        private static Rect ProjectedRect(Camera cam, Vector3 center, float half)
+        {
+            float x0 = float.MaxValue, y0 = float.MaxValue, x1 = float.MinValue, y1 = float.MinValue;
+            for (int k = 0; k < 4; k++)
+            {
+                Vector3 p = cam.WorldToScreenPoint(center + new Vector3((k & 1) == 0 ? -half : half, 0f, (k & 2) == 0 ? -half : half));
+                x0 = Mathf.Min(x0, p.x); y0 = Mathf.Min(y0, p.y); x1 = Mathf.Max(x1, p.x); y1 = Mathf.Max(y1, p.y);
+            }
+            return Rect.MinMaxRect(x0, y0, x1, y1);
         }
 
         [UnityTest]

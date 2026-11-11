@@ -38,6 +38,7 @@ namespace QL.Tests.PlayMode.UI
         private static readonly string[] HudPanels =
         {
             "Hud/WavePanel", "Hud/HatchPanel", "Hud/CoinPanel", "PauseButton", "Hud/OpsMessenger", "Hud/DeployButton",
+            "Hud/StartWave/Button", // F03 바로 시작 (준비 시간에만 켜짐 — 꺼져 있어도 자리는 같다)
         };
 
         private GameLoop _loop;
@@ -50,9 +51,12 @@ namespace QL.Tests.PlayMode.UI
 
         private GridSpace Space => _bootstrap.Space;
 
+        private GuidePrefsGuard _guidePrefs;
+
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
             GameEvents.ClearAll();
             SceneManager.sceneLoaded += DisableSeeder;
             SceneManager.LoadScene(SceneName, LoadSceneMode.Single);
@@ -88,6 +92,7 @@ namespace QL.Tests.PlayMode.UI
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            _guidePrefs.Restore();
             SceneManager.sceneLoaded -= DisableSeeder;
             yield return SetResolution(1920, 1080);
             Time.timeScale = 1f;

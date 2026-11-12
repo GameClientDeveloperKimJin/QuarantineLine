@@ -241,6 +241,21 @@ namespace QL.Tests.PlayMode.UI
             AssertInsideSafe("PauseScreen/Card", UnscaledScreenRect((RectTransform)root.Find("PauseScreen/Card"), scale), scale);
             AssertInsideSafe("ResultScreen/Panel", UnscaledScreenRect((RectTransform)root.Find("ResultScreen/Panel"), scale), scale);
 
+            // 4b. U18b — C14 드론 종류 선택 창 = 드론 투입 버튼 바로 위 (오른쪽 아래). HUD 패널 · 칩 · 카운트다운과 겹침 0
+            Rect pick = UnscaledScreenRect((RectTransform)root.Find("SupportScreen/SummonPick/Panel/Card"), scale);
+            AssertInsideSafe("SummonPick/Card", pick, scale);
+            Rect deploy = rects[5]; // Hud/DeployButton
+            Assert.GreaterOrEqual(pick.yMin, deploy.yMax - Epsilon, "C14 창이 투입 버튼 위" + res + " " + pick + " " + deploy);
+            Assert.AreEqual(deploy.xMax, pick.xMax, 1f, "C14 창 오른쪽 끝 = 투입 버튼" + res);
+            for (int i = 0; i < rects.Count; i++)
+                Assert.IsFalse(Overlaps(pick, rects[i]), "C14 창 ↔ " + HudPanels[i] + " 겹침" + res + " " + pick + " " + rects[i]);
+            string[] extra = { "Hud/SupportChips", "Hud/Countdown" };
+            for (int i = 0; i < extra.Length; i++)
+            {
+                Rect r = UnscaledScreenRect((RectTransform)_inGame.Find(extra[i]), scale);
+                Assert.IsFalse(Overlaps(pick, r), "C14 창 ↔ " + extra[i] + " 겹침" + res + " " + pick + " " + r);
+            }
+
             // 5. 글자 — 1080 이상 높이에서 화면 px 24 이상
             if (h >= 1080)
             {

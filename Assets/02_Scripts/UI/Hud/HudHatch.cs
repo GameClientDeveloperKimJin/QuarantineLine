@@ -1,4 +1,5 @@
 using DG.Tweening;
+using MoreMountains.Feedbacks;
 using QL.Core;
 using QL.FX;
 using QL.Game;
@@ -30,6 +31,8 @@ namespace QL.UI.Hud
         [SerializeField] private Sprite segmentSprite;
         [Tooltip("U06 위기 점멸 — 패널을 덮는 붉은 테 (raycastTarget 끔, 평소 꺼짐)")]
         [SerializeField] private Image criticalGlow;
+        [Tooltip("U18b 피격 Feel (HatchPanel/HitFeel) — 숫자 스프링 펀치 · 색 번쩍. 수치는 그 MMF_Player 인스펙터. 게임 시간")]
+        [SerializeField] private MMF_Player hitFeel;
 
         private Image[] _segments;
         private Tween[] _fades;
@@ -62,6 +65,10 @@ namespace QL.UI.Hud
         /// <summary>U06 — 위기 점멸 중.</summary>
         public bool IsCriticalBlinking => _criticalBlink != null && _criticalBlink.IsActive() && _criticalBlink.IsPlaying();
         public Image CriticalGlow => criticalGlow;
+        /// <summary>U18b — 피격 Feel (MMF_Player).</summary>
+        public MMF_Player HitFeel => hitFeel;
+        public bool HasHitFeel => hitFeel != null;
+        public int HitFeelPlays { get; private set; }
         public Color HitFlashColor => context.Fx.hatchHitFlashColor;
 
         public Image GetSegment(int index) => _segments[index];
@@ -135,7 +142,15 @@ namespace QL.UI.Hud
             bool damaged = _hp >= 0 && now < _hp;
             _hasInitial = true;
             Show(now, max);
-            if (damaged) _shake.Restart();
+            if (damaged)
+            {
+                _shake.Restart();
+                if (hitFeel != null)
+                {
+                    hitFeel.PlayFeedbacks();
+                    HitFeelPlays++;
+                }
+            }
             GameBootstrap bootstrap = context.Bootstrap;
             int criticalHp = bootstrap != null && bootstrap.Data != null ? bootstrap.Data.Config.HatchCriticalHp : 0;
             SetCritical(now > 0 && now <= criticalHp); // = HatchModel.IsCritical

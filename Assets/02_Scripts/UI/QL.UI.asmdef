@@ -1,7 +1,7 @@
 {
     "name": "QL.UI",
     "rootNamespace": "QL.UI",
-    "references": ["QL.Game", "QL.Core", "QL.Data", "QL.FX", "Unity.TextMeshPro", "UnityEngine.UI", "DOTween.Modules", "Unity.InputSystem"],
+    "references": ["QL.Game", "QL.Core", "QL.Data", "QL.FX", "Unity.TextMeshPro", "UnityEngine.UI", "DOTween.Modules", "Unity.InputSystem", "MoreMountains.Tools"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

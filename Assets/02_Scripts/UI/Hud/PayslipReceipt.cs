@@ -1,6 +1,7 @@
 using System;
 using DG.Tweening;
 using DG.Tweening.Core;
+using MoreMountains.Feedbacks;
 using QL.Core;
 using QL.Core.Flow;
 using QL.FX;
@@ -54,6 +55,8 @@ namespace QL.UI.Hud
         [SerializeField] private RectTransform footer;
         [SerializeField] private TMP_Text totalLabel;
         [SerializeField] private TMP_Text totalValue;
+        [Tooltip("U18b 합계 굴림 끝 Feel (Footer/TotalFeel) — 합계 숫자 스프링 펀치. 수치는 그 MMF_Player 인스펙터. 게임 시간")]
+        [SerializeField] private MMF_Player totalFeel;
         [SerializeField] private TMP_Text nextText;
         [SerializeField] private RectTransform stamp;
         [SerializeField] private Graphic stampGraphic;
@@ -94,6 +97,10 @@ namespace QL.UI.Hud
         public RectTransform Stamp => stamp;
         public TMP_Text WaveText => waveText;
         public TMP_Text TotalValue => totalValue;
+        /// <summary>U18b — 합계 굴림 끝 Feel (MMF_Player).</summary>
+        public MMF_Player TotalFeel => totalFeel;
+        public bool HasTotalFeel => totalFeel != null;
+        public int TotalFeelPlays { get; private set; }
         public TMP_Text NextText => nextText;
         public bool IsShowing => panel.gameObject.activeSelf;
         /// <summary>이번 영수증에 켜진 항목 줄 수.</summary>
@@ -142,6 +149,7 @@ namespace QL.UI.Hud
                 .Insert(fx.payslipTotalAt, DOTween.To(getTotal, SetTotal, 1f, fx.payslipTotalDuration).From(0f, false).SetEase(fx.payslipTotalEase))
                 .Insert(fx.payslipStampAt, DOTween.To(getStamp, SetStamp, 1f, fx.payslipStampDuration).From(0f, false).SetEase(fx.payslipStampEase))
                 .Insert(fx.payslipRollUpAt, DOTween.To(getRoll, SetRoll, 1f, fx.payslipRollUpDuration).From(0f, false).SetEase(fx.payslipRollUpEase))
+                .InsertCallback(fx.payslipTotalAt + fx.payslipTotalDuration, PlayTotalFeel)
                 .InsertCallback(fx.payslipCoinAt, ReleaseCoin)
                 .InsertCallback(fx.payslipEndAt, Finish)
                 .SetAutoKill(false)
@@ -298,6 +306,14 @@ namespace QL.UI.Hud
             rowGroups[i].alpha = t;
             RectTransform c = rowContents[i];
             c.anchoredPosition = new Vector2(context.Fx.payslipRowOffsetX * (1f - t), c.anchoredPosition.y);
+        }
+
+        /// <summary>U18b — 합계 숫자 굴림이 끝난 순간.</summary>
+        private void PlayTotalFeel()
+        {
+            if (totalFeel == null) return;
+            totalFeel.PlayFeedbacks();
+            TotalFeelPlays++;
         }
 
         private void SetTotal(float t)

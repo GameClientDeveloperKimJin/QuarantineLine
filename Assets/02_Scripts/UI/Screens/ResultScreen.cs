@@ -1,4 +1,5 @@
 using DG.Tweening;
+using MoreMountains.Feedbacks;
 using QL.Core.Flow;
 using QL.FX;
 using QL.Game;
@@ -40,6 +41,8 @@ namespace QL.UI.Screens
         [SerializeField] private Image stamp;
         [SerializeField] private StampData victoryStamp;
         [SerializeField] private StampData defeatStamp;
+        [Tooltip("U18b 도장 「쾅」 Feel (ResultScreen/StampFeel) — 도장이 닿는 순간 패널이 아래로 툭 · 되튐. 수치는 그 MMF_Player 인스펙터. Unscaled")]
+        [SerializeField] private MMF_Player stampFeel;
 
         [Header("① 헤더")]
         [SerializeField] private Image headerBand;
@@ -132,6 +135,10 @@ namespace QL.UI.Screens
         public bool IntroPlaying => _intro != null && _intro.IsPlaying();
         /// <summary>시퀀스를 만든 횟수 (재사용 확인 — 판 끝이 몇 번이어도 1).</summary>
         public int IntroBuilds => _introBuilds;
+        /// <summary>U18b — 도장 「쾅」 Feel (MMF_Player).</summary>
+        public MMF_Player StampFeel => stampFeel;
+        public bool HasStampFeel => stampFeel != null;
+        public int StampFeelPlays { get; private set; }
         public GameObject SkipCatcher => skipCatcher.gameObject;
         public Image Stamp => stamp;
         public float StampAngle => Mathf.DeltaAngle(0f, stamp.rectTransform.localEulerAngles.z);
@@ -323,6 +330,7 @@ namespace QL.UI.Screens
                 .Insert(fx.resultIntroStampAt, DOTween.To(() => _stampP, ApplyStamp, 1f, fx.resultIntroStampDuration).From(0f).SetEase(Ease.Linear))
                 .Insert(fx.resultIntroPunchAt, DOTween.Punch(() => _punch, ApplyPunch, Vector3.one * fx.resultIntroPunch,
                     fx.resultIntroPunchDuration, fx.resultIntroPunchVibrato, fx.resultIntroPunchElasticity))
+                .InsertCallback(fx.resultIntroStampAt + fx.resultIntroStampDuration, PlayStampFeel)
                 .InsertCallback(fx.resultIntroUnlockAt, Unlock)
                 .SetUpdate(true)
                 .SetAutoKill(false)
@@ -342,6 +350,14 @@ namespace QL.UI.Screens
         {
             if (_intro == null) return;
             _intro.Goto(seconds, false);
+        }
+
+        /// <summary>U18b — 도장이 닿는 순간 (시퀀스 콜백, 건너뛰기 Complete 때도 한 번).</summary>
+        private void PlayStampFeel()
+        {
+            if (stampFeel == null) return;
+            stampFeel.PlayFeedbacks();
+            StampFeelPlays++;
         }
 
         private void Unlock()

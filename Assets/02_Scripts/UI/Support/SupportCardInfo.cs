@@ -36,7 +36,7 @@ namespace QL.UI.Support
         public string Name;
         public CardCategory Category;
         public Sprite Icon;
-        /// <summary>카드 위 설명 — {value} 치환 · 괄호 설명 뺌.</summary>
+        /// <summary>카드 위 설명 — {value} 치환 · 괄호 설명 뺌. 끝이 {value}(+단위) 이고 큰 수치가 그 값이면 그 끝을 뺀다 (U18b — 같은 수치 두 번 방지, 툴팁은 전부).</summary>
         public string CardDescription;
         /// <summary>툴팁 설명 — {value} 치환 · 전부.</summary>
         public string FullDescription;
@@ -130,6 +130,15 @@ namespace QL.UI.Support
             else if (hasValue) info.Big = valueText + unit;
             else if (count > 0) info.Big = count + "회";
             else info.Big = string.Empty;
+            // 큰 수치가 같은 값을 크게 보여 주면 카드 위 설명 끝의 값은 뺀다 (U18b — C12 「… 공격력 +15%」 + 큰 「+15%」 → 두 번 보임).
+            // 문장 가운데 값 (C03 「지속 {value}초, …」 · C09 「{value}대 무료 투입」) 은 그대로 — 빼면 문장이 깨진다
+            if (hasValue && info.Big == valueText + unit)
+            {
+                string tail = ValueToken + unit;
+                string shortDesc = StripNote(desc);
+                if (shortDesc.EndsWith(tail, System.StringComparison.Ordinal))
+                    info.CardDescription = shortDesc.Substring(0, shortDesc.Length - tail.Length).TrimEnd();
+            }
             if (!string.IsNullOrEmpty(look.note)) info.Note = look.note;
             else if (info.ActiveWave > 0) info.Note = fx.supportWaveOnlyFormat.Replace("{0}", info.ActiveWave.ToString());
 

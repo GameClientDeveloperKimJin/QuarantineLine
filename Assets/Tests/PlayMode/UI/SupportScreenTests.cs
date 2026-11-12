@@ -373,6 +373,7 @@ namespace QL.Tests.PlayMode.UI
 
             Assert.IsFalse(_summon.RequestSummon(), "C14 — 소환 대신 창");
             Assert.IsTrue(_picker.IsOpen, "SummonTypeRequested → 창 열림");
+            AssertPickerAboveDeploy();
             _picker.Cancel();
             Assert.IsFalse(_picker.IsOpen, "닫기 = 취소");
             Assert.AreEqual(coins, _bootstrap.Wallet.Coins, "코인 그대로");
@@ -387,6 +388,39 @@ namespace QL.Tests.PlayMode.UI
                 if (_bootstrap.Grid.Get(i).HasDrone && _bootstrap.Grid.Get(i).Type == DroneType.Cryo) cryo++;
             Assert.AreEqual(1, cryo, "고른 종류로 소환");
             Assert.AreEqual(2, _picker.OpenCount);
+        }
+
+        /// <summary>U18b — C14 창은 드론 투입 버튼 바로 위 (오른쪽 끝 맞춤) · 카운트다운 · 작업 시작 · 칩 · 메신저와 겹침 0 (크기 그대로 — 등장 Scale 제외).</summary>
+        private void AssertPickerAboveDeploy()
+        {
+            Canvas.ForceUpdateCanvases();
+            Transform hud = _countdown.transform.parent;
+            Rect card = Unscaled(_picker.Card);
+            Rect deploy = Unscaled((RectTransform)hud.Find("DeployButton"));
+            Assert.GreaterOrEqual(card.yMin, deploy.yMax - 0.5f, "창 아래끝이 투입 버튼 위 " + card + " " + deploy);
+            Assert.Less(card.yMin - deploy.yMax, 40f, "창이 버튼 바로 위 (간격 40px 미만)");
+            Assert.AreEqual(deploy.xMax, card.xMax, 1f, "오른쪽 끝 맞춤");
+            string[] others = { "Countdown", "StartWave/Button", "SupportChips", "OpsMessenger", "CoinPanel", "HatchPanel", "WavePanel" };
+            for (int i = 0; i < others.Length; i++)
+            {
+                Transform t = hud.Find(others[i]);
+                Assert.IsNotNull(t, others[i]);
+                Rect r = Unscaled((RectTransform)t);
+                bool overlap = card.xMin < r.xMax - 0.5f && r.xMin < card.xMax - 0.5f && card.yMin < r.yMax - 0.5f && r.yMin < card.yMax - 0.5f;
+                Assert.IsFalse(overlap, "C14 창 ↔ " + others[i] + " 겹침 " + card + " " + r);
+            }
+        }
+
+        /// <summary>화면 사각형 — 자기 localScale 은 뺀다 (등장 연출 중간값과 무관 · 피벗 기준으로 커지므로 피벗 위치에서 잰다).</summary>
+        private static Rect Unscaled(RectTransform rt)
+        {
+            Vector3 lossy = rt.lossyScale;
+            float sx = Mathf.Abs(lossy.x) / Mathf.Max(1e-4f, Mathf.Abs(rt.localScale.x));
+            float sy = Mathf.Abs(lossy.y) / Mathf.Max(1e-4f, Mathf.Abs(rt.localScale.y));
+            Vector2 size = new Vector2(rt.rect.width * sx, rt.rect.height * sy);
+            Vector2 pivotWorld = rt.position;
+            Vector2 min = pivotWorld - Vector2.Scale(rt.pivot, size);
+            return new Rect(min, size);
         }
 
         [UnityTest]

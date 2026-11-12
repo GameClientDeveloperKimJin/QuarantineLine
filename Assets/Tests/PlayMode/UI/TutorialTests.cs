@@ -206,7 +206,7 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual("1 / " + Steps.StepCount, _tut.Bubble.CounterText.text);
             Assert.AreEqual(Steps.Step(0).title, _tut.Bubble.TitleText.text);
             Assert.GreaterOrEqual(_tut.Bubble.BodyText.fontSize, 24f, "글자 24px 이상");
-            Assert.AreEqual("QL_BagelFatOne SDF", _tut.Bubble.BodyText.font.name);
+            Assert.AreEqual("QL_PretendardMedium SDF", _tut.Bubble.BodyText.font.name, "본문 = Pretendard Medium (U22)");
             Assert.IsFalse(_start.IsShown, "튜토리얼 중 「작업 시작」 숨김");
             Assert.AreEqual(15, Steps.StepCount, "R1 — 4+5 합쳐 14 + 배치 직접 1 = 15단계");
 

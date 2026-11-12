@@ -364,7 +364,7 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsTrue(start.Button.gameObject.activeInHierarchy);
             Assert.IsFalse(receipt.IsShowing);
 
-            // 글자 24px 이상 · Bagel Fat One · 투입 버튼 · 메신저와 겹침 없음
+            // 글자 24px 이상 · Bagel Fat One (버튼 글자 — U22 규칙에서도 Bagel) · 투입 버튼 · 메신저와 겹침 없음
             var texts = start.GetComponentsInChildren<TMPro.TMP_Text>(true);
             Assert.Greater(texts.Length, 0);
             for (int i = 0; i < texts.Length; i++)

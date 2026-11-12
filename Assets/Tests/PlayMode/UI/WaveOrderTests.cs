@@ -634,7 +634,9 @@ namespace QL.Tests.PlayMode.UI
             for (int i = 0; i < texts.Length; i++)
             {
                 Assert.GreaterOrEqual(texts[i].fontSize, 24f, texts[i].name + " 24px 이상");
-                Assert.AreEqual("QL_BagelFatOne SDF", texts[i].font.name, "글꼴 하나");
+                // U22 글꼴 규칙: 제목 = Bagel, 번호 · 팀 · 항목 줄 (문장) = Pretendard Medium/SemiBold
+                if (texts[i].name == "Title") Assert.AreEqual("QL_BagelFatOne SDF", texts[i].font.name, "제목 = Bagel");
+                else StringAssert.StartsWith("QL_Pretendard", texts[i].font.name, texts[i].name + " = Pretendard");
                 Assert.LessOrEqual(texts[i].preferredWidth, texts[i].rectTransform.rect.width + 0.5f, texts[i].name + " 칸 안에 들어감");
             }
             _card.Resume();

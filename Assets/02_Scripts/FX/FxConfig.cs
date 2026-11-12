@@ -1055,10 +1055,10 @@ namespace QL.FX
         public Vector2 tutorialSafeMargin = new Vector2(40f, 40f);
         [Tooltip("꼬리를 말풍선 모서리에서 띄우는 거리 (px)")]
         [Min(0f)] public float tutorialTailInset = 36f;
-        [Min(24f)] public float tutorialSpeakerFontSize = 24f;
+        [Min(24f)] public float tutorialSpeakerFontSize = 26f;   // U22: Pretendard SemiBold
         [Min(24f)] public float tutorialTitleFontSize = 34f;
-        [Min(24f)] public float tutorialBodyFontSize = 28f;
-        [Min(24f)] public float tutorialCounterFontSize = 24f;
+        [Min(24f)] public float tutorialBodyFontSize = 30f;      // U22: Pretendard Medium (같은 pt 에서 가늘어 보임 → +2)
+        [Min(24f)] public float tutorialCounterFontSize = 26f;   // U22: Pretendard SemiBold
         [Min(24f)] public float tutorialButtonFontSize = 26f;
         public Color tutorialTitleColor = new Color(0.36f, 0.95f, 0.88f, 1f);
         public Color tutorialBodyColor = new Color(0.86f, 1f, 0.98f, 1f);

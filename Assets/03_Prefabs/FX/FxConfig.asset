@@ -334,12 +334,12 @@ MonoBehaviour:
   coinGainOutDuration: 0.3
   orderSlotFadeDuration: 0.15
   orderPrintAt: 0.1
-  orderPrintDuration: 0.45
+  orderPrintDuration: 0.6
   orderPrintEase: 6
-  orderShakeDuration: 0.3
+  orderShakeDuration: 0.45
   orderShakeAngle: 2
   orderShakeVibrato: 10
-  orderStampAt: 0.6
+  orderStampAt: 1
   orderStampDuration: 0.18
   orderStampScaleFrom: 1.6
   orderStampEase: 26
@@ -353,7 +353,7 @@ MonoBehaviour:
   orderPunchElasticity: 0.5
   orderCameraKickStrength: 0.025
   orderCameraKickDuration: 0.15
-  orderAbsorbAt: 5
+  orderAbsorbAt: 3
   orderAbsorbDuration: 0.4
   orderAbsorbScale: 0.1
   orderAbsorbEase: 5
@@ -654,10 +654,10 @@ MonoBehaviour:
   tutorialBubbleGap: 28
   tutorialSafeMargin: {x: 40, y: 40}
   tutorialTailInset: 36
-  tutorialSpeakerFontSize: 24
+  tutorialSpeakerFontSize: 26
   tutorialTitleFontSize: 34
-  tutorialBodyFontSize: 28
-  tutorialCounterFontSize: 24
+  tutorialBodyFontSize: 30
+  tutorialCounterFontSize: 26
   tutorialButtonFontSize: 26
   tutorialTitleColor: {r: 0.36, g: 0.95, b: 0.88, a: 1}
   tutorialBodyColor: {r: 0.86, g: 1, b: 0.98, a: 1}

@@ -194,7 +194,12 @@ namespace QL.Tests.PlayMode
 
         private void StepUntil(Func<bool> done, string what)
         {
-            for (int i = 0; i < MaxSteps && !done(); i++) _loop.Step(Dt);
+            for (int i = 0; i < MaxSteps && !done(); i++)
+            {
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 클리어 뒤 카드 선택에서 멈추지 않게 (드론 없는 패배는 웨이브 2 에서)
+                if (done()) break;
+                _loop.Step(Dt);
+            }
             Assert.IsTrue(done(), what + " 에 이르지 못했다");
         }
 
@@ -421,6 +426,7 @@ namespace QL.Tests.PlayMode
                 _loop.Step(Dt);
                 if (Flow.State == GameState.Result) break;
                 KillAllAlive();
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 웨이브 1 · 2 클리어 뒤 카드 선택 (고를 때까지 준비 시간이 멈춘다)
             }
 
             Assert.AreEqual(GameOutcome.Victory, Flow.Outcome);

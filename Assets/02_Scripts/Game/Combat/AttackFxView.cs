@@ -16,6 +16,7 @@ namespace QL.Game.Combat
     /// 흡입: 빔 위를 점액 → 드론으로 흐르는 입자 + 끝 소용돌이 · 소각: 부채꼴 안 불꽃 (노이즈 흔들림) + 끝 불씨 ·
     /// 냉각: 분사 서리 가루 + 맞은 곳 서리 반짝 · 3등급 빙결 링: 바닥 링 + 얼음 파편.
     /// 등급은 <c>from</c> 칸의 드론 등급을 읽어 (GameBootstrap Grid — 읽기만) 굵기 · 밝기 · 입자 수를 올린다.
+    /// G13 (보류함 36): DroneCombat 은 등급을 넘기는 오버로드 (<c>grade</c>) 를 부른다 — Grid 조회는 등급 없는 오버로드 (테스트) 만.
     /// 시간은 게임 시간 (일시정지 = DroneCombat 이 Advance 를 안 부르고 입자도 timeScale 0 에서 멈춤).
     /// </para>
     /// </summary>
@@ -244,10 +245,13 @@ namespace QL.Game.Combat
             }
         }
 
-        /// <summary>흡입 — 드론 → 빔 끝 (가장 먼 맞은 점액).</summary>
-        public void ShowBeam(Vector3 from, Vector3 to, DroneType type)
+        /// <summary>흡입 — 드론 → 빔 끝 (가장 먼 맞은 점액). 등급 = from 칸 드론.</summary>
+        public void ShowBeam(Vector3 from, Vector3 to, DroneType type) => ShowBeam(from, to, type, GradeAt(from));
+
+        /// <summary>흡입 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        public void ShowBeam(Vector3 from, Vector3 to, DroneType type, int grade)
         {
-            int g = Begin(Kind.Beam, from, type);
+            int g = Begin(Kind.Beam, type, grade);
             SetLine(from, to, beamWidth * Pick(gradeWidth, g), beamTexture);
             HideQuad();
 
@@ -258,10 +262,13 @@ namespace QL.Game.Combat
             Swirl(b, g);
         }
 
-        /// <summary>냉각 — 드론 → 타겟 선 + 끝에 Frost_Burst.</summary>
-        public void ShowFrost(Vector3 from, Vector3 to, DroneType type)
+        /// <summary>냉각 — 드론 → 타겟 선 + 끝에 Frost_Burst. 등급 = from 칸 드론.</summary>
+        public void ShowFrost(Vector3 from, Vector3 to, DroneType type) => ShowFrost(from, to, type, GradeAt(from));
+
+        /// <summary>냉각 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        public void ShowFrost(Vector3 from, Vector3 to, DroneType type, int grade)
         {
-            int g = Begin(Kind.Frost, from, type);
+            int g = Begin(Kind.Frost, type, grade);
             SetLine(from, to, frostWidth * Pick(gradeWidth, g), frostTexture);
             float s = burstSize * _cellSize * Pick(gradeWidth, g);
             SetFlatQuad(Lifted(to), Vector3.forward, s, s, 0.5f, frostTexture);
@@ -273,10 +280,13 @@ namespace QL.Game.Combat
             CryoGlint(b, g);
         }
 
-        /// <summary>소각 — 꼭짓점(드론) → 먼 끝 중심까지 부채꼴, 먼 끝 폭 farWidth (월드).</summary>
-        public void ShowCone(Vector3 apex, Vector3 farCenter, float farWidth, DroneType type)
+        /// <summary>소각 — 꼭짓점(드론) → 먼 끝 중심까지 부채꼴, 먼 끝 폭 farWidth (월드). 등급 = apex 칸 드론.</summary>
+        public void ShowCone(Vector3 apex, Vector3 farCenter, float farWidth, DroneType type) => ShowCone(apex, farCenter, farWidth, type, GradeAt(apex));
+
+        /// <summary>소각 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        public void ShowCone(Vector3 apex, Vector3 farCenter, float farWidth, DroneType type, int grade)
         {
-            int g = Begin(Kind.Cone, apex, type);
+            int g = Begin(Kind.Cone, type, grade);
             HideLine();
             apex = Lifted(apex);
             farCenter = Lifted(farCenter);
@@ -294,7 +304,7 @@ namespace QL.Game.Combat
         /// <summary>냉각 3등급 빙결 — 중심에 반경 radius (월드) 링.</summary>
         public void ShowRing(Vector3 center, float radius, DroneType type)
         {
-            Begin(Kind.Ring, center, type);
+            Begin(Kind.Ring, type, MaxGrade);
             LastGrade = MaxGrade; // 빙결은 냉각 3등급만
             _intensity = Pick(gradeIntensity, MaxGrade);
             HideLine();
@@ -306,14 +316,14 @@ namespace QL.Game.Combat
 
         // ── 내부 — 선 · 쿼드 ──────────────────────────────────
 
-        /// <summary>표시 시작 — 시간 · 종류 · 등급 (from 칸의 드론). 돌려주는 값 = 등급.</summary>
-        private int Begin(Kind kind, Vector3 from, DroneType type)
+        /// <summary>표시 시작 — 시간 · 종류 · 등급 (1~3 으로 자름). 돌려주는 값 = 등급.</summary>
+        private int Begin(Kind kind, DroneType type, int grade)
         {
             Remaining = duration;
             _kind = kind;
             _color = ColorOf(type);
             _scroll = 0f;
-            int g = GradeAt(from);
+            int g = Mathf.Clamp(grade, 1, MaxGrade);
             LastGrade = g;
             _intensity = Pick(gradeIntensity, g);
             return g;

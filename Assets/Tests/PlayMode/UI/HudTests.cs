@@ -403,7 +403,7 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsFalse(start.IsShown, "웨이브 중 숨김");
 
             // 결과 — 숨김 (드론 없이 패배까지)
-            StepUntil(() => Flow.State == GameState.Result, "결과");
+            StepUntil(() => { SupportTestUtil.PickIfOffered(_loop); return Flow.State == GameState.Result; }, "결과"); // G13 — 카드 선택에서 멈추지 않게
             yield return null;
             Assert.IsFalse(start.IsShown, "결과 중 숨김");
         }

@@ -5,6 +5,7 @@ using QL.Core.Stats;
 using QL.Core.Units;
 using QL.Data;
 using QL.Game.Stage;
+using QL.Game.Support;
 using UnityEngine;
 
 namespace QL.Game.Bootstrap
@@ -26,6 +27,8 @@ namespace QL.Game.Bootstrap
         public GridModel Grid { get; private set; }
         public Wallet Wallet { get; private set; }
         public Summoner Summoner { get; private set; }
+        /// <summary>업무 지원 카드 한 판 상태 (G13 — RunModifiers · StatResolver · 뽑기). 카드 풀이 없으면 카드 0장 (보정 없음).</summary>
+        public SupportCardRunner Support { get; private set; }
 
         /// <summary>Awake 에서 모델 생성이 끝났으면 true.</summary>
         public bool IsReady { get; private set; }
@@ -46,6 +49,7 @@ namespace QL.Game.Bootstrap
             Grid = new GridModel(Config, Catalog);
             Wallet = new Wallet(Config.StartCoin);
             Summoner = new Summoner(Config, Catalog);
+            Support = new SupportCardRunner(data.SupportCards, data.Config);
             IsReady = true;
         }
 

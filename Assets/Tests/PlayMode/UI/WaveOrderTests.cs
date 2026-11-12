@@ -273,6 +273,7 @@ namespace QL.Tests.PlayMode.UI
                     SlimeTarget[] t = registry.Targets;
                     for (int j = registry.TargetCount - 1; j >= 0; j--)
                         if (registry.TryGet(t[j].Id, out SlimeView s)) registry.Despawn(s, DespawnReason.Killed);
+                    SupportTestUtil.PickIfOffered(_loop); // G13 — 카드 선택에서 멈추지 않게
                     if (_card.IsShowing || _payslip.IsPlaying) break;
                 }
                 yield return null;

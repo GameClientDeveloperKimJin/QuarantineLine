@@ -4,6 +4,7 @@ using QL.Core;
 using QL.Core.Combat;
 using QL.Core.Grid;
 using QL.Core.Stats;
+using QL.Core.Support;
 using QL.Game.Bootstrap;
 using QL.Game.Pooling;
 using QL.Game.Slimes;
@@ -18,6 +19,9 @@ namespace QL.Game.Combat
     /// 흐름은 Advance(dt) — 자체 Update 없음 (테스트는 Advance 를 직접 부른다).
     /// 공격 표시는 Pool&lt;AttackFxView&gt; (크기 = 칸 수 × fxPoolPerCell).
     /// 오염 칸(Cell.IsContaminated) 드론은 공격 · 타이머 진행을 멈춘다 — 씻기거나 다른 칸으로 옮기면 멈췄던 타이머부터 다시 (O02).
+    /// G13 (업무 지원 카드): 칸마다 기본 수치 (UnitCatalog) 와 최종 수치 (StatResolver — 공격력 · 간격 · 사거리 · 감속률 · 감속 지속) 를 둘 다 둔다.
+    /// 최종 수치는 소환 · 머지 · 이벤트 없이 들어온 드론 때 · RunModifiers.Version 또는 웨이브 번호가 바뀐 뒤 첫 Advance 에서만 다시 계산 (캐시 — 할당 0).
+    /// 이미 배치된 · 새로 소환된 · 머지된 드론이 같은 길로 같은 최종 값을 쓴다. 보류함 36: 공격 표시에 드론 등급을 넘긴다.
     /// </summary>
     [DefaultExecutionOrder(10)] // Awake 준비 순서만 — SlimeRegistry.Awake 뒤 (프레임 순서는 GameLoop)
     public sealed class DroneCombat : MonoBehaviour
@@ -39,12 +43,16 @@ namespace QL.Game.Combat
         private bool[] _hasTimer;
         private DroneType[] _timerType;
         private int[] _timerGrade;
-        private UnitStats[] _stats;
+        private UnitStats[] _baseStats; // UnitCatalog 값 (G13)
+        private UnitStats[] _stats;     // 지원 카드 반영 최종 값 (G13) — 공격 · 표시가 쓰는 것
         private AttackTimer[] _timers;
         private AttackTimer[] _freezeTimers;
         private bool[] _hasFreeze;
 
         private int[] _buffer = Array.Empty<int>();
+        private StatResolver _resolver;
+        private int _seenVersion;
+        private int _seenWave;
         private Pool<AttackFxView> _fxPool;
         private readonly List<AttackFxView> _fxActive = new List<AttackFxView>();
 
@@ -72,7 +80,11 @@ namespace QL.Game.Combat
             _hasTimer = new bool[cells];
             _timerType = new DroneType[cells];
             _timerGrade = new int[cells];
+            _baseStats = new UnitStats[cells];
             _stats = new UnitStats[cells];
+            _resolver = bootstrap.Support.Resolver;
+            _seenVersion = _resolver.Modifiers.Version;
+            _seenWave = _resolver.Wave;
             _timers = new AttackTimer[cells];
             _freezeTimers = new AttackTimer[cells];
             _hasFreeze = new bool[cells];
@@ -119,6 +131,7 @@ namespace QL.Game.Combat
             if (!IsReady || !(dt > 0f)) return;
 
             TickFx(dt);
+            RefreshIfModifiersChanged();
 
             // 풀이 런타임에 늘었을 때만 (Pool 이 경고를 낸 상황) — 평소에는 할당 없음
             if (_buffer.Length < registry.Targets.Length) _buffer = new int[registry.Targets.Length];
@@ -214,15 +227,15 @@ namespace QL.Game.Combat
             switch (ctx.Stats.AttackKind)
             {
                 case AttackKind.SingleBeam:
-                    fx.ShowBeam(drone, _space.PathToWorld(ctx.Lane, ctx.ReachDist), ctx.Type);
+                    fx.ShowBeam(drone, _space.PathToWorld(ctx.Lane, ctx.ReachDist), ctx.Type, ctx.Stats.Grade);
                     break;
                 case AttackKind.Cone:
                     // 먼 끝 = 사거리 끝 중심, 폭 = 맞을 수 있는 레인 수 (Core 판정 범위를 그대로 그린다)
                     float width = (2 * ctx.Stats.ConeLaneSpread + 1) * _space.CellSize;
-                    fx.ShowCone(drone, _space.PathToWorld(ctx.Lane, ctx.Stats.Range), width, ctx.Type);
+                    fx.ShowCone(drone, _space.PathToWorld(ctx.Lane, ctx.Stats.Range), width, ctx.Type, ctx.Stats.Grade);
                     break;
                 default:
-                    fx.ShowFrost(drone, _space.PathToWorld(ctx.PrimaryLane, ctx.PrimaryDist), ctx.Type);
+                    fx.ShowFrost(drone, _space.PathToWorld(ctx.PrimaryLane, ctx.PrimaryDist), ctx.Type, ctx.Stats.Grade);
                     break;
             }
         }
@@ -253,10 +266,12 @@ namespace QL.Game.Combat
 
         private void ResetCell(int i, DroneType type, int grade)
         {
-            UnitStats st = bootstrap.Catalog.Get(type, grade);
+            UnitStats baseStats = bootstrap.Catalog.Get(type, grade);
+            UnitStats st = Resolve(in baseStats);
             _hasTimer[i] = true;
             _timerType[i] = type;
             _timerGrade[i] = grade;
+            _baseStats[i] = baseStats;
             _stats[i] = st;
             _timers[i] = new AttackTimer(st.AttackInterval);
             _hasFreeze[i] = st.FreezeInterval > 0f;
@@ -292,6 +307,7 @@ namespace QL.Game.Combat
             Swap(_hasTimer, a, b);
             Swap(_timerType, a, b);
             Swap(_timerGrade, a, b);
+            Swap(_baseStats, a, b);
             Swap(_stats, a, b);
             Swap(_timers, a, b);
             Swap(_freezeTimers, a, b);
@@ -312,6 +328,7 @@ namespace QL.Game.Combat
             _hasTimer[to] = _hasTimer[from];
             _timerType[to] = _timerType[from];
             _timerGrade[to] = _timerGrade[from];
+            _baseStats[to] = _baseStats[from];
             _stats[to] = _stats[from];
             _timers[to] = _timers[from];
             _freezeTimers[to] = _freezeTimers[from];
@@ -329,5 +346,62 @@ namespace QL.Game.Combat
 
         /// <summary>칸의 공격 타이머가 Ready 인가 (테스트 · 디버그).</summary>
         public bool IsTimerReady(int cell) => InCells(cell) && _hasTimer[cell] && _timers[cell].Ready;
+
+        /// <summary>
+        /// 칸 드론이 지금 쓰는 최종 수치 (지원 카드 반영, G13). 드론이 없거나 아직 타이머가 없으면 false.
+        /// 카드를 고른 직후 (Advance 전) 에도 최신 값을 돌려준다.
+        /// </summary>
+        public bool TryGetStats(int cell, out UnitStats stats)
+        {
+            stats = default;
+            if (!InCells(cell) || !_hasTimer[cell]) return false;
+            RefreshIfModifiersChanged();
+            stats = _stats[cell];
+            return true;
+        }
+
+        // ── 지원 카드 (G13) ───────────────────────────────────
+
+        /// <summary>기본 수치 → 최종 수치 (StatResolver 캐시 조회 — 할당 0). 공격력은 반올림 정수 (AwayFromZero).</summary>
+        private UnitStats Resolve(in UnitStats b)
+        {
+            StatResolver r = _resolver;
+            DroneType t = b.Type;
+            return new UnitStats(
+                t, b.Grade, b.AttackKind,
+                r.GetInt(t, StatKey.Damage, b.Damage),
+                r.Get(t, StatKey.AttackInterval, b.AttackInterval),
+                r.Get(t, StatKey.Range, b.Range),
+                r.Get(t, StatKey.SlowRate, b.SlowRate),
+                r.Get(t, StatKey.SlowDuration, b.SlowDuration),
+                b.PierceCount, b.ConeLaneSpread, b.BurnDps, b.BurnDuration,
+                b.FreezeInterval, b.FreezeRadius, b.FreezeDuration);
+        }
+
+        /// <summary>
+        /// 보정값 (Version) · 웨이브 번호 (C12) 가 바뀌었으면 칸마다 최종 수치 다시. 간격이 바뀐 칸은 새 간격 타이머 —
+        /// 대기 중 (Ready) 이었으면 Ready 그대로, 아니면 경과 0 부터 (카드는 준비 시간에 골라 대부분 Ready 대기 중).
+        /// </summary>
+        private void RefreshIfModifiersChanged()
+        {
+            int version = _resolver.Modifiers.Version;
+            int wave = _resolver.Wave;
+            if (version == _seenVersion && wave == _seenWave) return;
+            _seenVersion = version;
+            _seenWave = wave;
+
+            for (int i = 0; i < _stats.Length; i++)
+            {
+                if (!_hasTimer[i]) continue;
+                UnitStats st = Resolve(in _baseStats[i]);
+                if (st.AttackInterval != _stats[i].AttackInterval)
+                {
+                    bool ready = _timers[i].Ready;
+                    _timers[i] = new AttackTimer(st.AttackInterval);
+                    if (ready) _timers[i].Tick(st.AttackInterval);
+                }
+                _stats[i] = st;
+            }
+        }
     }
 }

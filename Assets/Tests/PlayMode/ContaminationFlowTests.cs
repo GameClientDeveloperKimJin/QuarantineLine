@@ -213,7 +213,12 @@ namespace QL.Tests.PlayMode
 
         private void StepUntil(Func<bool> done, string what)
         {
-            for (int i = 0; i < MaxSteps && !done(); i++) _loop.Step(Dt);
+            for (int i = 0; i < MaxSteps && !done(); i++)
+            {
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 클리어 뒤 카드 선택에서 멈추지 않게 (드론 없는 패배는 웨이브 2 에서)
+                if (done()) break;
+                _loop.Step(Dt);
+            }
             Assert.IsTrue(done(), what + " 에 이르지 못했다");
         }
 
@@ -546,6 +551,7 @@ namespace QL.Tests.PlayMode
             int summonsThisPrep = 0;
             for (int i = 0; i < MaxSteps; i++)
             {
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 카드 선택 중엔 소환이 막히고 준비 시간이 멈춘다
                 if (Flow.State == GameState.Prep && summonsThisPrep < 2 && Grid.HasEmptyCell)
                 {
                     // 준비 중 소환 — 공용 Rng 를 쓴다 (시간표는 웨이브 전용 시드라 영향 없음). 한 프레임 1회 가드라 프레임을 넘긴다
@@ -618,6 +624,7 @@ namespace QL.Tests.PlayMode
                 if (cleared >= 0) clearSlices.Add(_order.GetRange(cleared, _order.Count - cleared));
                 if (Flow.State == GameState.Result) break;
                 KillAllAlive();
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 클리어 Step 기록을 뗀 뒤 카드 선택
             }
 
             Assert.AreEqual(GameOutcome.Victory, Flow.Outcome);

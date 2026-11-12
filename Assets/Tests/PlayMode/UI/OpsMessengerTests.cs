@@ -520,7 +520,11 @@ namespace QL.Tests.PlayMode.UI
             // 도달 → 해치 피해는 GameLoop.OnEnable 구독이라 다시 켠다. 시간은 Step 으로만 (timeScale 0 → Update 의 Step(0) 은 아무것도 안 함, ScreenFlowTests 와 같은 방식)
             Time.timeScale = 0f;
             _loop.enabled = true;
-            for (int i = 0; i < 40000 && Flow.State != GameState.Result; i++) _loop.Step(0.05f);
+            for (int i = 0; i < 40000 && Flow.State != GameState.Result; i++)
+            {
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 카드 선택에서 멈추지 않게
+                _loop.Step(0.05f);
+            }
             Assert.AreEqual(GameState.Result, Flow.State, "패배까지");
             yield return null;
             int accepted = _ops.AcceptedCount;

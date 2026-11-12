@@ -301,13 +301,14 @@ namespace QL.Tests.PlayMode.UI
                 _loop.Step(Dt);
                 if (Flow.State == GameState.Result) break;
                 KillAllAlive();
+                SupportTestUtil.PickIfOffered(_loop); // G13 — 카드 선택에서 멈추지 않게
             }
             Assert.AreEqual(GameOutcome.Victory, Flow.Outcome);
         }
 
         private void PlayToDefeat()
         {
-            StepUntil(() => Flow.State == GameState.Result, "결과");
+            StepUntil(() => { SupportTestUtil.PickIfOffered(_loop); return Flow.State == GameState.Result; }, "결과"); // G13 — 카드 선택에서 멈추지 않게
             Assert.AreEqual(GameOutcome.Defeat, Flow.Outcome);
         }
 

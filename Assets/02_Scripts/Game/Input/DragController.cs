@@ -1,8 +1,10 @@
 using QL.Core.Grid;
+using QL.Core.Support;
 using QL.Game.Bootstrap;
 using QL.Game.Drones;
 using QL.Game.Flow;
 using QL.Game.Stage;
+using QL.Game.Support;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -92,7 +94,7 @@ namespace QL.Game.Input
         /// <summary>집기. 흐름이 막음(일시정지 · 결과) · 칸 밖 · 빈 칸 · 잠긴 칸 · 이미 드래그 중이면 false.</summary>
         public bool BeginAt(int cell)
         {
-            if (loop != null && !loop.CanAct) return false;
+            if (loop != null && (!loop.CanAct || loop.IsChoosingSupport)) return false; // G13 — 카드 선택 중엔 집기 금지
             if (!EnsureModel() || cell < 0) return false;
             if (!_grid.BeginDrag(cell)) return false;
 
@@ -135,7 +137,9 @@ namespace QL.Game.Input
             if (!EnsureModel() || _grid.DraggingIndex == None)
                 return new DropResult(DropOutcome.Return, None, None, default, 0);
 
-            DropResult r = _grid.Drop(cell < 0 ? None : cell);
+            // G13 · C15: 1등급끼리 머지면 사내 교육 이수 1회로 등급 한 번 더 (Core — DroneMerged 의 newGrade 가 그 등급)
+            SupportCardRunner support = bootstrap.Support;
+            DropResult r = _grid.Drop(cell < 0 ? None : cell, support.Modifiers);
             board.Apply(r);
 
             switch (r.Outcome)
@@ -148,12 +152,14 @@ namespace QL.Game.Input
                     break;
                 case DropOutcome.Merge:
                     GameEvents.RaiseDroneMerged(r.From, r.To, r.Type, r.NewGrade);
+                    PayMergeReward(support);
                     break;
                 case DropOutcome.MergeClean:
                     GameEvents.RaiseDroneMerged(r.From, r.To, r.Type, r.NewGrade);
                     // 오염 칸 청소 — 수당 내역 · CellCleaned(true) 는 흐름(GameLoop) 한 곳에서 (O02)
                     if (loop != null) loop.NotifyMergeClean(r.To);
                     else GameEvents.RaiseCellCleaned(r.To, true);
+                    PayMergeReward(support);
                     break;
                 case DropOutcome.SwapClean:
                     // 최고 등급끼리 오염 칸 청소 (G11 B안) — 자리 교환 알림 뒤 머지 청소와 같은 경로
@@ -163,9 +169,22 @@ namespace QL.Game.Input
                     break;
             }
 
+            support.NotifyIfChanged(); // C15 를 썼으면 ModifiersChanged
             ClearDragColors();
             GameEvents.RaiseDragEnded(r.From, r.Outcome);
             return r;
+        }
+
+        /// <summary>
+        /// G13 · C11 결합 장려금 — 머지 (Merge · MergeClean) 마다 MergeReward 최종 값만큼 코인 (기본 0 = 카드 없으면 아무 일 없음).
+        /// 순서: DroneMerged → (CellCleaned) → CoinChanged → (ModifiersChanged) → DragEnded.
+        /// </summary>
+        private void PayMergeReward(SupportCardRunner support)
+        {
+            int reward = support.Resolver.GetGlobalInt(StatKey.MergeReward, 0);
+            if (reward <= 0) return; // Wallet.Add 는 1 이상만
+            bootstrap.Wallet.Add(reward);
+            GameEvents.RaiseCoinChanged(bootstrap.Wallet.Coins, reward);
         }
 
         /// <summary>드래그 취소 → 원위치 · DragEnded(from, Return). 드래그 중이 아니면 아무 일 없음.</summary>

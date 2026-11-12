@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using QL.Game.Bootstrap;
 using UnityEngine;
 
@@ -11,10 +13,22 @@ namespace QL.Game.Stage
     /// G10: 복도 벽 바깥(Outer) — A11 데크 판 · 컨테이너 더미를 배치좌표.md 표(직렬화 배열) 그대로 깐다.
     /// G12: U10 카메라에서 비던 바닥 — 데크 격자 한 줄씩 더 (직렬화 값) + 격자 밖 빈 곳 판(outerDeckFill).
     /// G09: 레인 경계마다 가는 발광 선(LaneLines) — 레인 바닥은 어둡게(Mat_Lane), 구분은 선으로 (시안 ingame_reference).
+    /// G15: 에디터 메뉴로 「구운」 맵(씬 오브젝트)이 있으면 생성하지 않고 그것을 쓴다. 굽기는 Build 와 같은 코드 —
+    /// 결과를 <see cref="LockedGroupName"/> (판정과 묶인 위치) · <see cref="EditableGroupName"/> (장식) 두 묶음으로 나눈다.
+    /// 시작 때 두 묶음의 자식을 루트 바로 아래로 꺼내 (월드 위치 유지) 생성 때와 같은 계층으로 맞춘다 — 이름으로 찾는 쪽(HatchAlertFx · GateSignFx · 테스트)이 그대로 돈다.
     /// </summary>
     public sealed class StageBuilder : MonoBehaviour
     {
         private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+
+        /// <summary>구운 맵 — 판정(GridSpace)과 묶인 묶음. 옮기면 드래그 · 점액 경로와 겉모습이 어긋난다.</summary>
+        public const string LockedGroupName = "_Locked (수정 금지)";
+        /// <summary>구운 맵 — 사람이 Scene 뷰에서 자유롭게 옮기는 장식 묶음.</summary>
+        public const string EditableGroupName = "Editable";
+
+        /// <summary>Build 가 루트 바로 아래 만드는 것 중 수정 금지 묶음으로 가는 이름 (나머지는 Editable).</summary>
+        private static readonly string[] LockedParts =
+            { "Floor", "Lanes", "LaneLines", "Cells", "Hatch", "Posts", "Laser", "SpawnLine", "SpawnGate" };
 
         [SerializeField] private GameBootstrap bootstrap;
 
@@ -166,10 +180,25 @@ namespace QL.Game.Stage
         [Header("기즈모")]
         [SerializeField] private float gizmoRadius = 0.08f;
 
+        [Header("구운 맵 (G15 — 메뉴 Quarantine Line/전투맵 굽기 · 직접 넣지 않는다)")]
+        [Tooltip("구운 수정 금지 묶음. 둘 다 차 있으면 시작 때 생성하지 않고 씬 것을 쓴다")]
+        [SerializeField] private Transform bakedLocked;
+        [Tooltip("구운 자유 편집 묶음")]
+        [SerializeField] private Transform bakedEditable;
+
+        /// <summary>null = Instantiate. 굽기 때만 에디터가 넘긴 함수 (PrefabUtility.InstantiatePrefab).</summary>
+        private Func<GameObject, Transform, GameObject> _spawn;
+        private bool _baking;
+
         /// <summary>칸 인덱스 = 배열 인덱스. G02 하이라이트 · U03 가 MaterialPropertyBlock 으로 쓴다.</summary>
         public Renderer[] CellRenderers { get; private set; }
 
         public bool IsBuilt => CellRenderers != null;
+
+        /// <summary>구운 맵이 있다 (두 묶음 다).</summary>
+        public bool IsBaked => bakedLocked != null && bakedEditable != null;
+        public Transform BakedLocked => bakedLocked;
+        public Transform BakedEditable => bakedEditable;
 
         private void Start()
         {
@@ -180,15 +209,156 @@ namespace QL.Game.Stage
                 return;
             }
 
-            if (cellPrefab == null || floorMaterial == null || laneMaterial == null ||
-                hatchMaterial == null || spawnLineMaterial == null || laserMaterial == null)
+            if (!HasRequiredAssets())
             {
                 Debug.LogError("[StageBuilder] 칸 프리팹 또는 재질이 비어 있다", this);
                 enabled = false;
                 return;
             }
 
+            // 남의 묶음을 가리키는 참조 (직렬화 값을 복사한 StageBuilder 등) 는 없는 것으로 — 남의 것을 꺼내거나 지우지 않는다
+            if (bakedLocked != null && bakedLocked.parent != transform) bakedLocked = null;
+            if (bakedEditable != null && bakedEditable.parent != transform) bakedEditable = null;
+
+            if (bakedLocked != null || bakedEditable != null)
+            {
+                if (UseBaked(bootstrap.Space)) return;
+                DiscardBaked(); // 반쪽 · 어긋난 구운 맵 — 이번 실행만 생성으로 대신 (씬 파일은 그대로)
+            }
+
             Build(bootstrap.Space);
+        }
+
+        private bool HasRequiredAssets()
+        {
+            return cellPrefab != null && floorMaterial != null && laneMaterial != null &&
+                   hatchMaterial != null && spawnLineMaterial != null && laserMaterial != null;
+        }
+
+        // ── 구운 맵 (G15) ──────────────────────────────────────
+
+        /// <summary>
+        /// 구운 맵을 쓴다: 칸 렌더러를 이름(Cell_00…)으로 모으고, 두 묶음의 자식을 루트 바로 아래로 꺼낸다 (월드 위치 유지 —
+        /// Editable 안에서 옮긴 것은 옮긴 자리 그대로). 레인 선의 발광 블록 · 정적 배치는 저장되지 않으니 여기서 다시 한다.
+        /// 칸 수가 데이터와 다르면 false (다시 굽기 필요).
+        /// </summary>
+        private bool UseBaked(GridSpace space)
+        {
+            if (!IsBaked)
+            {
+                Debug.LogError("[StageBuilder] 구운 맵 묶음이 하나만 있다 ('" + LockedGroupName + "' · '" + EditableGroupName +
+                               "') — 메뉴 「전투맵 굽기」 로 다시 굽는다. 이번 실행은 생성으로 대신한다", this);
+                return false;
+            }
+
+            Transform cells = bakedLocked.Find("Cells");
+            int count = space.CellCount;
+            var renderers = new Renderer[count];
+            bool ok = cells != null && cells.childCount == count;
+            for (int i = 0; ok && i < count; i++)
+            {
+                Transform c = cells.Find("Cell_" + i.ToString("00"));
+                renderers[i] = c != null ? c.GetComponent<Renderer>() : null;
+                ok = renderers[i] != null;
+            }
+            if (!ok)
+            {
+                Debug.LogError("[StageBuilder] 구운 맵의 칸이 데이터(칸 " + count + ")와 맞지 않는다 — 메뉴 「전투맵 굽기」 로 다시 굽는다. " +
+                               "이번 실행은 생성으로 대신한다", this);
+                return false;
+            }
+
+            if (bakedLocked.localPosition != Vector3.zero || bakedLocked.localRotation != Quaternion.identity ||
+                bakedLocked.localScale != Vector3.one)
+                Debug.LogWarning("[StageBuilder] '" + LockedGroupName + "' 묶음이 옮겨졌다 — 칸 · 레인 겉모습이 판정(GridSpace)과 어긋난다", this);
+
+            MoveChildrenToRoot(bakedLocked);
+            MoveChildrenToRoot(bakedEditable);
+
+            Transform lines = transform.Find("LaneLines");
+            if (lines != null) FinishLaneLines(lines);
+
+            CellRenderers = renderers;
+            return true;
+        }
+
+        private void MoveChildrenToRoot(Transform group)
+        {
+            while (group.childCount > 0) group.GetChild(0).SetParent(transform, true);
+        }
+
+        /// <summary>실행 중 쓰지 못한 구운 묶음을 치운다 (Play 중만 — 씬 파일은 바뀌지 않는다).</summary>
+        private void DiscardBaked()
+        {
+            if (bakedLocked != null) Destroy(bakedLocked.gameObject);
+            if (bakedEditable != null) Destroy(bakedEditable.gameObject);
+            bakedLocked = null;
+            bakedEditable = null;
+        }
+
+        /// <summary>
+        /// 에디터 굽기 (메뉴 「전투맵 굽기」). 시작 때 생성과 같은 Build 로 만든 뒤 루트 아래 두 묶음으로 나눈다.
+        /// spawn = 프리팹 인스턴스 만들기 (에디터 = PrefabUtility.InstantiatePrefab, null 이면 Instantiate).
+        /// 이미 구운 것이 있으면 false — 먼저 <see cref="UnbakeForEditor"/>. Collider 는 즉시 지우고, 레인 선 발광 · 정적 배치는 실행 때 한다.
+        /// </summary>
+        public bool BakeForEditor(Func<GameObject, Transform, GameObject> spawn, out string error)
+        {
+            error = null;
+            if (bakedLocked != null || bakedEditable != null) { error = "이미 구운 맵이 있다"; return false; }
+            if (bootstrap == null) { error = "bootstrap 이 비어 있다"; return false; }
+            if (!HasRequiredAssets()) { error = "칸 프리팹 또는 재질이 비어 있다"; return false; }
+            GridSpace space = bootstrap.Space;
+            if (space == null)
+            {
+                if (bootstrap.Data == null || bootstrap.Data.Config == null) { error = "GameDataSet · Config 가 비어 있다"; return false; }
+                space = new GridSpace(bootstrap.Data.Config.ToRuleConfig()); // 편집 모드 — 기즈모와 같은 경로
+            }
+
+            // 루트에 이미 있는 자식 (생성 결과 · 사람이 둔 것) 은 건드리지 않는다
+            var before = new HashSet<Transform>();
+            foreach (Transform c in transform) before.Add(c);
+
+            Renderer[] keepCells = CellRenderers;
+            _spawn = spawn;
+            _baking = true;
+            try
+            {
+                Build(space);
+            }
+            finally
+            {
+                _spawn = null;
+                _baking = false;
+                CellRenderers = keepCells; // IsBuilt = 실행 중 준비됨 — 굽기는 바꾸지 않는다
+            }
+
+            var built = new List<Transform>();
+            foreach (Transform c in transform)
+                if (!before.Contains(c)) built.Add(c);
+
+            bakedLocked = CreateGroup(LockedGroupName, transform);
+            bakedEditable = CreateGroup(EditableGroupName, transform);
+            for (int i = 0; i < built.Count; i++)
+                built[i].SetParent(Array.IndexOf(LockedParts, built[i].name) >= 0 ? bakedLocked : bakedEditable, false);
+            return true;
+        }
+
+        /// <summary>
+        /// 굽기 되돌리기 — 두 묶음을 지우고 참조를 비운다 (다음 시작부터 생성). destroy = 지우는 함수
+        /// (에디터 = Undo.DestroyObjectImmediate, null 이면 편집 모드 DestroyImmediate · 실행 중 Destroy).
+        /// </summary>
+        public void UnbakeForEditor(Action<GameObject> destroy)
+        {
+            if (destroy == null) destroy = go => { if (Application.isPlaying) Destroy(go); else DestroyImmediate(go); };
+            if (bakedLocked != null) destroy(bakedLocked.gameObject);
+            if (bakedEditable != null) destroy(bakedEditable.gameObject);
+            bakedLocked = null;
+            bakedEditable = null;
+        }
+
+        private GameObject Spawn(GameObject prefab, Transform parent)
+        {
+            return _spawn != null ? _spawn(prefab, parent) : Instantiate(prefab, parent);
         }
 
         private void Build(GridSpace space)
@@ -249,7 +419,7 @@ namespace QL.Game.Stage
             float cellTile = cs * cellTileRatio;
             for (int i = 0; i < count; i++)
             {
-                MeshRenderer cell = Instantiate(cellPrefab, cells);
+                MeshRenderer cell = Spawn(cellPrefab.gameObject, cells).GetComponent<MeshRenderer>();
                 cell.name = "Cell_" + i.ToString("00");
                 Transform t = cell.transform;
                 Vector3 pos = space.CellToWorld(i);
@@ -357,10 +527,6 @@ namespace QL.Game.Stage
             int last = laneLineEdges ? space.LaneCount : space.LaneCount - 1;
 
             Transform group = CreateGroup("LaneLines", root);
-            var block = new MaterialPropertyBlock();
-            Color emission = laneLineColor * laneLineIntensity;
-            emission.a = 1f;
-            block.SetColor(EmissionColorId, emission);
             for (int i = first; i <= last; i++)
             {
                 MeshRenderer line = CreatePrimitive(PrimitiveType.Quad, "LaneLine_" + i, group, laneLineMaterial,
@@ -368,8 +534,21 @@ namespace QL.Game.Stage
                     new Vector3(laneLineWidthCells * cs, pathSpan, 1f), true);
                 line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 line.receiveShadows = false;
-                line.SetPropertyBlock(block);
             }
+
+            // 굽기 땐 하지 않는다 — 블록은 씬에 저장되지 않고, 정적 배치는 실행 때만 (구운 맵은 UseBaked 가 한다)
+            if (!_baking) FinishLaneLines(group);
+        }
+
+        /// <summary>레인 선 발광 (MaterialPropertyBlock 의 _EmissionColor) · 정적 배치. 생성 · 구운 맵 공용, 시작 때 1회.</summary>
+        private void FinishLaneLines(Transform group)
+        {
+            var block = new MaterialPropertyBlock();
+            Color emission = laneLineColor * laneLineIntensity;
+            emission.a = 1f;
+            block.SetColor(EmissionColorId, emission);
+            MeshRenderer[] lines = group.GetComponentsInChildren<MeshRenderer>(true);
+            for (int i = 0; i < lines.Length; i++) lines[i].SetPropertyBlock(block);
 
             if (laneLineStaticBatch) StaticBatchingUtility.Combine(group.gameObject);
         }
@@ -455,7 +634,7 @@ namespace QL.Game.Stage
         private GameObject PlaceModule(GameObject prefab, Transform parent, string objectName, Vector3 localPosition,
             float scale, bool mirror)
         {
-            GameObject go = Instantiate(prefab, parent);
+            GameObject go = Spawn(prefab, parent);
             go.name = objectName;
             Transform t = go.transform;
             Vector3 s = prefab.transform.localScale * scale;
@@ -479,13 +658,13 @@ namespace QL.Game.Stage
             return t;
         }
 
-        /// <param name="removeColliderNow">true 면 Collider 를 즉시 지운다 (같은 프레임에 Collider 0 을 보장 — 레인 선)</param>
-        private static MeshRenderer CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material,
+        /// <param name="removeColliderNow">true 면 Collider 를 즉시 지운다 (같은 프레임에 Collider 0 을 보장 — 레인 선). 굽기 땐 항상 즉시</param>
+        private MeshRenderer CreatePrimitive(PrimitiveType type, string name, Transform parent, Material material,
             Vector3 localPosition, Quaternion localRotation, Vector3 localScale, bool removeColliderNow = false)
         {
             GameObject go = GameObject.CreatePrimitive(type);
-            // 칸 판정은 GridSpace — Collider 안 씀 (시작 시 1회)
-            if (removeColliderNow) DestroyImmediate(go.GetComponent<Collider>());
+            // 칸 판정은 GridSpace — Collider 안 씀 (시작 시 1회). 편집 모드 굽기는 Destroy 를 못 쓴다
+            if (removeColliderNow || _baking || !Application.isPlaying) DestroyImmediate(go.GetComponent<Collider>());
             else Destroy(go.GetComponent<Collider>());
             go.name = name;
             Transform t = go.transform;

@@ -24,7 +24,7 @@
 5. 텍스트는 TMP `SetText` 무할당 (`V01` 6장). 값이 바뀔 때만
 6. 색 · 크기 · 시간 같은 연출 수치는 연출용 SO(`FxConfig`, R4 소유, `Data/` 아님 `FX/` 아래)에 둔다
 7. 연출 하나 끝날 때마다 포폴 GIF 대상인지 ② 에 적는다 (머지 · 처치 · 보급 · 웨이브 배너 · 피격)
-8. **UI 글자는 최소 24px** (1920×1080 기준, Bagel Fat One 18px 은 받침 한글이 뭉개짐 — U01 실측). 보조 폰트는 쓰지 않는다
+8. **UI 글자는 최소 24px** (1920×1080 기준, Bagel Fat One 18px 은 받침 한글이 뭉개짐 — U01 실측). **글꼴 2개 (U22 · 사람 2026-11-13)**: 제목 · 큰 숫자 · 버튼 · 카드 이름 · 로고 느낌 = **Bagel Fat One** / 문장 · 설명 · 작은 글자 = **Pretendard** (본문 Medium · 이름 · 값 · 태그 SemiBold, `QL_PretendardMedium SDF` · `QL_PretendardSemiBold SDF`). 「문장이면 Pretendard, 단어 · 숫자 하나면 Bagel」
 9. **Feel (More Mountains) 사용 가능** (사람 2026-11-11, `Assets/Feel/`). 새 연출에 써도 되고, 기존 DOTween 연출을 Feel 로 더 좋게 바꿔도 된다 (바꿀 땐 보고에 「무엇을 왜」). 단:
    - **timeScale 은 GameLoop 소유** → `MMF_TimescaleModifier` · `MMF_FreezeFrame` · `MMTimeManager` (히트스톱 포함) 쓰지 않는다
    - **카메라는 CameraRig 소유** → `MMCameraShaker` 를 메인 카메라에 붙이지 않는다. 흔들림은 `CameraShakeFx` (→ `CameraRig.SetShakeOffset`) 로만

@@ -15,7 +15,7 @@ MonoBehaviour:
   id: C06
   displayName: "\uC131\uACFC\uAE09 \uC120\uC9C0\uAE09"
   category: 1
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b7274f73465c40a4f89d3ded573c152f, type: 3}
   description: "\uC989\uC2DC \uCF54\uC778 {value}"
   effects:
   - kind: 2

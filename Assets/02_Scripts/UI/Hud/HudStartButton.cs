@@ -7,6 +7,7 @@ namespace QL.UI.Hud
     /// <summary>
     /// F03 「작업 시작 (Enter)」 버튼 (InGameScreen/Hud/StartWave — 준비 카운트다운 바로 아래). G11 바로 시작을 화면에 보여 준다.
     /// 보이기 = <see cref="GameLoop.IsPrep"/> 이고 U15 작업 지시서 · U14 영수증이 떠 있지 않을 때 (둘이 화면 가운데를 쓰는 동안은 숨김 — 겹침 없음).
+    /// U19: 업무 지원 카드 선택 중 (<see cref="GameLoop.IsChoosingSupport"/> — 영수증 ~ 고른 카드가 칩으로 들어갈 때까지) 숨김.
     /// 웨이브 · 일시정지 · 결과 중엔 IsPrep 이 false 라 숨김. 클릭 → <see cref="GameLoop.RequestStartWave"/> (Enter 키는 GameLoop 가 직접 읽는다 — UI 는 키를 읽지 않는다).
     /// 상태 읽기만 매 프레임 (bool 몇 개 — 할당 0), 보임이 바뀔 때만 SetActive.
     /// </summary>
@@ -47,6 +48,7 @@ namespace QL.UI.Hud
         {
             GameLoop loop = context.Loop;
             if (loop == null || !loop.IsReady || !loop.IsPrep) return false;
+            if (loop.IsChoosingSupport) return false; // U19 — 카드 선택 중엔 바로 시작이 막힌다 (RequestStartWave false) · 선택 화면이 가운데를 쓴다
             if (orderCard != null && (orderCard.IsShowing || orderCard.IsWaiting)) return false;
             if (receipt != null && receipt.IsShowing) return false;
             return true;

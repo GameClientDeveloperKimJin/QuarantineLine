@@ -892,6 +892,130 @@ namespace QL.FX
         [Min(0f)] public float mainStartPunchDuration = 0.2f;
         [Min(0f)] public float mainExitFadeDuration = 0.4f;
 
+        [Header("U19 업무 지원 카드 — 선택 화면 등장 (실제 시간 SetUpdate(true) · 선택 중엔 준비 시간이 이미 멈춰 있음)")]
+        [Tooltip("어둡게 끝 알파 (Linear — 기획서 0.5 느낌. U12 · U13 의 0.85 규칙보다 조금 진하게: 밝은 HUD 패널 위에 카드가 뜨므로). 색 RGB = breakDimColor")]
+        [Range(0f, 1f)] public float supportDimAlpha = 0.92f;
+        [Tooltip("어둡게 0 → 끝 (원본 0.2초 Linear)")]
+        [Min(0f)] public float supportDimDuration = 0.2f;
+        [Tooltip("카드 3장 올라오기 시작 (원본 0.15) · 장마다 늦게 (0.08) · 시간 (0.3 OutBack) · 아래에서 올라오는 거리 (px, 원본 +80)")]
+        [Min(0f)] public float supportCardsAt = 0.15f;
+        [Min(0f)] public float supportCardStagger = 0.08f;
+        [Min(0.01f)] public float supportCardInDuration = 0.3f;
+        public float supportCardRise = 80f;
+        public Ease supportCardInEase = Ease.OutBack;
+        [Tooltip("호버 — 크기 · 뜨는 높이 (px) · 시간 (원본 1.05 · +10 · 0.12)")]
+        public float supportHoverScale = 1.05f;
+        public float supportHoverRise = 10f;
+        [Min(0.01f)] public float supportHoverDuration = 0.12f;
+
+        [Header("U19 업무 지원 카드 — 고른 뒤 (실제 시간, 고른 순간 기준)")]
+        [Tooltip("「승인」 도장 Scale 1.6 → 1 (0.15초 InBack) · 각도 (도)")]
+        [Min(0.01f)] public float supportStampDuration = 0.15f;
+        public float supportStampScaleFrom = 1.6f;
+        public Ease supportStampEase = Ease.InBack;
+        public float supportStampAngle = -12f;
+        [Tooltip("도장이 닿을 때 카드 펀치 세기 (0.05) · 시간")]
+        [Min(0f)] public float supportPunchStrength = 0.05f;
+        [Min(0.01f)] public float supportPunchDuration = 0.2f;
+        [Tooltip("나머지 2장 아래로 빠짐 — 시작 (+0.15) · 거리 (px, −60) · 시간 (0.2) + Fade 0")]
+        [Min(0f)] public float supportOthersOutAt = 0.15f;
+        public float supportOthersDrop = 60f;
+        [Min(0.01f)] public float supportOthersOutDuration = 0.2f;
+        [Tooltip("고른 카드가 HUD 칩 자리로 — 시작 (+0.45) · 시간 (0.35 InQuad) · 끝 크기 (0.2). 이 사이 어둡게도 걷힌다")]
+        [Min(0f)] public float supportFlyAt = 0.45f;
+        [Min(0.01f)] public float supportFlyDuration = 0.35f;
+        public float supportFlyScale = 0.2f;
+        public Ease supportFlyEase = Ease.InQuad;
+        [Tooltip("칩 도착 펀치 (DOPunchScale) — 세기 · 시간 · 진동 · 탄성")]
+        [Min(0f)] public float supportChipPunchStrength = 0.18f;
+        [Min(0.01f)] public float supportChipPunchDuration = 0.25f;
+        [Min(1)] public int supportChipPunchVibrato = 6;
+        [Range(0f, 1f)] public float supportChipPunchElasticity = 0.5f;
+
+        [Header("U19 업무 지원 카드 — 색 (A14 분류 색: 공격 주황 · 경제 노랑 · 방어 초록 · 유틸 보라)")]
+        [Tooltip("CardCategory 순서 (Attack · Economy · Defense · Utility) — 태그 · 큰 수치 · 배지")]
+        public Color[] supportCategoryColors =
+        {
+            new Color(1f, 136f / 255f, 40f / 255f, 1f),
+            new Color(240f / 255f, 182f / 255f, 30f / 255f, 1f),
+            new Color(48f / 255f, 196f / 255f, 104f / 255f, 1f),
+            new Color(150f / 255f, 100f / 255f, 235f / 255f, 1f),
+        };
+        [Tooltip("카드 종이 위 글자 — 진한 글자 (이름 · 태그) · 흐린 글자 (설명 · 결재란)")]
+        public Color supportInkColor = new Color(0.16f, 0.15f, 0.13f, 1f);
+        public Color supportInkDimColor = new Color(0.42f, 0.4f, 0.36f, 1f);
+        [Tooltip("배지 바탕 = 분류 색에 이 알파 · 큰 수치가 너무 밝을 때 어둡게 곱하는 값 (경제 노랑 대비)")]
+        [Range(0f, 1f)] public float supportBadgeAlpha = 0.22f;
+        [Range(0f, 1f)] public float supportValueDarken = 0.85f;
+        [Tooltip("화면 제목 · 부제 · 부제 강조 · 키캡 글자")]
+        public Color supportTitleColor = Color.white;
+        public Color supportSubtitleColor = new Color(0.78f, 0.84f, 0.86f, 1f);
+        public Color supportSubtitleAccent = Color.white;
+        [Tooltip("HUD 칩 — 이름 · 수치 · 「적용 중 지원」 머리말 · 꺼진 배지 알파 (C12 웨이브 3 전)")]
+        public Color supportChipNameColor = Color.white;
+        public Color supportChipLabelColor = new Color(0.66f, 0.74f, 0.78f, 1f);
+        [Range(0f, 1f)] public float supportChipIdleAlpha = 0.45f;
+
+        [Header("U19 업무 지원 카드 — 문구 ({0} {1} = TMP SetText 숫자)")]
+        public string supportTitle = "업무 지원 신청";
+        [Tooltip("{0} = 막은 웨이브 · {1} = 다음 웨이브 (1부터)")]
+        public string supportSubtitleFormat = "웨이브 {0} 근무 완료 · 다음 근무 <color=#FFFFFF>웨이브 {1}</color> · 1장을 승인하세요";
+        [Tooltip("다음이 마지막 웨이브일 때")]
+        public string supportSubtitleLastFormat = "웨이브 {0} 근무 완료 · 다음 근무 <color=#FFFFFF>웨이브 {1} (마지막)</color> · 1장을 승인하세요";
+        [Tooltip("CardCategory 순서 — 태그 글자")]
+        public string[] supportCategoryNames = { "공격 지원", "경제 지원", "방어 지원", "유틸 지원" };
+        [Tooltip("{0} = 카드 번호 (C12) — 태그 오른쪽")]
+        public string supportNumberPrefix = "No. ";
+        [Tooltip("결재란 위 왼쪽 — 효과 종류 (지속 · 횟수형 · 즉시). 횟수형 {0} = 한 장 횟수")]
+        public string supportKindModifier = "지속";
+        public string supportKindCountedFormat = "횟수형 · {0}회";
+        public string supportKindInstant = "즉시";
+        [Tooltip("결재란 위 오른쪽 — {0} = 지금 중첩 · {1} = 최대 (최대 0 = 즉시형 → 표시 안 함)")]
+        public string supportStackFormat = "중첩 {0} / {1}";
+        [Tooltip("웨이브 한정 카드 배지 (C12) — {0} = 웨이브 번호")]
+        public string supportWaveOnlyFormat = "웨이브 {0} 한정";
+        [Tooltip("선택 화면 아래 줄 · HUD 머리말")]
+        public string supportActiveLabel = "적용 중 지원";
+        public string supportEmptySlot = "빈 칸 · 이번 선택";
+        [Tooltip("HUD 칩 배지 — 횟수형 남은 수 · 중첩 · C12 발동 중 / 대기")]
+        public string supportChipRemainFormat = "남은 {0}";
+        public string supportChipStackFormat = "×{0}";
+        public string supportChipActive = "발동 중";
+        public string supportChipWaitingFormat = "웨이브 {0}";
+        [Tooltip("툴팁 — 횟수형 남은 수 · 드론 값 「3등급 흡입 드론 45 → 54」 ({0} 기본 · {1} 최종) · 처치 보상 · 머지 코인")]
+        public string supportTipRemainFormat = "남은 {0}회";
+        public string supportTipGradePrefix = "{0}등급 ";
+        public string[] supportDroneNames = { "흡입", "소각", "냉각" };
+        public string supportTipKillFormat = "점액 처치 보상 {0} → {1}";
+        public string supportTipMergeFormat = "머지 1회 코인 +{0}";
+        [Tooltip("카드별 손질 — 큰 수치 · 배지 문구 (비우면 자동: 큰 수치 = {value} 값, 배지 = 웨이브 한정만)")]
+        public SupportCardLook[] supportCardLooks =
+        {
+            new SupportCardLook { id = "C03", big = "+0.5초", note = "감속률 +5%p" },
+            new SupportCardLook { id = "C05", note = "다음 소환 3회" },
+            new SupportCardLook { id = "C07", note = "변이 점액도 +1" },
+            new SupportCardLook { id = "C08", note = "최대 HP 까지만" },
+            new SupportCardLook { id = "C09", big = "1대", note = "종류 무작위" },
+            new SupportCardLook { id = "C10", big = "+1칸" },
+            new SupportCardLook { id = "C13", big = "1회 무효", note = "변이 점액 피해도 막음" },
+            new SupportCardLook { id = "C14", big = "종류 지정", note = "다음 소환 2회" },
+            new SupportCardLook { id = "C15", big = "바로 3등급", note = "1등급끼리 머지 1회" },
+            new SupportCardLook { id = "C16", big = "무료", note = "소환 횟수에는 포함" },
+        };
+
+        [Header("U19 C14 종류 선택 창 · C13 보험 처리")]
+        [Tooltip("C14 창 제목 · 닫기 안내 · 버튼 이름 (DroneType 순서 흡입 · 소각 · 냉각)")]
+        public string summonPickTitle = "결재 라인 단축 · 드론 종류 선택";
+        public string summonPickHint = "Esc 닫기 · 소환 취소";
+        [Tooltip("C14 창 등장 (실제 시간) — 크기 0.9 → 1 · 시간")]
+        public float summonPickScaleFrom = 0.9f;
+        [Min(0.01f)] public float summonPickInDuration = 0.15f;
+        [Tooltip("C13 보험 처리 — 문구 · 방패 번쩍 시간 (게임 시간) · 방패 끝 크기 · 색")]
+        public string insuranceText = "보험 처리";
+        [Min(0.05f)] public float insuranceDuration = 0.9f;
+        public float insuranceShieldScaleFrom = 1.5f;
+        public Color insuranceColor = new Color(48f / 255f, 196f / 255f, 104f / 255f, 1f);
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {
@@ -905,6 +1029,18 @@ namespace QL.FX
                 default: return 1;
             }
         }
+    }
+
+    /// <summary>U19 — 카드별 화면 손질 (FxConfig.supportCardLooks). 수치는 카드 SO 그대로, 여기는 보이는 글자만.</summary>
+    [System.Serializable]
+    public struct SupportCardLook
+    {
+        [Tooltip("카드 번호 (C01 ~)")]
+        public string id;
+        [Tooltip("큰 수치 자리 글자 (비우면 {value} 값)")]
+        public string big;
+        [Tooltip("큰 수치 아래 배지 (비우면 웨이브 한정만 · 아니면 숨김)")]
+        public string note;
     }
 
     /// <summary>

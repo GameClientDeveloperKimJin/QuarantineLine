@@ -142,7 +142,7 @@ namespace QL.Tests.PlayMode.FX
         public void Beam_Suction_MuzzleImpactFlowAndSwirl()
         {
             Vector3 from = Drone(2, 0, DroneType.Suction, 1);
-            _view.ShowBeam(from, Target(2, 5f), DroneType.Suction);
+            _view.ShowBeam(from, Target(2, 5f), DroneType.Suction, 1);
             Assert.IsTrue(_view.IsLineVisible);
             Assert.IsFalse(_view.IsQuadVisible);
             Assert.GreaterOrEqual(Count(Glow), 2 + 4, "머즐 섬광 2 + 흐르는 입자");
@@ -157,7 +157,7 @@ namespace QL.Tests.PlayMode.FX
         public void Cone_Plasma_FlamesAndEmbers()
         {
             Vector3 from = Drone(2, 0, DroneType.Plasma, 1);
-            _view.ShowCone(from, Target(2, 3f), 3f * Space.CellSize, DroneType.Plasma);
+            _view.ShowCone(from, Target(2, 3f), 3f * Space.CellSize, DroneType.Plasma, 1);
             Assert.IsFalse(_view.IsLineVisible);
             Assert.IsTrue(_view.IsQuadVisible);
             Assert.GreaterOrEqual(Count(Fire), 6, "부채꼴 안 불꽃");
@@ -169,7 +169,7 @@ namespace QL.Tests.PlayMode.FX
         public void Frost_Cryo_SprayAndGlint_Ring_Shards()
         {
             Vector3 from = Drone(2, 0, DroneType.Cryo, 1);
-            _view.ShowFrost(from, Target(2, 4f), DroneType.Cryo);
+            _view.ShowFrost(from, Target(2, 4f), DroneType.Cryo, 1);
             Assert.IsTrue(_view.IsLineVisible);
             Assert.IsTrue(_view.IsQuadVisible, "끝 Frost_Burst");
             Assert.GreaterOrEqual(Count(Frost), 5 + 3, "분사 서리 가루 + 맞은 곳 반짝");
@@ -192,19 +192,19 @@ namespace QL.Tests.PlayMode.FX
             Vector3 g2 = Drone(2, 0, DroneType.Suction, 2);
             Vector3 g3 = Drone(4, 0, DroneType.Suction, 3);
 
-            _view.ShowBeam(g1, Target(0, 5f), DroneType.Suction);
+            _view.ShowBeam(g1, Target(0, 5f), DroneType.Suction, 1);
             Assert.AreEqual(1, _view.LastGrade);
             float w1 = _view.LineWidth;
             int n1 = AttackFxView.SharedParticleCount;
 
             AttackFxView.ClearShared();
-            _view.ShowBeam(g2, Target(2, 5f), DroneType.Suction);
+            _view.ShowBeam(g2, Target(2, 5f), DroneType.Suction, 2);
             Assert.AreEqual(2, _view.LastGrade);
             float w2 = _view.LineWidth;
             int n2 = AttackFxView.SharedParticleCount;
 
             AttackFxView.ClearShared();
-            _view.ShowBeam(g3, Target(4, 5f), DroneType.Suction);
+            _view.ShowBeam(g3, Target(4, 5f), DroneType.Suction, 3);
             Assert.AreEqual(3, _view.LastGrade);
             float w3 = _view.LineWidth;
             int n3 = AttackFxView.SharedParticleCount;
@@ -221,7 +221,7 @@ namespace QL.Tests.PlayMode.FX
         public void Tick_PulsesBeam_ThenEndsAfterDuration()
         {
             Vector3 from = Drone(2, 0, DroneType.Suction, 1);
-            _view.ShowBeam(from, Target(2, 5f), DroneType.Suction);
+            _view.ShowBeam(from, Target(2, 5f), DroneType.Suction, 1);
             float w0 = _view.LineWidth;
             bool changed = false;
             float t = 0f;
@@ -250,11 +250,11 @@ namespace QL.Tests.PlayMode.FX
 
             void Once()
             {
-                _view.ShowBeam(s, ts, DroneType.Suction);
+                _view.ShowBeam(s, ts, DroneType.Suction, 3);
                 _view.Tick(0.016f);
-                _view.ShowCone(p, tp, width, DroneType.Plasma);
+                _view.ShowCone(p, tp, width, DroneType.Plasma, 2);
                 _view.Tick(0.016f);
-                _view.ShowFrost(c, tc, DroneType.Cryo);
+                _view.ShowFrost(c, tc, DroneType.Cryo, 3);
                 _view.Tick(0.016f);
                 _view.ShowRing(tc, radius, DroneType.Cryo);
                 _view.Tick(0.016f);
@@ -278,7 +278,7 @@ namespace QL.Tests.PlayMode.FX
         public IEnumerator Paused_ParticlesFreeze_ThenFinishWhenResumed()
         {
             Vector3 from = Drone(2, 0, DroneType.Plasma, 1);
-            _view.ShowCone(from, Target(2, 3f), 3f * Space.CellSize, DroneType.Plasma);
+            _view.ShowCone(from, Target(2, 3f), 3f * Space.CellSize, DroneType.Plasma, 1);
             int n = AttackFxView.SharedParticleCount;
             Assert.Greater(n, 0);
             Time.timeScale = 0f;

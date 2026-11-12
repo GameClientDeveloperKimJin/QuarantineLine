@@ -15,7 +15,7 @@ MonoBehaviour:
   id: C03
   displayName: "\uB0C9\uAC01\uC81C \uC99D\uB7C9"
   category: 0
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 22490007893b9c546b4391826851a1aa, type: 3}
   description: "\uB0C9\uAC01 \uAC10\uC18D \uC9C0\uC18D {value}\uCD08, \uAC10\uC18D\uB960
     +5%p"
   effects:

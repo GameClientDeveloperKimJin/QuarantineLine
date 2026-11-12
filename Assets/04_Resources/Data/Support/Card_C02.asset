@@ -15,7 +15,7 @@ MonoBehaviour:
   id: C02
   displayName: "\uD50C\uB77C\uC988\uB9C8 \uC555\uB825 \uC0C1\uC2B9"
   category: 0
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 630e88508f24fc546a9b5b1931415689, type: 3}
   description: "\uC18C\uAC01 \uB4DC\uB860 \uACF5\uACA9\uB825 {value}"
   effects:
   - kind: 0

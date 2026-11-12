@@ -1,5 +1,4 @@
 using QL.Core;
-using QL.Game.Bootstrap;
 using UnityEngine;
 
 namespace QL.Game.Combat
@@ -15,8 +14,8 @@ namespace QL.Game.Combat
     /// 공통: 발사구 머즐 플래시 (드론 노즐 쪽 섬광이 톡 커졌다 줄어드는 펀치) · 맞은 곳 임팩트 (스파크 · 작은 링).
     /// 흡입: 빔 위를 점액 → 드론으로 흐르는 입자 + 끝 소용돌이 · 소각: 부채꼴 안 불꽃 (노이즈 흔들림) + 끝 불씨 ·
     /// 냉각: 분사 서리 가루 + 맞은 곳 서리 반짝 · 3등급 빙결 링: 바닥 링 + 얼음 파편.
-    /// 등급은 <c>from</c> 칸의 드론 등급을 읽어 (GameBootstrap Grid — 읽기만) 굵기 · 밝기 · 입자 수를 올린다.
-    /// G13 (보류함 36): DroneCombat 은 등급을 넘기는 오버로드 (<c>grade</c>) 를 부른다 — Grid 조회는 등급 없는 오버로드 (테스트) 만.
+    /// 등급은 부르는 쪽이 넘긴다 (<c>grade</c> — DroneCombat 이 공격한 드론의 등급) — 굵기 · 밝기 · 입자 수를 올린다.
+    /// G13 (보류함 36) · U19 정리: Grid 를 읽던 등급 없는 오버로드를 지웠다 (계산 없음, 보이는 것만).
     /// 시간은 게임 시간 (일시정지 = DroneCombat 이 Advance 를 안 부르고 입자도 timeScale 0 에서 멈춤).
     /// </para>
     /// </summary>
@@ -176,7 +175,6 @@ namespace QL.Game.Combat
 
         private static Transform s_root;
         private static readonly ParticleSystem[] s_ps = new ParticleSystem[(int)Ps.Count];
-        private static GameBootstrap s_bootstrap;
         private static uint s_rng = 0x9E3779B9u;
 
         /// <summary>같이 쓰는 입자 시스템 부모 (없으면 null).</summary>
@@ -209,7 +207,6 @@ namespace QL.Game.Combat
         {
             // 풀 생성(DroneCombat.Awake → Pool → Instantiate)에서 불린다 — 시작 때 한 번만 만들고 데운다
             if (s_root == null) BuildShared(transform.parent);
-            if (s_bootstrap == null) s_bootstrap = FindAnyObjectByType<GameBootstrap>();
         }
 
         /// <summary>풀에서 처음 꺼낼 때 한 번 (DroneCombat).</summary>
@@ -245,10 +242,7 @@ namespace QL.Game.Combat
             }
         }
 
-        /// <summary>흡입 — 드론 → 빔 끝 (가장 먼 맞은 점액). 등급 = from 칸 드론.</summary>
-        public void ShowBeam(Vector3 from, Vector3 to, DroneType type) => ShowBeam(from, to, type, GradeAt(from));
-
-        /// <summary>흡입 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        /// <summary>흡입 — 드론 → 빔 끝 (가장 먼 맞은 점액). grade = 공격한 드론 등급 (G13 · 보류함 36, DroneCombat).</summary>
         public void ShowBeam(Vector3 from, Vector3 to, DroneType type, int grade)
         {
             int g = Begin(Kind.Beam, type, grade);
@@ -262,10 +256,7 @@ namespace QL.Game.Combat
             Swirl(b, g);
         }
 
-        /// <summary>냉각 — 드론 → 타겟 선 + 끝에 Frost_Burst. 등급 = from 칸 드론.</summary>
-        public void ShowFrost(Vector3 from, Vector3 to, DroneType type) => ShowFrost(from, to, type, GradeAt(from));
-
-        /// <summary>냉각 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        /// <summary>냉각 — 드론 → 타겟 선 + 끝에 Frost_Burst. grade = 공격한 드론 등급.</summary>
         public void ShowFrost(Vector3 from, Vector3 to, DroneType type, int grade)
         {
             int g = Begin(Kind.Frost, type, grade);
@@ -280,10 +271,7 @@ namespace QL.Game.Combat
             CryoGlint(b, g);
         }
 
-        /// <summary>소각 — 꼭짓점(드론) → 먼 끝 중심까지 부채꼴, 먼 끝 폭 farWidth (월드). 등급 = apex 칸 드론.</summary>
-        public void ShowCone(Vector3 apex, Vector3 farCenter, float farWidth, DroneType type) => ShowCone(apex, farCenter, farWidth, type, GradeAt(apex));
-
-        /// <summary>소각 — 등급을 받는다 (G13 · 보류함 36, DroneCombat).</summary>
+        /// <summary>소각 — 꼭짓점(드론) → 먼 끝 중심까지 부채꼴, 먼 끝 폭 farWidth (월드). grade = 공격한 드론 등급.</summary>
         public void ShowCone(Vector3 apex, Vector3 farCenter, float farWidth, DroneType type, int grade)
         {
             int g = Begin(Kind.Cone, type, grade);
@@ -327,15 +315,6 @@ namespace QL.Game.Combat
             LastGrade = g;
             _intensity = Pick(gradeIntensity, g);
             return g;
-        }
-
-        private static int GradeAt(Vector3 world)
-        {
-            if (s_bootstrap == null || !s_bootstrap.IsReady) return 1;
-            int cell = s_bootstrap.Space.WorldToCell(world);
-            if (cell < 0) return 1;
-            var c = s_bootstrap.Grid.Get(cell);
-            return c.HasDrone ? Mathf.Clamp(c.Grade, 1, MaxGrade) : 1;
         }
 
         private static float Pick(float[] values, int grade)

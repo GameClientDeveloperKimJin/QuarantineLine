@@ -16,6 +16,7 @@ namespace QL.FX.Alert
     /// 끝나면 반드시 SetShakeOffset(Vector3.zero). 트윈 없음 (할당 없음).
     /// U15: <see cref="Kick"/> — 피격과 따로 도는 작은 흔들림 (작업 지시서 도장 충격). 피격 세기 · 횟수(HitCount · PeakStrength · IsShaking)에 섞이지 않고
     /// 오프셋만 더해진다. 같은 게임 시간 · 같은 멈춤 규칙.
+    /// U19 (C13 시설 보험): 같은 프레임 <c>HatchDamageBlocked</c> 가 오면 방금 그 도달의 흔들림을 되돌린다 (피해 없음 — 해치 패널 방패 연출이 대신).
     /// </summary>
     public sealed class CameraShakeFx : MonoBehaviour
     {
@@ -33,6 +34,9 @@ namespace QL.FX.Alert
         private float _kickStrength;
         private float _kickDuration;
         private float _kickLeft;
+        private int _hitFrame = -1;
+        private float _strengthBeforeHit;
+        private float _timeBeforeHit;
 
         public FxConfig Config => fx;
         public CameraRig Rig => rig;
@@ -51,10 +55,13 @@ namespace QL.FX.Alert
         /// <summary>U15 — 지금 Kick 세기 (잦아들기 전 값).</summary>
         public float KickStrength => IsKicking ? _kickStrength : 0f;
         public int KickCount { get; private set; }
+        /// <summary>U19 — C13 보험으로 되돌린 도달 수.</summary>
+        public int BlockedCount { get; private set; }
 
         private void OnEnable()
         {
             GameEvents.SlimeReachedHatch += OnReached;
+            GameEvents.HatchDamageBlocked += OnBlocked;
             GameEvents.HatchHpChanged += OnHatchHp;
             GameEvents.StateChanged += OnStateChanged;
             GameEvents.GameEnded += OnGameEnded;
@@ -63,6 +70,7 @@ namespace QL.FX.Alert
         private void OnDisable()
         {
             GameEvents.SlimeReachedHatch -= OnReached;
+            GameEvents.HatchDamageBlocked -= OnBlocked;
             GameEvents.HatchHpChanged -= OnHatchHp;
             GameEvents.StateChanged -= OnStateChanged;
             GameEvents.GameEnded -= OnGameEnded;
@@ -115,11 +123,29 @@ namespace QL.FX.Alert
         {
             if (_loop != null && _loop.IsReady && _loop.Flow.State == GameState.Result) return;
             HitCount++;
+            _hitFrame = Time.frameCount;
+            _strengthBeforeHit = IsShaking ? _strength : 0f;
+            _timeBeforeHit = _timeLeft;
             float hit = fx.shakeStrength * (_critical ? fx.shakeCriticalMultiplier : 1f);
             _strength = IsShaking ? Mathf.Max(_strength, hit) + fx.shakeStrength * fx.shakeStackRatio : hit;
             _strength = Mathf.Min(_strength, fx.shakeStrengthCap);
             _timeLeft = fx.shakeDuration; // 시간만 연장
             if (_strength > PeakStrength) PeakStrength = _strength;
+        }
+
+        /// <summary>U19 — 이 프레임 도달의 피해가 보험으로 막혔다: 그 도달 전 흔들림으로 되돌린다 (HitCount 는 그대로 — 도달은 있었다).</summary>
+        private void OnBlocked(Game.Slimes.SlimeView view)
+        {
+            if (_hitFrame != Time.frameCount) return;
+            _hitFrame = -1;
+            BlockedCount++;
+            _strength = _strengthBeforeHit;
+            _timeLeft = _timeBeforeHit;
+            if (_timeLeft <= 0f)
+            {
+                _timeLeft = 0f;
+                _strength = 0f;
+            }
         }
 
         private void OnHatchHp(int now, int max)

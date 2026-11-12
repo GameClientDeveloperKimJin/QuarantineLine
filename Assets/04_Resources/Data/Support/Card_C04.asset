@@ -15,7 +15,7 @@ MonoBehaviour:
   id: C04
   displayName: "\uC2E0\uC18D \uC815\uBE44"
   category: 0
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: e40458582880ad945a93a089aaf07b22, type: 3}
   description: "\uBAA8\uB4E0 \uB4DC\uB860 \uACF5\uACA9 \uAC04\uACA9 {value}"
   effects:
   - kind: 0

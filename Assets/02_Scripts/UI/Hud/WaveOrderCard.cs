@@ -31,6 +31,8 @@ namespace QL.UI.Hud
     /// 종이를 클릭하면 1.20 흡수로 건너뛴다. 종이(Paper) 말고는 raycastTarget 끔 — 연출 중에도 소환 · 머지가 된다.
     /// 게임 시간 (일시정지 때 같이 멈춤). Sequence 하나를 Awake 에 만들어 SetAutoKill(false) + Restart, 할당 없음.
     /// 이 컴포넌트는 늘 켜진 바깥 오브젝트에 두고, 보였다 숨는 것은 <see cref="panel"/>.
+    /// U19 (G13): 웨이브 1 · 2 클리어 뒤엔 업무 지원 카드를 고를 때까지 (<see cref="GameLoop.IsChoosingSupport"/>) 기다린다 —
+    /// 영수증 → 선택 화면 → 지시서 순서. 끝 신호 = <c>SupportPicked</c> (선택 화면은 연출이 끝난 뒤 고른다) · 영수증 끝 중 늦은 쪽.
     /// </summary>
     public sealed class WaveOrderCard : MonoBehaviour, IPointerClickHandler
     {
@@ -176,6 +178,7 @@ namespace QL.UI.Hud
             GameEvents.WavePrepStarted += OnWavePrepStarted;
             GameEvents.WaveStarted += OnWaveStarted;
             GameEvents.GameEnded += OnGameEnded;
+            GameEvents.SupportPicked += OnSupportPicked;
             if (payslip != null) payslip.Finished += OnPayslipFinished;
         }
 
@@ -184,6 +187,7 @@ namespace QL.UI.Hud
             GameEvents.WavePrepStarted -= OnWavePrepStarted;
             GameEvents.WaveStarted -= OnWaveStarted;
             GameEvents.GameEnded -= OnGameEnded;
+            GameEvents.SupportPicked -= OnSupportPicked;
             if (payslip != null) payslip.Finished -= OnPayslipFinished;
         }
 
@@ -198,7 +202,8 @@ namespace QL.UI.Hud
             _pending = forecast;
             if (countdown != null) countdown.SetSuppressed(true); // 기다리는 동안부터 — 지시서 끝까지
             // 같은 프레임 WaveCleared → 영수증이 먼저 시작해 있다 (V02 프레임 순서) — 그 끝을 기다린다
-            if (payslip != null && payslip.IsPlaying)
+            // U19: 카드 선택 대기 (SupportOffered 가 WavePrepStarted 보다 먼저) — 고를 때까지
+            if ((payslip != null && payslip.IsPlaying) || IsChoosing())
             {
                 _waiting = true;
                 return;
@@ -209,9 +214,23 @@ namespace QL.UI.Hud
 
         private void OnPayslipFinished()
         {
-            if (!_waiting) return;
+            if (!_waiting || IsChoosing()) return; // U19 — 영수증 다음은 선택 화면, 지시서는 고른 뒤
             _waiting = false;
             Play(_pendingIndex, in _pending);
+        }
+
+        /// <summary>U19 — 카드를 골랐다. 영수증이 아직 돌고 있으면 그 끝을 계속 기다린다.</summary>
+        private void OnSupportPicked(QL.Core.Support.SupportCardSpec card, int stack)
+        {
+            if (!_waiting || (payslip != null && payslip.IsPlaying)) return;
+            _waiting = false;
+            Play(_pendingIndex, in _pending);
+        }
+
+        private bool IsChoosing()
+        {
+            GameLoop loop = context.Loop;
+            return loop != null && loop.IsChoosingSupport;
         }
 
         private void Play(int index, in WaveForecast forecast)

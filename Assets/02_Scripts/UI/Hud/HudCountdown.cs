@@ -16,6 +16,8 @@ namespace QL.UI.Hud
     /// U18a (G12): <c>PrepHoldChanged(true)</c> (커서 가이드 연습 중 — PrepTick 이 오지 않음) 동안 숫자 대신 <see cref="GuideText.PrepHeld"/>
     /// (「연습 중 · Enter 로 시작」) 을 평소 크기 · 평소 색 · FxConfig.countdownHeldFontSize 로. 풀리면 마지막 남은 초를 원래 글자 크기로 다시 그린다.
     /// 문구 SO 는 같은 Hud 아래 <see cref="CursorGuide"/> 가 가진 것을 시작 때 한 번 읽는다 (새 직렬화 연결 없음).
+    /// U19 (G13): 업무 지원 카드 선택 대기도 같은 PrepHoldChanged(true) 로 온다 — <see cref="QL.Game.Flow.GameLoop.IsChoosingSupport"/> 면 「연습 중」 이 아니라 그냥 숨김
+    /// (선택 화면 · 작업 지시서가 가운데를 쓴다). 풀리면 (고름) 원래 보일 상태로.
     /// </summary>
     public sealed class HudCountdown : MonoBehaviour
     {
@@ -32,6 +34,7 @@ namespace QL.UI.Hud
         private bool _shown;
         private bool _suppressed;
         private bool _held;
+        private bool _choosingHold;
         private float _numberFontSize;
         private string _heldText = DefaultHeldText;
 
@@ -48,6 +51,8 @@ namespace QL.UI.Hud
         public bool IsSuppressed => _suppressed;
         /// <summary>U15 — 숨기지 않았다면 보였을지 (준비 중 첫 PrepTick 뒤).</summary>
         public bool WantsVisible => _shown;
+        /// <summary>U19 — 카드 선택 대기로 잡혀 숨긴 중.</summary>
+        public bool IsChoosingHold => _choosingHold;
         /// <summary>U18a — 「연습 중」 표시 중 (PrepHoldChanged(true) ~ (false)).</summary>
         public bool IsHeldShown => _held;
         public string HeldText => _heldText;
@@ -116,6 +121,14 @@ namespace QL.UI.Hud
         {
             if (held)
             {
+                var loop = context.Loop;
+                if (!_held && loop != null && loop.IsChoosingSupport)
+                {
+                    // U19 — 카드 선택 대기 (가이드 연습이 아님): 글자만 숨긴다
+                    _choosingHold = true;
+                    SetShown(false);
+                    return;
+                }
                 if (_held) return;
                 _held = true;
                 _punch.Stop();
@@ -125,6 +138,11 @@ namespace QL.UI.Hud
                 label.SetText(_heldText);
                 SetShown(true);
                 return;
+            }
+            if (_choosingHold)
+            {
+                _choosingHold = false;
+                if (!_held) { SetShown(_hasTick); return; }
             }
             if (!_held) return;
             ExitHeld();

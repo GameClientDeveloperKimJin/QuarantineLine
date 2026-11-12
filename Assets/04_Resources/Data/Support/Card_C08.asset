@@ -15,7 +15,7 @@ MonoBehaviour:
   id: C08
   displayName: "\uAE34\uAE09 \uC218\uB9AC"
   category: 2
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f56fe5203a14a884fac29b9cb097e216, type: 3}
   description: "\uD574\uCE58 HP {value} (\uCD5C\uB300 20\uC744 \uB118\uC9C0 \uC54A\uC74C)"
   effects:
   - kind: 2

@@ -165,7 +165,7 @@ namespace QL.Tests.PlayMode.UI
 
         private IEnumerator WaitCardDone()
         {
-            float end = Time.realtimeSinceStartup + 8f;
+            float end = Time.realtimeSinceStartup + _card.Duration + _fx.payslipEndAt + 3f; // U21 — FxConfig 시간 기준
             while (Time.realtimeSinceStartup < end && (_card.IsShowing || _card.IsWaiting || _payslip.IsPlaying)) yield return null;
             Assert.IsFalse(_card.IsShowing, "지시서가 끝나지 않았다");
         }
@@ -324,8 +324,8 @@ namespace QL.Tests.PlayMode.UI
             Assert.AreEqual("4", _countdown.Label.text, "숫자는 그대로 갱신");
 
             yield return Wait(_fx.payslipEndAt - 0.2f);
-            Assert.AreEqual(0, _started, "영수증 끝(2.0초) 전에는 시작 안 함");
-            float end = Time.realtimeSinceStartup + 3f;
+            Assert.AreEqual(0, _started, "영수증 끝 (payslipEndAt) 전에는 시작 안 함");
+            float end = Time.realtimeSinceStartup + _fx.payslipEndAt + 1f; // U21 — FxConfig 시간 기준
             while (_payslip.IsPlaying && Time.realtimeSinceStartup < end) yield return null;
             Assert.IsFalse(_payslip.IsPlaying);
             Assert.AreEqual(1, _started, "Finished 뒤 시작");
@@ -567,7 +567,7 @@ namespace QL.Tests.PlayMode.UI
             Raise("RaiseWaveStarted", 2, 3, "C-3");
             Assert.IsFalse(_card.IsWaiting, "기다림 취소");
             Assert.IsFalse(_countdown.IsSuppressed);
-            float end = Time.realtimeSinceStartup + 8f;
+            float end = Time.realtimeSinceStartup + _fx.payslipEndAt + 3f; // U21 — FxConfig 시간 기준
             while (_payslip.IsPlaying && Time.realtimeSinceStartup < end) yield return null;
             yield return null;
             Assert.AreEqual(started, _started, "기다리던 지시서는 시작 안 함");

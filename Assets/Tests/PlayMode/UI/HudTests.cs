@@ -263,7 +263,7 @@ namespace QL.Tests.PlayMode.UI
             if (card.IsShowing) Assert.IsFalse(_countdown.IsVisible, "지시서 중 숨김");
             _loop.enabled = false; // 지시서가 끝날 때까지 준비 시간이 흐르지 않게
             Time.timeScale = 1f;
-            float end = Time.realtimeSinceStartup + 5f;
+            float end = Time.realtimeSinceStartup + card.Duration + 2f; // U21 — 지시서 길이 (FxConfig orderAbsorbAt + orderAbsorbDuration) 기준
             while (card.IsShowing && Time.realtimeSinceStartup < end) yield return null;
             Time.timeScale = 0f;
             _loop.enabled = true;

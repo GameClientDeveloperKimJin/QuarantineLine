@@ -3,7 +3,7 @@ using UnityEngine;
 namespace QL.UI.Data
 {
     /// <summary>
-    /// U09 첫 30초 커서 가이드 문구 — <c>Assets/04_Resources/Data/UI/GuideText.asset</c>.
+    /// U09 첫 30초 커서 가이드 문구 (U21 부터 말풍선 · HUD 「교육 중」 은 TutorialSteps — 남은 칸은 에셋 호환용으로만 남김) — <c>Assets/04_Resources/Data/UI/GuideText.asset</c>.
     /// 한 줄씩 짧게 (Bagel Fat One 하나 · 1920×1080 기준 24px 이상). 길이에 맞춰 말풍선 폭이 정해진다 (<see cref="QL.UI.Tutorial.CursorGuide"/> 가 시작 때 한 번 잰다).
     /// </summary>
     [CreateAssetMenu(menuName = "QL/UI/Guide Text", fileName = "GuideText")]
@@ -15,12 +15,9 @@ namespace QL.UI.Data
         [SerializeField] private string summonAgain = "한 번 더 투입하세요 (SPACE)";
         [Tooltip("2단계 — 같은 드론 둘 사이 화살표")]
         [SerializeField] private string merge = "같은 드론을 겹치면 합쳐져요";
-        [Tooltip("U18a — 가이드 중 준비 시간이 멈춰 있을 때 HUD 카운트다운 자리 (숫자 대신)")]
-        [SerializeField] private string prepHeld = "연습 중 · Enter 로 시작";
 
         public string Summon => summon;
         public string SummonAgain => summonAgain;
         public string Merge => merge;
-        public string PrepHeld => prepHeld;
     }
 }

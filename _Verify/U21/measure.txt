@@ -1,0 +1,20 @@
+U21_01.png | 1920x1080 | step=1 격리 1팀 첫 출근을 환영합니다 | frame=off | bubble=(x:640.00, y:423.73, width:640.00, height:232.55) side=Center | dimHoles=True/False | font=28
+U21_02.png | 1920x1080 | step=2 C-1 게이트 | frame=(x:773.43, y:873.97, width:373.14, height:195.24) | bubble=(x:640.00, y:619.42, width:640.00, height:232.55) side=Below | dimHoles=True/True | font=28
+U21_03.png | 1920x1080 | step=3 격리선 · 해치 HP | frame=(x:620.05, y:941.99, width:679.91, height:134.02) | bubble=(x:640.00, y:646.91, width:640.00, height:273.09) side=Below | dimHoles=True/True | font=28
+U21_04.png | 1920x1080 | step=4 작업 현황 · 보급 코인 | frame=(x:12.02, y:828.07, width:500.20, height:239.88) | bubble=(x:534.00, y:766.91, width:640.00, height:273.09) side=Right | dimHoles=True/False | font=28
+U21_05.png | 1920x1080 | step=5 드론 투입 | frame=(x:1419.96, y:11.94, width:488.03, height:184.14) | bubble=(x:758.00, y:40.00, width:640.00, height:273.09) side=Left | dimHoles=True/False | font=28
+U21_06_21x9.png | 2560x1080 | step=6 드론 배치 | frame=(x:1200.94, y:258.25, width:158.20, height:268.59) | bubble=(x:960.00, y:548.86, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_06.png | 1920x1080 | step=6 드론 배치 | frame=(x:880.94, y:258.25, width:158.20, height:268.59) | bubble=(x:640.00, y:548.86, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_07.png | 1920x1080 | step=7 배치 칸 5레인 × 3줄 | frame=(x:627.11, y:153.01, width:665.77, height:353.57) | bubble=(x:640.00, y:528.39, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_08.png | 1920x1080 | step=8 흡입 드론 · 청록 | frame=(x:762.85, y:258.23, width:166.04, height:188.86) | bubble=(x:525.79, y:469.09, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_09.png | 1920x1080 | step=9 소각 드론 · 주황 | frame=(x:880.76, y:258.26, width:158.22, height:188.83) | bubble=(x:640.00, y:469.09, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_10.png | 1920x1080 | step=10 냉각 드론 · 하늘 | frame=(x:991.25, y:258.26, width:165.77, height:188.83) | bubble=(x:754.21, y:469.09, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_11_21x9.png | 2560x1080 | step=11 머지 | frame=(x:1201.25, y:258.21, width:276.01, height:268.43) | bubble=(x:1019.07, y:548.86, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_11.png | 1920x1080 | step=11 머지 | frame=(x:881.25, y:258.21, width:276.01, height:268.43) | bubble=(x:699.07, y:548.86, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_12.png | 1920x1080 | step=12 오염 칸 | frame=(x:762.97, y:258.28, width:166.03, height:188.88) | bubble=(x:525.79, y:469.09, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_13.png | 1920x1080 | step=13 관제실 메신저 | frame=(x:12.10, y:12.04, width:539.90, height:413.94) | bubble=(x:574.00, y:102.73, width:640.00, height:232.55) side=Right | dimHoles=True/False | font=28
+U21_14.png | 1920x1080 | step=14 업무 지원 카드 | frame=(x:11.99, y:575.90, width:500.03, height:280.10) | bubble=(x:534.00, y:579.46, width:640.00, height:273.09) side=Right | dimHoles=True/False | font=28
+U21_15.png | 1920x1080 | step=15 교육 끝 · 작업 준비 | frame=(x:749.78, y:12.07, width:420.10, height:152.17) | bubble=(x:640.00, y:186.00, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_16_end_punch.png | 1920x1080 | step=0 - | frame=off | bubble=(x:640.00, y:186.00, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+U21_17_end_countdown.png | 1920x1080 | step=0 - | frame=off | bubble=(x:640.00, y:186.00, width:640.00, height:273.09) side=Above | dimHoles=True/False | font=28
+end | state=AwaitSupport loop=Prep held=False prepLeft=9.0 start=True punch=1 keyLock=False guideDone=1

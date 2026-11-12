@@ -1016,6 +1016,66 @@ namespace QL.FX
         public float insuranceShieldScaleFrom = 1.5f;
         public Color insuranceColor = new Color(48f / 255f, 196f / 255f, 104f / 255f, 1f);
 
+        [Header("U21 상세 튜토리얼 — 스포트라이트 (실제 시간 · 캔버스 px = 1920×1080 기준)")]
+        [Tooltip("구멍 밖 어둠 색 (알파 = 어둡기)")]
+        public Color tutorialDimColor = new Color(0.02f, 0.04f, 0.06f, 0.72f);
+        [Tooltip("대상 사각형 바깥으로 넓히는 여백 (px)")]
+        [Min(0f)] public float tutorialHolePadding = 14f;
+        [Tooltip("구멍 모서리 반지름 (px) · 모서리 조각 수")]
+        [Min(0f)] public float tutorialHoleRadius = 18f;
+        [Range(1, 16)] public int tutorialHoleCornerSegments = 6;
+        [Tooltip("단계가 바뀔 때 구멍이 옮겨 가는 시간 (초, 0 = 바로)")]
+        [Min(0f)] public float tutorialHoleMoveDuration = 0.25f;
+        public Ease tutorialHoleMoveEase = Ease.OutCubic;
+        [Tooltip("구멍 테두리 (둥근 외곽선) 색 · 구멍 바깥 여백 · 숨쉬기 한 번 (초) · 알파 최소 · 최대")]
+        public Color tutorialFrameColor = new Color(0.36f, 0.95f, 0.88f, 1f);
+        [Min(0f)] public float tutorialFramePadding = 6f;
+        [Min(0f)] public float tutorialFramePulsePeriod = 1.2f;
+        public Vector2 tutorialFramePulseAlpha = new Vector2(0.55f, 1f);
+
+        [Header("U21 — 월드 대상 상자 (칸 단위 × cellSize)")]
+        [Tooltip("C-1 게이트 — x = 레인 전체 폭에 곱함 · y = 높이 · z = 깊이 (스폰선 기준)")]
+        public Vector3 tutorialGateBox = new Vector3(1.05f, 2.2f, 1f);
+        [Tooltip("격리선 띠 높이 · 깊이")]
+        [Min(0f)] public float tutorialLineHeight = 0.5f;
+        [Min(0f)] public float tutorialLineDepth = 0.4f;
+        [Tooltip("드론 칸 · 머지 쌍 · 오염 칸 상자 높이 (드론 몸통이 들어가게)")]
+        [Min(0f)] public float tutorialDroneHeight = 0.9f;
+        [Tooltip("배치 칸 15개 상자 높이")]
+        [Min(0f)] public float tutorialGridHeight = 0.6f;
+
+        [Header("U21 — 말풍선 (S3 규칙 8 — 글자 24 이상)")]
+        [Min(200f)] public float tutorialBubbleWidth = 640f;
+        [Tooltip("좌우 · 위아래 여백 (px)")]
+        public Vector2 tutorialBubblePadding = new Vector2(32f, 24f);
+        [Tooltip("본문 아래 버튼 줄 높이 (px)")]
+        [Min(0f)] public float tutorialBubbleFooterHeight = 64f;
+        [Tooltip("구멍과 말풍선 사이 (px) · 화면 끝 여백 (px)")]
+        [Min(0f)] public float tutorialBubbleGap = 28f;
+        public Vector2 tutorialSafeMargin = new Vector2(40f, 40f);
+        [Tooltip("꼬리를 말풍선 모서리에서 띄우는 거리 (px)")]
+        [Min(0f)] public float tutorialTailInset = 36f;
+        [Min(24f)] public float tutorialSpeakerFontSize = 24f;
+        [Min(24f)] public float tutorialTitleFontSize = 34f;
+        [Min(24f)] public float tutorialBodyFontSize = 28f;
+        [Min(24f)] public float tutorialCounterFontSize = 24f;
+        [Min(24f)] public float tutorialButtonFontSize = 26f;
+        public Color tutorialTitleColor = new Color(0.36f, 0.95f, 0.88f, 1f);
+        public Color tutorialBodyColor = new Color(0.86f, 1f, 0.98f, 1f);
+        [Tooltip("직접 단계 「직접 해 보세요」 (노랑 — 경고 테이프)")]
+        public Color tutorialTryColor = new Color(1f, 0.82f, 0.2f, 1f);
+        [Tooltip("등장 팝 — Scale 이 값 → 1 · 시간 (초, SetUpdate(true))")]
+        public float tutorialBubblePopScale = 0.92f;
+        [Min(0.01f)] public float tutorialBubblePopDuration = 0.18f;
+
+        [Header("U21 — 건너뛰기 · 16 지원 카드 안내")]
+        [Tooltip("Esc 를 이만큼 누르고 있으면 건너뛰기 (초, 실제 시간)")]
+        [Min(0.1f)] public float tutorialSkipHoldSeconds = 1f;
+        [Tooltip("16 — 지원 카드 화면 위 말풍선 가운데 = 화면 가운데 + 이 값 (px)")]
+        public Vector2 tutorialSupportHintOffset = new Vector2(0f, 330f);
+        [Tooltip("튜토리얼 중 HUD 카운트다운 「교육 중」 글자 위치 = 평소 자리 + 이 값 (px) — 화면 가운데 말풍선을 비켜 해치 패널 아래로")]
+        public Vector2 tutorialHeldCountdownOffset = new Vector2(0f, 250f);
+
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)
         {

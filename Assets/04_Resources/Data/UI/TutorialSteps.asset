@@ -1,0 +1,173 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0f1bfdbf2ee520d428e88b545420e0d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.UI::QL.UI.Data.TutorialSteps
+  speaker: "\uBC15 \uB300\uB9AC \xB7 \uAD00\uC81C\uC2E4"
+  nextLabel: "\uB2E4\uC74C"
+  nextKey: Enter
+  skipLabel: "\uAC74\uB108\uB6F0\uAE30"
+  skipKey: "Esc 1\uCD08"
+  tryLabel: "\uC9C1\uC811 \uD574 \uBCF4\uC138\uC694"
+  counterFormat: '{0} / {1}'
+  prepHeld: "\uAD50\uC721 \uC911 \xB7 Enter \uB85C \uB2E4\uC74C"
+  supportHintTitle: "\uC5C5\uBB34 \uC9C0\uC6D0 \uCE74\uB4DC"
+  supportHintBody: "1\uC7A5\uC744 \uACE8\uB77C \uC2B9\uC778\uD558\uC138\uC694"
+  droneCells: 060000000700000008000000
+  placeCleanPartner: 1
+  moveCell: 2
+  moveMinDistance: 2
+  steps:
+  - title: "\uACA9\uB9AC 1\uD300 \uCCAB \uCD9C\uADFC\uC744 \uD658\uC601\uD569\uB2C8\uB2E4"
+    body: "\uC5C5\uBB34 \uAD50\uC721, 5\uBD84\uC774\uBA74 \uB05D\uB098\uC694. \uD558\uB098\uC529
+      \uC9DA\uC5B4 \uB4DC\uB9B4\uAC8C\uC694."
+    target: 0
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 5
+    position: {x: 0, y: 0}
+  - title: "C-1 \uAC8C\uC774\uD2B8"
+    body: "\uC810\uC561\uC774 \uC5EC\uAE30\uC11C \uB098\uC640 \uBCF5\uB3C4\uB97C
+      \uB530\uB77C \uB0B4\uB824\uC635\uB2C8\uB2E4."
+    target: 1
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uACA9\uB9AC\uC120 \xB7 \uD574\uCE58 HP"
+    body: "\uC810\uC561\uC774 \uACA9\uB9AC\uC120\uC744 \uB118\uC73C\uBA74 \uD574\uCE58
+      HP \uAC00 \uAE4E\uC5EC\uC694. 0 \uC774\uBA74 \uD328\uBC30 \xB7 \uBCC0\uC774
+      \uC810\uC561\uC740 3 \uAE4E\uC2B5\uB2C8\uB2E4."
+    target: 3
+    frameOnly: 2
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uC791\uC5C5 \uD604\uD669 \xB7 \uBCF4\uAE09 \uCF54\uC778"
+    body: "\uC6E8\uC774\uBE0C n/3 \xB7 \uB0A8\uC740 \uC810\uC561, 3\uC6E8\uC774\uBE0C\uB97C
+      \uB9C9\uC73C\uBA74 \uD1F4\uADFC. \uCF54\uC778\uC740 \uCC98\uCE58 \xB7 \uC6E8\uC774\uBE0C
+      \uC218\uB2F9\uC73C\uB85C \uBC95\uB2C8\uB2E4."
+    target: 4
+    frameOnly: 5
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uB4DC\uB860 \uD22C\uC785"
+    body: "\uCF54\uC778\uC73C\uB85C \uB4DC\uB860\uC744 \uD22C\uC785\uD574\uC694 (Space).
+      \uD22C\uC785\uD560\uC218\uB85D \uBE44\uC2F8\uC9C0\uACE0 \uC885\uB958\uB294
+      \uBB34\uC791\uC704\uC785\uB2C8\uB2E4."
+    target: 6
+    frameOnly: 99
+    advance: 1
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uB4DC\uB860 \uBC30\uCE58"
+    body: "\uB4DC\uB860\uC744 \uB04C\uC5B4\uC11C \uD45C\uC2DC\uD55C \uCE78\uC73C\uB85C
+      \uC62E\uACA8 \uBCF4\uC138\uC694. \uC5B4\uB514 \uB458\uC9C0\uAC00 \uACE7 \uC791\uC804\uC785\uB2C8\uB2E4."
+    target: 17
+    frameOnly: 99
+    advance: 5
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uBC30\uCE58 \uCE78 5\uB808\uC778 \xD7 3\uC904"
+    body: "\uB4DC\uB860\uC740 \uC790\uAE30 \uB808\uC778\uC758 \uC810\uC561\uB9CC
+      \uC3E9\uB2C8\uB2E4. \uC904\uC740 \uBC30\uCE58 \uACF5\uAC04\uC77C \uBFD0, \uC5B4\uB290
+      \uB808\uC778\uC5D0 \uB450\uB290\uB0D0\uAC00 \uC911\uC694\uD574\uC694."
+    target: 7
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uD761\uC785 \uB4DC\uB860 \xB7 \uCCAD\uB85D"
+    body: "\uD55C \uB9C8\uB9AC\uB97C \uBA40\uB9AC\uC11C \uBE60\uB974\uAC8C (\uC0AC\uAC70\uB9AC
+      {suctionRange}). 3\uB4F1\uAE09\uC740 2\uB9C8\uB9AC \uAD00\uD1B5."
+    target: 8
+    frameOnly: 99
+    advance: 0
+    setup: 1
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uC18C\uAC01 \uB4DC\uB860 \xB7 \uC8FC\uD669"
+    body: "\uAC00\uAE4C\uC774 ({plasmaRange}) \uBD80\uCC44\uAF34\uB85C \uC5EC\uB7EC
+      \uB9C8\uB9AC. 2\uB4F1\uAE09\uBD80\uD130 \uC591\uC606 \uB808\uC778 \xB7 3\uB4F1\uAE09
+      \uC794\uC5F4."
+    target: 9
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uB0C9\uAC01 \uB4DC\uB860 \xB7 \uD558\uB298"
+    body: "\uB9DE\uD78C \uC810\uC561\uC744 \uB290\uB9AC\uAC8C (\uC0AC\uAC70\uB9AC
+      {cryoRange}). 3\uB4F1\uAE09\uC740 \uC8FC\uBCC0\uC744 \uC5BC\uB9BD\uB2C8\uB2E4."
+    target: 10
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uBA38\uC9C0"
+    body: "\uAC19\uC740 \uC885\uB958 \xB7 \uAC19\uC740 \uB4F1\uAE09\uC744 \uACB9\uCE58\uBA74
+      \uD55C \uB4F1\uAE09 \uC704\uB85C (\uCD5C\uB300 3). \uC9D1\uC73C\uBA74 \uD569\uCE60
+      \uCE78\uC774 \uCD08\uB85D\uC774\uC5D0\uC694."
+    target: 11
+    frameOnly: 99
+    advance: 2
+    setup: 2
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uC624\uC5FC \uCE78"
+    body: "\uC810\uC561\uC774 \uB6AB\uC73C\uBA74 \uADF8 \uB808\uC778 \uCE78\uC774
+      \uC624\uC5FC\uB3FC {contamSeconds}\uCD08 \uACF5\uACA9\uC744 \uBA48\uCDB0\uC694.
+      \uAC19\uC740 \uB4DC\uB860\uC744 \uACB9\uCE58\uBA74 \uBC14\uB85C \uC53B\uAE30\uACE0
+      \uCCAD\uC18C \uC218\uB2F9."
+    target: 12
+    frameOnly: 99
+    advance: 3
+    setup: 3
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uAD00\uC81C\uC2E4 \uBA54\uC2E0\uC800"
+    body: "\uC704\uD5D8\uD55C \uC21C\uAC04\uC5D4 \uC81C\uAC00 \uC5EC\uAE30\uB85C
+      \uC54C\uB824 \uB4DC\uB9B4\uAC8C\uC694."
+    target: 13
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uC5C5\uBB34 \uC9C0\uC6D0 \uCE74\uB4DC"
+    body: "\uC6E8\uC774\uBE0C\uB97C \uB9C9\uC744 \uB54C\uB9C8\uB2E4 \uCE74\uB4DC
+      1\uC7A5\uC744 \uACE8\uB77C \uBD80\uB300 \uC804\uCCB4\uB97C \uAC15\uD654\uD569\uB2C8\uB2E4."
+    target: 14
+    frameOnly: 99
+    advance: 0
+    setup: 0
+    side: 0
+    position: {x: 0, y: 0}
+  - title: "\uAD50\uC721 \uB05D \xB7 \uC791\uC5C5 \uC900\uBE44"
+    body: "\uC774\uC81C \uC900\uBE44 \uC2DC\uAC04\uC774 \uD750\uB985\uB2C8\uB2E4.
+      \uB2E4 \uB418\uBA74 \uC6E8\uC774\uBE0C \uC2DC\uC791 \u2014 \u300C\uC791\uC5C5
+      \uC2DC\uC791\u300D \xB7 Enter \uB85C \uBC14\uB85C, Esc \uB85C \uD734\uAC8C."
+    target: 15
+    frameOnly: 16
+    advance: 0
+    setup: 0
+    side: 6
+    position: {x: 0, y: 125}

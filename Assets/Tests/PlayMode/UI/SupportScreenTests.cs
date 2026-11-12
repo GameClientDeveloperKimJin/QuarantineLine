@@ -175,7 +175,7 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsTrue(_loop.IsChoosingSupport, "클리어 뒤 카드 선택 대기");
             if (slot0Id != null) Assert.IsTrue(_loop.Support.OverrideOffer(0, CardIndex(slot0Id)));
             Time.timeScale = 1f; // 영수증 (게임 시간) — 선택 중엔 준비 시간이 멈춰 웨이브가 안 온다
-            yield return WaitUntil(() => _screen.IsShowing, 5f);
+            yield return WaitUntil(() => _screen.IsShowing, _payslip.Duration + 3f); // U21 — 영수증 길이 (FxConfig payslipEndAt) 기준
             Assert.IsTrue(_screen.IsShowing, "영수증 뒤 선택 화면이 열리지 않았다");
         }
 
@@ -202,7 +202,7 @@ namespace QL.Tests.PlayMode.UI
             Assert.IsTrue(_countdown.IsChoosingHold);
 
             Time.timeScale = 1f;
-            yield return WaitUntil(() => _screen.IsShowing, 5f);
+            yield return WaitUntil(() => _screen.IsShowing, _payslip.Duration + 3f); // U21 — 영수증 길이 (FxConfig payslipEndAt) 기준
             Assert.IsTrue(_screen.IsShowing);
             Assert.IsFalse(_payslip.IsPlaying, "영수증이 끝난 뒤 열림");
             Assert.IsTrue(_order.IsWaiting, "선택 중엔 지시서가 아직");

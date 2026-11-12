@@ -13,9 +13,9 @@ namespace QL.UI.Hud
     /// 크기(scaler)와 Punch(label) 는 다른 Transform — Punch 가 끝날 때 크기를 되돌리지 않게.
     /// U15 (R1 결정): 작업 지시서(<see cref="WaveOrderCard"/>)가 화면에 있는 동안 <see cref="SetSuppressed"/>(true) 로 글자만 숨긴다 —
     /// 숫자 · 크기 · 색 · Punch 갱신은 그대로 하고, 풀리면 남은 초부터 다시 보인다.
-    /// U18a (G12): <c>PrepHoldChanged(true)</c> (커서 가이드 연습 중 — PrepTick 이 오지 않음) 동안 숫자 대신 <see cref="GuideText.PrepHeld"/>
-    /// (「연습 중 · Enter 로 시작」) 을 평소 크기 · 평소 색 · FxConfig.countdownHeldFontSize 로. 풀리면 마지막 남은 초를 원래 글자 크기로 다시 그린다.
-    /// 문구 SO 는 같은 Hud 아래 <see cref="CursorGuide"/> 가 가진 것을 시작 때 한 번 읽는다 (새 직렬화 연결 없음).
+    /// U18a (G12) → U21: <c>PrepHoldChanged(true)</c> (첫 판 튜토리얼 중 — PrepTick 이 오지 않음) 동안 숫자 대신 <see cref="QL.UI.Data.TutorialSteps.PrepHeld"/>
+    /// (「교육 중 · Enter 로 다음」) 을 평소 크기 · 평소 색 · FxConfig.countdownHeldFontSize 로. 풀리면 마지막 남은 초를 원래 글자 크기로 다시 그린다.
+    /// 문구 SO 는 같은 Hud 아래 <see cref="TutorialDirector"/> 가 가진 TutorialSteps 를 시작 때 한 번 읽는다 (새 직렬화 연결 없음). U09 「연습 중」 문구는 U21 에서 없앰.
     /// U19 (G13): 업무 지원 카드 선택 대기도 같은 PrepHoldChanged(true) 로 온다 — <see cref="QL.Game.Flow.GameLoop.IsChoosingSupport"/> 면 「연습 중」 이 아니라 그냥 숨김
     /// (선택 화면 · 작업 지시서가 가운데를 쓴다). 풀리면 (고름) 원래 보일 상태로.
     /// </summary>
@@ -36,10 +36,11 @@ namespace QL.UI.Hud
         private bool _held;
         private bool _choosingHold;
         private float _numberFontSize;
+        private Vector2 _labelRest;
         private string _heldText = DefaultHeldText;
 
-        /// <summary>CursorGuide · GuideText 를 못 찾았을 때 (테스트용 단독 HUD 등).</summary>
-        public const string DefaultHeldText = "연습 중 · Enter 로 시작";
+        /// <summary>TutorialDirector · TutorialSteps 를 못 찾았을 때 (테스트용 단독 HUD 등).</summary>
+        public const string DefaultHeldText = "교육 중 · Enter 로 다음";
 
         public TMP_Text Label => label;
         public int BigFrom => context.Fx.countdownBigFrom;
@@ -61,8 +62,9 @@ namespace QL.UI.Hud
         {
             _punch = new HudPunch(label.transform, context.Fx);
             _numberFontSize = label.fontSize;
-            CursorGuide guide = context.GetComponentInChildren<CursorGuide>(true);
-            if (guide != null && guide.Text != null && !string.IsNullOrEmpty(guide.Text.PrepHeld)) _heldText = guide.Text.PrepHeld;
+            _labelRest = label.rectTransform.anchoredPosition;
+            TutorialDirector tutorial = context.GetComponentInChildren<TutorialDirector>(true);
+            if (tutorial != null && tutorial.Steps != null && !string.IsNullOrEmpty(tutorial.Steps.PrepHeld)) _heldText = tutorial.Steps.PrepHeld;
             SetShown(false);
         }
 
@@ -89,7 +91,17 @@ namespace QL.UI.Hud
         {
             _hasTick = true;
             SetShown(true);
-            if (_held) ExitHeld(); // 잡힌 동안엔 오지 않지만 순서가 어긋나도 숫자로 돌아온다
+            if (_held)
+            {
+                // U21: 판 시작 첫 프레임부터 잡으면 첫 PrepTick (첫 Step) 이 잡힌 뒤에 온다 — 아직 잡혀 있으면 「교육 중」 그대로, 초만 기억 (풀릴 때 ExitHeld 가 그림)
+                var loop = context.Loop;
+                if (loop != null && loop.IsPrepHeld)
+                {
+                    _seconds = secondsLeft;
+                    return;
+                }
+                ExitHeld(); // 순서가 어긋나도 숫자로 돌아온다
+            }
             if (secondsLeft == _seconds) return;
             _seconds = secondsLeft;
             label.SetText(CountdownFormat, secondsLeft);
@@ -124,7 +136,7 @@ namespace QL.UI.Hud
                 var loop = context.Loop;
                 if (!_held && loop != null && loop.IsChoosingSupport)
                 {
-                    // U19 — 카드 선택 대기 (가이드 연습이 아님): 글자만 숨긴다
+                    // U19 — 카드 선택 대기 (튜토리얼이 아님): 글자만 숨긴다
                     _choosingHold = true;
                     SetShown(false);
                     return;
@@ -136,6 +148,7 @@ namespace QL.UI.Hud
                 label.fontSize = context.Fx.countdownHeldFontSize;
                 label.color = context.Fx.countdownColor;
                 label.SetText(_heldText);
+                label.rectTransform.anchoredPosition = _labelRest + context.Fx.tutorialHeldCountdownOffset; // U21 — 말풍선 자리 (화면 가운데) 를 비키고 해치 패널 아래로
                 SetShown(true);
                 return;
             }
@@ -154,6 +167,7 @@ namespace QL.UI.Hud
         {
             _held = false;
             label.fontSize = _numberFontSize;
+            label.rectTransform.anchoredPosition = _labelRest;
             int s = _seconds;
             _seconds = -1;
             if (s < 0) return;

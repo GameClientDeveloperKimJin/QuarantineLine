@@ -238,9 +238,19 @@ namespace QL.Core.Grid
         /// <exception cref="ArgumentOutOfRangeException">index 가 칸 범위 밖</exception>
         public void Contaminate(int index)
         {
+            Contaminate(index, _contaminateDuration);
+        }
+
+        /// <summary>
+        /// (G14 튜토리얼) <see cref="Contaminate(int)"/> 과 같되 남은 시간을 duration 으로 (이미 오염이면 시간만 다시).
+        /// duration ≤ 0 (또는 NaN) 이면 자연 청소 없음 (머지 · <see cref="Clean"/> 으로만 지워짐).
+        /// </summary>
+        /// <exception cref="ArgumentOutOfRangeException">index 가 칸 범위 밖</exception>
+        public void Contaminate(int index, float duration)
+        {
             CheckIndex(index);
             _contaminated[index] = true;
-            _contaminateRemaining[index] = _contaminateDuration > 0f ? _contaminateDuration : 0f;
+            _contaminateRemaining[index] = duration > 0f ? duration : 0f;
         }
 
         /// <summary>
@@ -292,20 +302,32 @@ namespace QL.Core.Grid
         /// <returns>이번 Tick 에 자연 청소된 칸 수</returns>
         public int Tick(float dt)
         {
+            return Tick(dt, dt);
+        }
+
+        /// <summary>
+        /// (G14) <see cref="Tick(float)"/> 과 같되 머지 잠금은 dt, 오염 남은 시간은 contaminationDt 만큼 줄인다
+        /// (튜토리얼 설명 중 오염만 멈출 때 contaminationDt = 0). 각각 ≤ 0 이면 그쪽은 그대로. 할당 없음.
+        /// </summary>
+        /// <returns>이번 Tick 에 자연 청소된 칸 수</returns>
+        public int Tick(float dt, float contaminationDt)
+        {
             TickCleanedCount = 0;
-            if (dt <= 0f) return 0;
+            bool locks = dt > 0f;
+            bool dry = contaminationDt > 0f;
+            if (!locks && !dry) return 0;
 
             for (int i = 0; i < CellCount; i++)
             {
-                if (_lockRemaining[i] > 0f)
+                if (locks && _lockRemaining[i] > 0f)
                 {
                     float left = _lockRemaining[i] - dt;
                     _lockRemaining[i] = left > 0f ? left : 0f;
                 }
 
-                if (_contaminated[i] && _contaminateRemaining[i] > 0f)
+                if (dry && _contaminated[i] && _contaminateRemaining[i] > 0f)
                 {
-                    float left = _contaminateRemaining[i] - dt;
+                    float left = _contaminateRemaining[i] - contaminationDt;
                     if (left > 0f)
                     {
                         _contaminateRemaining[i] = left;

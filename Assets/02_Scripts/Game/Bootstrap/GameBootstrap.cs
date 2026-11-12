@@ -33,6 +33,12 @@ namespace QL.Game.Bootstrap
         /// <summary>Awake 에서 모델 생성이 끝났으면 true.</summary>
         public bool IsReady { get; private set; }
 
+        /// <summary>
+        /// (G14 튜토리얼) true 면 <see cref="TickGrid"/> 이 오염 남은 시간을 줄이지 않는다 (머지 잠금은 그대로 흐름).
+        /// GameLoop 만 켠다 — 튜토리얼 오염을 쓴 판의 준비 시간 잡기 중. 일반 판에선 늘 false.
+        /// </summary>
+        internal bool ContaminationFrozen { get; set; }
+
         private void Awake()
         {
             if (data == null || data.Config == null)
@@ -55,7 +61,13 @@ namespace QL.Game.Bootstrap
 
         private void Update()
         {
-            if (IsReady) Grid.Tick(Time.deltaTime); // 머지 잠금 시간
+            if (IsReady) TickGrid(Time.deltaTime); // 머지 잠금 · 오염 남은 시간
+        }
+
+        /// <summary>Grid.Tick 한 번 — <see cref="ContaminationFrozen"/> 이면 오염 쪽 dt 는 0 (G14). 테스트는 이것을 직접 부른다.</summary>
+        internal int TickGrid(float dt)
+        {
+            return Grid.Tick(dt, ContaminationFrozen ? 0f : dt);
         }
 
         private void OnDestroy()

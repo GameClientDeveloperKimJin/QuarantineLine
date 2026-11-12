@@ -162,6 +162,20 @@ namespace QL.Game.Summon
             return true;
         }
 
+        /// <summary>
+        /// G14 튜토리얼 — 정한 종류 · 등급을 정한 칸에 (코인 · 소환 횟수 · 비용 그대로, 난수 안 뽑음). 판정 · 상태 확인은 GameLoop.PlaceTutorialDrone.
+        /// 뷰 → DroneSpawned → (바뀌었으면) SummonAvailabilityChanged — C09 예비 드론과 같은 순서.
+        /// </summary>
+        internal bool PlaceTutorialDrone(int cell, DroneType type, int grade)
+        {
+            if (_summoner == null) return false;
+            bootstrap.Grid.Place(cell, type, grade);
+            board.SyncCell(cell);
+            GameEvents.RaiseDroneSpawned(cell, type, grade);
+            RefreshAvailability();
+            return true;
+        }
+
         private bool Complete(in SummonResult r)
         {
             if (!r.Success)

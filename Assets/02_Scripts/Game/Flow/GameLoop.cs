@@ -25,8 +25,9 @@ namespace QL.Game.Flow
     /// G13: 업무 지원 카드 — 마지막이 아닌 웨이브 클리어 → 카드 제시 (SupportOffered) · 고를 때까지 준비 시간 잡아 두기 (G12 와 같은 길, PrepHoldChanged) →
     /// <see cref="PickSupport"/> → 즉시형 적용 → 준비 시간 재개. 판 시작 · 끝 · 다시 하기에 보정값 비움. 웨이브 시작에 StatResolver.SetWave(index + 1).
     /// C13 해치 피해 무효 (HatchDamageBlocked) · C14 종류 지정 소환 (<see cref="ChooseSummonType"/> — SummonController 가 Start 에서 붙는다).
+    /// G14: 튜토리얼 배치 · 오염 API 는 Game/Tutorial/GameLoop.Tutorial.cs (같은 클래스의 나머지).
     /// </summary>
-    public sealed class GameLoop : MonoBehaviour
+    public sealed partial class GameLoop : MonoBehaviour
     {
         [SerializeField] private GameBootstrap bootstrap;
         [SerializeField] private WaveRunner waves;
@@ -137,9 +138,11 @@ namespace QL.Game.Flow
             Keyboard kb = Keyboard.current;
             if (kb != null)
             {
-                if (kb.escapeKey.wasPressedThisFrame) HandleEscape();
+                // G14: 튜토리얼 키 잠금 중엔 Enter 키 무시 · Esc 키는 휴게(일시정지)만 막는다 — 드래그 취소 · C14 창 닫기 · 재개는 그대로
+                // (직접 호출 · 포커스 잃음 휴게 · R 은 잠금과 무관)
+                if (kb.escapeKey.wasPressedThisFrame) HandleEscape(!_tutorialKeyLock);
                 else if (kb.rKey.wasPressedThisFrame) HandleRestartKey();
-                else if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) RequestStartWave();
+                else if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame) { if (!_tutorialKeyLock) RequestStartWave(); }
             }
 
             Step(Time.deltaTime);
@@ -340,6 +343,12 @@ namespace QL.Game.Flow
         /// </summary>
         public void HandleEscape()
         {
+            HandleEscape(true);
+        }
+
+        /// <summary>allowPause = false 면 Prep · Wave → 일시정지만 하지 않는다 (G14 튜토리얼 키 잠금 중 Esc 키). 나머지 단계는 같다.</summary>
+        private void HandleEscape(bool allowPause)
+        {
             if (_flow == null) return;
 
             if (drag.IsDragging)
@@ -361,7 +370,7 @@ namespace QL.Game.Flow
                 Time.timeScale = 1f;
                 GameEvents.RaiseStateChanged(_flow.State);
             }
-            else if (_flow.Pause())
+            else if (allowPause && _flow.Pause())
             {
                 Time.timeScale = 0f;
                 GameEvents.RaiseStateChanged(GameState.Paused);
@@ -408,10 +417,11 @@ namespace QL.Game.Flow
             SyncHoldEvent();
         }
 
-        /// <summary>판 끝 · 다시 하기 · 타이틀 — 가이드 잡기 · 카드 제시 모두 푼다.</summary>
+        /// <summary>판 끝 · 다시 하기 · 타이틀 — 가이드 잡기 · 카드 제시 · 튜토리얼 키 잠금 (G14) 모두 푼다.</summary>
         private void ReleaseAllHolds()
         {
             _prepHeld = false;
+            _tutorialKeyLock = false; // G14 — 판 끝 · 다시 하기 · 타이틀에 튜토리얼 키 잠금도 푼다
             if (_support != null) _support.ClearOffer();
             SyncHoldEvent();
         }
@@ -420,6 +430,7 @@ namespace QL.Game.Flow
         private void SyncHoldEvent()
         {
             bool now = IsPrepHeld;
+            SyncContaminationFreeze(); // G14 — 튜토리얼 오염을 쓴 판만 (아니면 늘 false)
             if (now == _holdRaised) return;
             _holdRaised = now;
             GameEvents.RaisePrepHoldChanged(now);

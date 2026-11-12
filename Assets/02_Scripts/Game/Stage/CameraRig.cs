@@ -13,6 +13,9 @@ namespace QL.Game.Stage
     {
         [SerializeField] private GameBootstrap bootstrap;
 
+        [Tooltip("켜면 자동 맞춤을 끄고 Transform 의 Position · Rotation 을 그대로 씀")]
+        [SerializeField] private bool manualPlacement = false;
+
         [Header("연출값")]
         [Tooltip("내려다보는 각도 (도)")]
         [Range(10f, 89f)]
@@ -51,6 +54,13 @@ namespace QL.Game.Stage
 
         private void Start()
         {
+            // G16 수동 배치 — 흔들림 기준 = 시작 때 Transform 위치 (FOV 는 Camera 컴포넌트 값 그대로)
+            if (manualPlacement)
+            {
+                _basePosition = transform.position;
+                _hasBase = true;
+            }
+
             if (bootstrap == null || !bootstrap.IsReady)
             {
                 Debug.LogError("[CameraRig] GameBootstrap 이 없거나 준비되지 않았다", this);
@@ -65,7 +75,7 @@ namespace QL.Game.Stage
 
         private void LateUpdate()
         {
-            if (!_hasBounds) return;
+            if (!_hasBounds || manualPlacement) return;
             if (Screen.width == _lastWidth && Screen.height == _lastHeight &&
                 pitch == _lastPitch && yaw == _lastYaw && fieldOfView == _lastFov && margin == _lastMargin)
                 return;
@@ -76,6 +86,12 @@ namespace QL.Game.Stage
         public void Refit()
         {
             if (!_hasBounds) return;
+            if (manualPlacement)
+            {
+                // 위치 · 회전 · FOV 를 건드리지 않는다. 재생 중 끄면 다음 LateUpdate 가 다시 맞추도록 기록을 무효화
+                _lastWidth = -1;
+                return;
+            }
 
             _lastWidth = Screen.width;
             _lastHeight = Screen.height;

@@ -34,12 +34,18 @@
 | `CellContaminated` | `int cell, int lane, float duration` | `GameLoop.cs:281` (`ContaminateInLane` ≠ −1) — **O02** | O03 · U16 레인 핑 |
 | `CellCleaned` | `int cell, bool byMerge` | `GameLoop.cs:183` (자연) · `:195` (머지, DragController.cs:155 가 부름) · `DragController.cs:156` (loop 없을 때) — **O02** | O03 |
 | `PrepHoldChanged` | `bool held` | `GameLoop.cs:266` (SetPrepHold) · `:280` (ReleasePrepHold — 바로 시작 · 웨이브 시작 · 판 끝 · Restart · GoToTitle) — **G12**, 바뀔 때만 | U18a 가이드 · HUD 카운트다운 「연습 중」 |
+| `SupportOffered` | `int clearedWaveIndex (0부터), SupportCardSpec[] cards (재사용 배열)` | GameLoop 웨이브 1 · 2 클리어 — **G13** | U19 선택 화면 |
+| `SupportPicked` | `SupportCardSpec card, int stackAfter` | `PickSupport` 성공 — G13 | U19 도장 · 칩 |
+| `ModifiersChanged` | — | 보정값 바뀜 (선택 · 횟수 소모 · 판 끝 비움) — G13 | U19 칩 · 툴팁 |
+| `SummonTypeRequested` · `SummonTypeClosed` | — · `bool summoned` | C14 종류 선택 창 열기 · 닫힘 — G13 | U19 C14 창 |
+| `HatchDamageBlocked` | `SlimeView` | C13 피해 무효 (이때 `HatchHpChanged` 없음) — G13 | U19 보험 연출 |
 | `KillRewarded` | `SlimeView, int reward` | `Game/Combat/KillRewarder.cs:40` (`CoinChanged` :41 직전) — **O02 (보류함 21)** | U05 CoinFlyFx 전환 · U16 |
 
 ## 같은 프레임 순서 (O02 기준 — `EventOrder_PrepClearVictory_BonusEarnedIsPayTotalSum` 고정)
 - `GameLoop.Step`: `CellCleaned(false)` → `SlimeSpawned` → `SlimeReachedHatch` → `HatchHpChanged` → `RemainingSlimesChanged` → `CellContaminated` → `SlimeKilled` → `KillRewarded` → `CoinChanged` · `RemainingSlimesChanged` (구독 순) → `PrepTick` → `WaveStarted` → `RemainingSlimesChanged` → `WaveCleared` → `CoinChanged`(수당) → `StateChanged` → `WavePrepStarted` | `GameEnded`
 - 시작: `StateChanged(Prep)` → `WavePrepStarted` (첫 `PrepTick` 은 다음 Step)
 - 드롭: `DroneMerged` → `CellCleaned(true)` → `DragEnded`
+- **(G13) 클리어**: `WaveCleared` → `CoinChanged` → `StateChanged(Prep)` → `PrepHoldChanged(true)` → `SupportOffered` → `WavePrepStarted` · **고름**: `SupportPicked` → 즉시형 (`CoinChanged` / `HatchHpChanged` / `DroneSpawned`) → `ModifiersChanged` (→ `SummonCostChanged`) → `PrepHoldChanged(false)` · **도달 + C13**: `SlimeReachedHatch` → `HatchDamageBlocked` → `ModifiersChanged` → `RemainingSlimesChanged` → `CellContaminated` · **머지**: `DroneMerged` → (`CellCleaned`) → `CoinChanged` (C11) → (`ModifiersChanged`) → `DragEnded` · **소환**: 뷰 → `CoinChanged` (무료면 없음) → `SummonCostChanged` → `DroneSpawned` → `ModifiersChanged` → `SummonAvailabilityChanged` · **판 끝**: `GameEnded` → `ModifiersChanged`
 - 드롭 SwapClean (G11 — 오염 칸 최고 등급 위 같은 종류 최고 등급): `DroneSwapped(from,to)` → `CellCleaned(to,true)` → `DragEnded(from, SwapClean)` · `DroneMerged` 없음 (`DragController.cs:167`)
 - 바로 시작 (G11): `RequestStartWave` 다음 Step = `WaveStarted` → `RemainingSlimesChanged` → `StateChanged(Wave)` · `PrepTick` 없음 (`GameLoop.cs:133` PrepTick · `:139` WaveStarted)
 
@@ -53,6 +59,7 @@
 - `CameraRig.SetShakeOffset(Vector3 local)` (U06 추가 — 흔들림 전용, zero = 원위치)
 - `SlimeCombat.Burning` (U05 추가 — 잔열 중 true, 읽기 전용)
 - `GameLoop`: `Flow`(GameFlow, 읽기) · `CanAct`(Prep · Wave 일 때만) · `LastResult` · `Step(dt)` · `HandleEscape()` (결과 상태면 `GoToTitle`) · `Restart()` · `HandleRestartKey()` (결과 상태에서만 Restart — R 키) · `GoToTitle()` (U11, timeScale 1 → Title 씬) · `IsReady`
+- **(G13)** `GameLoop.PickSupport(int)→bool` (Prep · 선택 중 첫 입력만) · `ChooseSummonType(DroneType?)` (null = 취소) · `IsChoosingSupport` · `CurrentOffer` · `ActiveSupports` · `IsChoosingSummonType` · `Support` (`GetOfferCardIndex` · `GetData` · `StacksOf` · `RemainingOf`) · `DroneCombat.TryGetStats(cell, out UnitStats)` · `SummonController.CurrentCost` = 견적 값. 선택 대기 · 가이드 hold 는 같은 `IsPrepHeld` (선택 중 Enter · 소환 · 집기 막힘)
 - `GameLoop.SetPrepHold(bool) → bool` · `IsPrepHeld` (G12) — Prep 에서만 true 받음 (그 밖엔 false 반환), 잡혀 있으면 준비 시간 안 줄고 `PrepTick` 안 옴 · 소환 · 드래그 · 머지 · 일시정지 그대로
 - `GameLoop.RequestStartWave()` · `IsPrep` · `PrepRemaining` (G11) — Prep 에서만 바로 웨이브 시작, Enter (숫자패드 포함). 그 밖 상태는 무시
 - 진짜 소환 버튼은 `SummonController.RequestSummon()` 을 부른다 (G03)

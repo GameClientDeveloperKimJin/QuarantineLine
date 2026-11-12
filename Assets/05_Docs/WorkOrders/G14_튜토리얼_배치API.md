@@ -13,6 +13,8 @@
 - `PlaceTutorialDrone(DroneType type, int grade, int cell) → bool` — 빈 칸에 코인 · 소환 횟수 · 비용 변화 없이 배치, 평소 `DroneSpawned` 발행 (뷰 · 연출 그대로). Prep 에서만
 - `ContaminateForTutorial(int cell, float duration) → bool` — 그 칸 오염 (평소 `CellContaminated` 발행). Prep 에서만, 준비 시간 hold 중엔 오염 시간도 멈춤 (튜토리얼이 설명하는 동안 마르지 않게) — 어렵거나 Core 변경이 필요하면 보고
 - 읽기: 칸 → 화면 사각형 계산은 R4 가 `GridSpace` 로 — R3 할 일 아님
+- `SetTutorialKeyLock(bool)` (S3 요청 · R1 승인) — 잠긴 동안 Enter (바로 시작) · Esc (휴게) **키 입력만** 무시, 직접 호출 · 포커스 잃음 휴게는 그대로, Restart · 타이틀 · 판 끝 때 해제
+- **Core 예외 (R1 승인)**: `GridModel.Contaminate(int, float)` · `Tick(dt, contaminationDt)` 덧붙이기 — hold 중 튜토리얼 오염 안 마름, 머지 잠금은 흐름
 - 일반 판에선 부르지 않으면 아무 영향 없음
 
 ## 테스트 (관련 클래스만)

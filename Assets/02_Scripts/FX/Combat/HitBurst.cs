@@ -80,6 +80,11 @@ namespace QL.FX.Combat
         /// <param name="bitCount">이번 조각 수 (프리팹 개수까지)</param>
         internal void Play(Vector3 foot, float scale, Vector3 toward, Quaternion cameraRotation, Vector3 toCamera,
             int bitCount, Color color, float duration, FxConfig fx)
+            => Play(foot, fx.hitImpactHeight * scale, scale, toward, cameraRotation, toCamera, bitCount, color, duration, fx);
+
+        /// <param name="height">이펙트 중심 높이 (발 위, 월드). U24b: 흡입 · 소각 = 점액 몸 중앙 (Renderer.bounds.center)</param>
+        internal void Play(Vector3 foot, float height, float scale, Vector3 toward, Quaternion cameraRotation, Vector3 toCamera,
+            int bitCount, Color color, float duration, FxConfig fx)
         {
             _fx = fx;
             _foot = foot;
@@ -88,7 +93,7 @@ namespace QL.FX.Combat
             _right = cameraRotation * Vector3.right;
             _up = cameraRotation * Vector3.up;
             _forward = cameraRotation * Vector3.forward;
-            _center = foot + Vector3.up * (fx.hitImpactHeight * scale) + toCamera * (fx.hitImpactCameraOffset * scale);
+            _center = foot + Vector3.up * height + toCamera * (fx.hitImpactCameraOffset * scale);
             _color = color;
             _duration = Mathf.Max(0.01f, duration);
             _elapsed = 0f;

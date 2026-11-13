@@ -1,4 +1,5 @@
 using QL.Core;
+using QL.FX.Alert;
 using QL.FX.Motion;
 using QL.Game;
 using QL.Game.Drones;
@@ -29,6 +30,8 @@ namespace QL.FX.Combat
         [SerializeField] private FxPool pool;
         [Tooltip("드론 위치 (방울 방향 · 등급). 비어 있으면 처음 한 번 찾는다")]
         [SerializeField] private DroneBoard board;
+        [Tooltip("점액 렌더러 캐시 (흡입 · 소각 몸 중앙 높이). 비어 있으면 Start 에 한 번 찾는다")]
+        [SerializeField] private HitFlashFx hitFlash;
         [Tooltip("DroneType 순서 — 흡입 · 소각 · 냉각")]
         [SerializeField] private HitBurst suctionPrefab;
         [SerializeField] private HitBurst plasmaPrefab;
@@ -115,6 +118,7 @@ namespace QL.FX.Combat
         private void Start()
         {
             EnsureBoard(); // 웨이브 중 첫 타격에 찾지 않게
+            if (hitFlash == null) hitFlash = FindAnyObjectByType<HitFlashFx>();
         }
 
         private void OnDamaged(SlimeView view, int damage, DroneType source)
@@ -158,11 +162,19 @@ namespace QL.FX.Combat
             Quaternion rot = cam != null ? cam.transform.rotation : Quaternion.identity;
             Vector3 toCam = cam != null ? (cam.transform.position - foot).normalized : Vector3.zero;
 
+            // U24b: 흡입 · 소각 = 점액 몸 중앙 (렌더러 bounds — 스쿼시 · 크기 반영). 냉각 = 발밑 물결이라 기존 높이 그대로
+            float height = fx.hitImpactHeight * scale;
+            if (source != DroneType.Cryo && hitFlash != null)
+            {
+                Renderer r = hitFlash.RendererOf(view);
+                if (r != null) height = Mathf.Max(0f, r.bounds.center.y - foot.y);
+            }
+
             int k = (int)source;
             HitBurst item = slots[_next[k]];
             _next[k] = (_next[k] + 1) % slots.Length;
             item.Serial = ++_serial;
-            item.Play(foot, scale, toward, rot, toCam, count, color, duration, fx);
+            item.Play(foot, height, scale, toward, rot, toCam, count, color, duration, fx);
         }
 
         private void Update()

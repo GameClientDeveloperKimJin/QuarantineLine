@@ -332,6 +332,8 @@ namespace QL.UI.Screens
             QuitRequested = true;
 #if UNITY_EDITOR
             if (!EditorQuitSuppressed) UnityEditor.EditorApplication.isPlaying = false;
+#elif UNITY_WEBGL
+            SceneManager.LoadScene(0); // B01 — 웹은 종료 불가 → 타이틀로
 #else
             Application.Quit();
 #endif

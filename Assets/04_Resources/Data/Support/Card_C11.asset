@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: "\uACB0\uD569 \uC7A5\uB824\uAE08"
   category: 3
   icon: {fileID: 21300000, guid: d03d303e3cdcb65468349f288a506fce, type: 3}
-  description: "\uBA38\uC9C0\uD560 \uB54C\uB9C8\uB2E4 \uCF54\uC778 {value}"
+  description: "\uBA38\uC9C0\uD560 \uB54C\uB9C8\uB2E4 \uC815\uC81C \uC810\uC561 {value}"
   effects:
   - kind: 0
     stat: 7

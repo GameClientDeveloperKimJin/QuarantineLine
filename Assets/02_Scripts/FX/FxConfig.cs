@@ -1015,7 +1015,7 @@ namespace QL.FX
         public string supportTipGradePrefix = "{0}등급 ";
         public string[] supportDroneNames = { "흡입", "소각", "냉각" };
         public string supportTipKillFormat = "점액 처치 보상 {0} → {1}";
-        public string supportTipMergeFormat = "머지 1회 코인 +{0}";
+        public string supportTipMergeFormat = "머지 1회 정제 점액 +{0}";
         [Tooltip("카드별 손질 — 큰 수치 · 배지 문구 (비우면 자동: 큰 수치 = {value} 값, 배지 = 웨이브 한정만)")]
         public SupportCardLook[] supportCardLooks =
         {

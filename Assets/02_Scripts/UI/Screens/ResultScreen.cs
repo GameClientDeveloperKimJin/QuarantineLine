@@ -83,7 +83,7 @@ namespace QL.UI.Screens
         [SerializeField] private TMP_Text infoLabelText;
         [SerializeField] private TMP_Text infoValueText;
         [SerializeField] private string bonusLabel = "웨이브 클리어 보너스";
-        [SerializeField] private string bonusFormat = "+{0} 코인";
+        [SerializeField] private string bonusFormat = "+{0} 정제 점액";
         [SerializeField] private string laneLabel = "많이 뚫린 레인";
         [SerializeField] private string laneFormat = "{0}레인";
         [SerializeField] private string noLaneText = "없음";

@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0f1bfdbf2ee520d428e88b545420e0d9, type: 3}
-  m_Name: 
+  m_Name: TutorialSteps
   m_EditorClassIdentifier: QL.UI::QL.UI.Data.TutorialSteps
   speaker: "\uBC15 \uB300\uB9AC \xB7 \uAD00\uC81C\uC2E4"
   nextLabel: "\uB2E4\uC74C"
@@ -55,10 +55,11 @@ MonoBehaviour:
     setup: 0
     side: 0
     position: {x: 0, y: 0}
-  - title: "\uC791\uC5C5 \uD604\uD669 \xB7 \uBCF4\uAE09 \uCF54\uC778"
+  - title: "\uC791\uC5C5 \uD604\uD669 \xB7 \uC815\uC81C \uC810\uC561"
     body: "\uC6E8\uC774\uBE0C n/3 \xB7 \uB0A8\uC740 \uC810\uC561, 3\uC6E8\uC774\uBE0C\uB97C
-      \uB9C9\uC73C\uBA74 \uD1F4\uADFC. \uCF54\uC778\uC740 \uCC98\uCE58 \xB7 \uC6E8\uC774\uBE0C
-      \uC218\uB2F9\uC73C\uB85C \uBC95\uB2C8\uB2E4."
+      \uB9C9\uC73C\uBA74 \uD1F4\uADFC. \uCC98\uCE58\uD55C \uC810\uC561\uC740 \uC815\uC81C\uB3FC
+      \uC815\uC81C \uC810\uC561\uC73C\uB85C \uB4E4\uC5B4\uC640\uC694 (\uC6E8\uC774\uBE0C
+      \uC218\uB2F9\uB3C4)."
     target: 4
     frameOnly: 5
     advance: 0
@@ -66,8 +67,8 @@ MonoBehaviour:
     side: 0
     position: {x: 0, y: 0}
   - title: "\uB4DC\uB860 \uD22C\uC785"
-    body: "\uCF54\uC778\uC73C\uB85C \uB4DC\uB860\uC744 \uD22C\uC785\uD574\uC694 (Space).
-      \uD22C\uC785\uD560\uC218\uB85D \uBE44\uC2F8\uC9C0\uACE0 \uC885\uB958\uB294
+    body: "\uC815\uC81C \uC810\uC561\uC73C\uB85C \uB4DC\uB860\uC744 \uD22C\uC785\uD574\uC694
+      (Space). \uD22C\uC785\uD560\uC218\uB85D \uBE44\uC2F8\uC9C0\uACE0 \uC885\uB958\uB294
       \uBB34\uC791\uC704\uC785\uB2C8\uB2E4."
     target: 6
     frameOnly: 99

@@ -328,7 +328,7 @@ MonoBehaviour:
   clearBannerOutAt: 1.5
   clearBannerOutDuration: 0.25
   coinGainFormat: +{0}
-  coinGainColor: {r: 0.62, g: 0.95, b: 0.36, a: 1}
+  coinGainColor: {r: 0.43137255, g: 1, b: 0.3137255, a: 1}
   coinGainInDuration: 0.1
   coinGainHoldDuration: 0.9
   coinGainOutDuration: 0.3
@@ -608,7 +608,7 @@ MonoBehaviour:
   - "\uC18C\uAC01"
   - "\uB0C9\uAC01"
   supportTipKillFormat: "\uC810\uC561 \uCC98\uCE58 \uBCF4\uC0C1 {0} \u2192 {1}"
-  supportTipMergeFormat: "\uBA38\uC9C0 1\uD68C \uCF54\uC778 +{0}"
+  supportTipMergeFormat: "\uBA38\uC9C0 1\uD68C \uC815\uC81C \uC810\uC561 +{0}"
   supportCardLooks:
   - id: C03
     big: "+0.5\uCD08"

@@ -1,7 +1,7 @@
 {
     "name": "QL.Audio",
     "rootNamespace": "QL.Audio",
-    "references": ["QL.Game", "QL.Core"],
+    "references": ["QL.Game", "QL.Core", "QL.UI", "UnityEngine.UI"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

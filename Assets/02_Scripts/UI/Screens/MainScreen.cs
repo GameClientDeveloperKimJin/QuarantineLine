@@ -115,7 +115,7 @@ namespace QL.UI.Screens
             _rec.Goto(time, true);
         }
 
-        /// <summary>출근하기 다음 씬 — M01 이 이 한 줄만 「처음이면 Intro」 로 바꾼다.</summary>
+        /// <summary>출근하기 다음 씬 — U23: 처음이면 Intro (QL.IntroSeen), 아니면 Game.</summary>
         public string NextSceneName()
         {
             return PlayerPrefs.GetInt(IntroScreen.IntroSeenKey, 0) == 0 ? IntroScreen.SceneName : gameSceneName;

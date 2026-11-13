@@ -37,11 +37,16 @@ namespace QL.Tests.PlayMode.UI
 
         private MainScreen _screen;
         private GuidePrefsGuard _guidePrefs;
+        private bool _hadIntroSeen;   // U23 — QL.IntroSeen 원래 있었나
+        private int _introSeenValue;  // U23 — 원래 값
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
             _guidePrefs = GuidePrefsGuard.Save(); // F03 — QL.GuideDone 원복
+            _hadIntroSeen = PlayerPrefs.HasKey(IntroScreen.IntroSeenKey); // U23 — 인트로 본 상태로 고정 (출근하기 = Game)
+            _introSeenValue = PlayerPrefs.GetInt(IntroScreen.IntroSeenKey, 0);
+            PlayerPrefs.SetInt(IntroScreen.IntroSeenKey, 1);
 #if UNITY_EDITOR
             MainScreen.EditorQuitSuppressed = true;
 #endif
@@ -53,6 +58,9 @@ namespace QL.Tests.PlayMode.UI
         public IEnumerator TearDown()
         {
             _guidePrefs.Restore();
+            if (_hadIntroSeen) PlayerPrefs.SetInt(IntroScreen.IntroSeenKey, _introSeenValue); // U23 — 원래 값으로
+            else PlayerPrefs.DeleteKey(IntroScreen.IntroSeenKey);
+            PlayerPrefs.Save();
 #if UNITY_EDITOR
             MainScreen.EditorQuitSuppressed = false;
             UnityEditor.PlayModeWindow.SetCustomRenderingResolution(1920, 1080, "U20 MainScreenTests");

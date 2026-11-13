@@ -1,0 +1,71 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3900ef9409f9b1c42b76fa552e220a3c, type: 3}
+  m_Name: IntroCutData
+  m_EditorClassIdentifier: QL.UI::QL.UI.Data.IntroCutData
+  cuts:
+  - image: {fileID: 21300000, guid: 2a0508c840f844f4980fcc6c11563c4c, type: 3}
+    caption: "\uC785\uC0AC\uB97C \uCD95\uD558\uD569\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 506d61ea5f069af439bc7ff72c41a60b, type: 3}
+    caption: "C.C.C.\uB294 \uC6B0\uC8FC \uC815\uAC70\uC7A5 \uACF3\uACF3\uC744 \uCCAD\uC18C\uD558\uB294
+      \uD68C\uC0AC\uC785\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 9332feaf8d0853c45a61392bbf7afc77, type: 3}
+    caption: "\uADF8\uB7F0\uB370 \uCD5C\uADFC, \uD654\uBB3C\uC5D0\uC11C \uC815\uCCB4\uBD88\uBA85\uC758
+      \uC810\uC561\uC774 \uC0C8\uACE0 \uC788\uC2B5\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 0f12513d7a5191d45ae1a30d4f219abf, type: 3}
+    caption: "\uC810\uC561\uC740 \uB2E4\uC12F \uAC08\uB798 \uD1B5\uB85C\uB97C \uB530\uB77C
+      \uACA9\uB9AC \uD574\uCE58\uB85C \uBAB0\uB824\uC635\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 079f058df240c644ca8be6752d7bf9d2, type: 3}
+    caption: "\uC810\uC561\uC774 \uD574\uCE58\uB97C \uB118\uC73C\uBA74 \uC815\uAC70\uC7A5
+      \uC804\uCCB4\uAC00 \uC624\uC5FC\uB429\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 9349c05e844885049aafaa26af60fb02, type: 3}
+    caption: "\uBCF4\uAE09 \uCF54\uC778\uC73C\uB85C \uBE48 \uCE78\uC5D0 \uCCAD\uC18C
+      \uB4DC\uB860\uC744 \uD22C\uC785\uD558\uC138\uC694."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 03ed9b20a04f3794aa3ce9937a0558c6, type: 3}
+    caption: "\uD761\uC785 \uB4DC\uB860 \u2014 \uC810\uC561 \uD558\uB098\uB97C \uBE60\uB974\uAC8C
+      \uBE68\uC544\uB4E4\uC785\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 10c7f270628840145a2f87174e5433cf, type: 3}
+    caption: "\uD50C\uB77C\uC988\uB9C8 \uC18C\uAC01 \uB4DC\uB860 \u2014 \uBD80\uCC44\uAF34\uB85C
+      \uB113\uAC8C \uD0DC\uC6C1\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 8bb542a7704c6fe4190cd345c651350c, type: 3}
+    caption: "\uB0C9\uAC01 \uBD84\uC0AC \uB4DC\uB860 \u2014 \uC810\uC561\uC744 \uC5BC\uB824
+      \uB290\uB9AC\uAC8C \uB9CC\uB4ED\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: e4a4344d03545c743abae3d4473b10e8, type: 3}
+    caption: "\uAC19\uC740 \uC885\uB958 \xB7 \uAC19\uC740 \uB4F1\uAE09 \uB4DC\uB860\uC744
+      \uACB9\uCE58\uBA74 \uD55C \uB4F1\uAE09 \uC704\uB85C \uD569\uCCD0\uC9D1\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: faa20c9126131a348a224ecfca0fd8f1, type: 3}
+    caption: "\uC6E8\uC774\uBE0C \uD6C4\uBC18\uC5D4 \uD06C\uACE0 \uB2E8\uB2E8\uD55C
+      \uBCC0\uC774 \uC810\uC561\uC774 \uB098\uD0C0\uB0A9\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 6bfa4e9e7d4c790418d8c85f97e995b4, type: 3}
+    caption: "\uC6E8\uC774\uBE0C\uB97C \uB9C9\uC744 \uB54C\uB9C8\uB2E4 \uC5C5\uBB34
+      \uC9C0\uC6D0 \uC2E0\uCCAD\uC11C \uD55C \uC7A5\uC774 \uC2B9\uC778\uB429\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: ce825c958ccfa4846a11d89e351b351f, type: 3}
+    caption: "\uB9C8\uC9C0\uB9C9 \uC6E8\uC774\uBE0C\uAE4C\uC9C0 \uBC84\uD2F0\uBA74
+      \uACA9\uB9AC \uC131\uACF5."
+    sfx: {fileID: 0}
+  - image: {fileID: 21300000, guid: 95cadcc371b06464698b6a747d3ef453, type: 3}
+    caption: "\uACA9\uB9AC 1\uD300, \uCCAB \uCD9C\uADFC\uC785\uB2C8\uB2E4."
+    sfx: {fileID: 0}
+  skipLabel: "\uAC74\uB108\uB6F0\uAE30"
+  progressFormat: '{0} / {1}'

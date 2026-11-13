@@ -18,6 +18,7 @@ namespace QL.FX
     /// U15: 작업 지시서 — 시퀀스 시점 (슬롯 · 출력 · 흔들림 · 도장 · Punch · 카메라 · 흡수) · 웨이브 패널 Punch (문구는 WaveOrderText SO).
     /// U16: 관제실 메신저 — 쿨다운 · 입력 중 · 말풍선 팝 / 밀림 / 접힘 · 레인 핑 링 (대사 · 우선순위 · 핑 여부는 OpsLineTable SO).
     /// O03: 오염 웅덩이 번짐 · 출렁임 · 튐 방울 · 오염 칸 드론 링 흐리게 · 타이머 말풍선 · 청소 충격파 링 · 튐 / 마름.
+    /// U23: 인트로 그림 컷 — 크로스페이드 · 줌인 · 자막 타자 · 자동 넘김 · 시작 노이즈 · 끝 / 건너뛰기 페이드 · 자막 띠 (그림 · 자막은 IntroCutData SO).
     /// (U06 웨이브 경고 배너 수치는 U15 에서 배너와 함께 지움 — 웨이브 시작 알림 = 작업 지시서)
     /// </summary>
     [CreateAssetMenu(menuName = "QL/FX Config", fileName = "FxConfig")]
@@ -891,6 +892,32 @@ namespace QL.FX
         public float mainStartPunch = 0.12f;
         [Min(0f)] public float mainStartPunchDuration = 0.2f;
         [Min(0f)] public float mainExitFadeDuration = 0.4f;
+
+        [Header("U23 인트로 그림 컷 (Intro.unity — IntroScreen) · 실제 시간 SetUpdate(true) · 캔버스 px = 1920×1080 기준")]
+        [Tooltip("컷 사이 크로스페이드 (초) — 새 그림이 위에서 0 → 1")]
+        [Min(0f)] public float introCrossfadeDuration = 0.4f;
+        [Tooltip("컷마다 아주 느린 줌인 — 크기 처음 → 끝 · 시간 (초, 한 컷 길이쯤. 더 오래 머물면 끝 크기에서 멈춤)")]
+        public float introZoomFrom = 1f;
+        public float introZoomTo = 1.05f;
+        [Min(0.01f)] public float introZoomDuration = 3.5f;
+        [Tooltip("자막 한 글자씩 — 길이와 상관없이 이 시간 안에 다 나옴 (초, 0 = 바로)")]
+        [Min(0f)] public float introTypeDuration = 0.6f;
+        [Tooltip("자막이 다 나온 뒤 자동으로 다음 컷까지 (초)")]
+        [Min(0f)] public float introAutoAdvanceDelay = 2.5f;
+        [Tooltip("1번 컷 시작 화면 노이즈 — 검은 덮개 깜빡이며 걷힘: 전체 시간 (초) · 깜빡임 수 · 다시 어두워지는 알파")]
+        [Min(0f)] public float introNoiseDuration = 0.3f;
+        [Min(1)] public int introNoiseFlickers = 3;
+        [Range(0f, 1f)] public float introNoiseAlpha = 0.85f;
+        [Tooltip("14번 컷 끝 검게 페이드 → Game (초) · 건너뛰기 (버튼 · ESC) 페이드 (초, 0 = 바로)")]
+        [Min(0f)] public float introEndFadeDuration = 0.8f;
+        [Min(0f)] public float introSkipFadeDuration = 0.2f;
+        [Tooltip("자막 — 글자 크기 (S3 규칙 8 · 지시서 40~46) · 색 · 반투명 검은 띠 알파")]
+        [Min(24f)] public float introCaptionFontSize = 42f;   // U22: Pretendard SemiBold (문장)
+        public Color introCaptionColor = Color.white;
+        [Range(0f, 1f)] public float introCaptionBandAlpha = 0.6f;
+        [Tooltip("「3 / 14」 진행 표시 — 켬 · 글자 크기")]
+        public bool introShowProgress = true;
+        [Min(24f)] public float introProgressFontSize = 24f;  // U22: Pretendard SemiBold
 
         [Header("U19 업무 지원 카드 — 선택 화면 등장 (실제 시간 SetUpdate(true) · 선택 중엔 준비 시간이 이미 멈춰 있음)")]
         [Tooltip("어둡게 끝 알파 (Linear — 기획서 0.5 느낌. U12 · U13 의 0.85 규칙보다 조금 진하게: 밝은 HUD 패널 위에 카드가 뜨므로). 색 RGB = breakDimColor")]

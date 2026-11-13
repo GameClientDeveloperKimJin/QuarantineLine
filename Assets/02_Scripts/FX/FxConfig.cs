@@ -18,6 +18,7 @@ namespace QL.FX
     /// U15: 작업 지시서 — 시퀀스 시점 (슬롯 · 출력 · 흔들림 · 도장 · Punch · 카메라 · 흡수) · 웨이브 패널 Punch (문구는 WaveOrderText SO).
     /// U16: 관제실 메신저 — 쿨다운 · 입력 중 · 말풍선 팝 / 밀림 / 접힘 · 레인 핑 링 (대사 · 우선순위 · 핑 여부는 OpsLineTable SO).
     /// O03: 오염 웅덩이 번짐 · 출렁임 · 튐 방울 · 오염 칸 드론 링 흐리게 · 타이머 말풍선 · 청소 충격파 링 · 튐 / 마름.
+    /// U24: 드론별 피격 (흡입 소용돌이 · 방울 / 소각 폭발 · 불씨 · 연기 / 냉각 빙하 물결 · 얼음 조각) · 감속 서리 원 · 빙결 껍질 · 깨짐 · 풀 상한 · 쿨다운.
     /// U23: 인트로 그림 컷 — 크로스페이드 · 줌인 · 자막 타자 · 자동 넘김 · 시작 노이즈 · 끝 / 건너뛰기 페이드 · 자막 띠 (그림 · 자막은 IntroCutData SO).
     /// (U06 웨이브 경고 배너 수치는 U15 에서 배너와 함께 지움 — 웨이브 시작 알림 = 작업 지시서)
     /// </summary>
@@ -1102,6 +1103,101 @@ namespace QL.FX
         public Vector2 tutorialSupportHintOffset = new Vector2(0f, 330f);
         [Tooltip("튜토리얼 중 HUD 카운트다운 「교육 중」 글자 위치 = 평소 자리 + 이 값 (px) — 화면 가운데 말풍선을 비켜 해치 패널 아래로")]
         public Vector2 tutorialHeldCountdownOffset = new Vector2(0f, 250f);
+
+        [Header("U24 드론별 피격 — 공통 (HitImpactFx · CombatFx.prefab, 풀 · 게임 시간 · 크기는 칸 × 점액 크기)")]
+        [Tooltip("종류별 동시 상한 (흡입 · 소각 · 냉각 각각) — 넘치면 가장 오래된 것부터 다시 씀")]
+        [Min(1)] public int hitImpactPoolPerType = 24;
+        [Tooltip("같은 점액 · 같은 종류 피격은 이 시간(초) 안에 다시 띄우지 않는다 (흡입 고속 공격 도배 방지)")]
+        [Min(0f)] public float hitImpactCooldown = 0.15f;
+        [Tooltip("쿨다운 기록 칸 수 (원형 — 쿨다운 안의 피격 수보다 넉넉히)")]
+        [Min(8)] public int hitImpactCooldownSlots = 96;
+        [Tooltip("이펙트 중심 높이 (점액 발 위, 칸 × 점액 크기) · 카메라 쪽으로 당기는 거리 (점액 몸에 가리지 않게)")]
+        [Min(0f)] public float hitImpactHeight = 0.45f;
+        [Min(0f)] public float hitImpactCameraOffset = 0.35f;
+        [Tooltip("공격한 드론이 3등급이면 크기 × 이 값 · 입자 수 × (1 + 이 값)")]
+        [Min(1f)] public float hitGrade3Scale = 1.3f;
+        [Min(0f)] public float hitGrade3CountBonus = 0.5f;
+        [Tooltip("종류색 (A17 — 흡입 #2EE0E0 · 소각 #FF9A2E · 냉각 #7CC8FF)")]
+        public Color hitSuctionColor = new Color(0.180f, 0.878f, 0.878f, 1f);
+        public Color hitPlasmaColor = new Color(1f, 0.604f, 0.180f, 1f);
+        public Color hitCryoColor = new Color(0.486f, 0.784f, 1f, 1f);
+
+        [Header("U24 흡입 — FX_Suck_Swirl 돌며 줄어듦 + FX_Goo_Droplet 이 드론 쪽으로 뜯겨 나감")]
+        [Min(0.05f)] public float suckDuration = 0.42f;
+        [Tooltip("소용돌이 지름 시작 → 끝 (칸 × 점액 크기) · 회전 속도 (도/초, 가운데로 감기는 방향) · 알파")]
+        [Min(0f)] public float suckSwirlSizeFrom = 1.5f;
+        [Min(0f)] public float suckSwirlSizeTo = 0.25f;
+        public float suckSwirlSpin = 900f;
+        [Range(0f, 1f)] public float suckSwirlAlpha = 1f;
+        [Tooltip("방울 수 (3등급이면 늘어남, 프리팹 방울 수까지) · 크기 · 드론 쪽으로 날아가는 거리 (칸) · 좌우 퍼짐 (도) · 위로 뜨는 양 (칸)")]
+        [Min(0)] public int suckDropletCount = 4;
+        [Min(0f)] public float suckDropletSize = 0.28f;
+        [Min(0f)] public float suckDropletTravel = 1.1f;
+        [Range(0f, 90f)] public float suckDropletSpread = 28f;
+        [Min(0f)] public float suckDropletLift = 0.25f;
+        [Tooltip("방울마다 출발 늦춤 최대 (수명 비율) — 하나씩 뜯겨 나가게")]
+        [Range(0f, 0.6f)] public float suckDropletStagger = 0.3f;
+
+        [Header("U24 소각 — FX_Plasma_Burst 펑 + FX_Ember 위로 튐 + FX_Smoke_Puff 회색 한 덩이")]
+        [Min(0.05f)] public float plasmaDuration = 0.5f;
+        [Tooltip("폭발 지름 시작 → 끝 (칸 × 점액 크기) · 보이는 시간 (초) · 알파")]
+        [Min(0f)] public float plasmaBurstSizeFrom = 0.5f;
+        [Min(0f)] public float plasmaBurstSizeTo = 1.5f;
+        [Min(0.02f)] public float plasmaBurstTime = 0.22f;
+        [Range(0f, 1f)] public float plasmaBurstAlpha = 1f;
+        [Tooltip("불씨 수 · 크기 · 처음 위로 속도 (칸/초) · 좌우 속도 최대 (칸/초) · 중력 (칸/초²)")]
+        [Min(0)] public int plasmaEmberCount = 5;
+        [Min(0f)] public float plasmaEmberSize = 0.16f;
+        [Min(0f)] public float plasmaEmberUpSpeed = 3.2f;
+        [Min(0f)] public float plasmaEmberSideSpeed = 1.6f;
+        [Min(0f)] public float plasmaEmberGravity = 7f;
+        [Tooltip("연기 색 (알파 블렌드 회색) · 지름 시작 → 끝 · 솟는 높이 (칸) · 늦춤 (초)")]
+        public Color plasmaSmokeColor = new Color(0.42f, 0.42f, 0.44f, 0.6f);
+        [Min(0f)] public float plasmaSmokeSizeFrom = 0.5f;
+        [Min(0f)] public float plasmaSmokeSizeTo = 1.1f;
+        [Min(0f)] public float plasmaSmokeRise = 0.55f;
+        [Min(0f)] public float plasmaSmokeDelay = 0.06f;
+
+        [Header("U24 냉각 — FX_Ice_Wave 발밑 바닥에서 고리로 퍼짐 (빙하 물결) + FX_Frost_Burst 반짝 + FX_Ice_Shard 튐")]
+        [Min(0.05f)] public float cryoDuration = 0.5f;
+        [Tooltip("물결 지름 시작 → 끝 (칸 × 점액 크기 — 끝 = 점액 지름의 약 2배 반경) · 알파 · 사라지기 시작 (수명 비율)")]
+        [Min(0f)] public float cryoWaveSizeFrom = 0.5f;
+        [Min(0f)] public float cryoWaveSizeTo = 2.4f;
+        [Range(0f, 1f)] public float cryoWaveAlpha = 1f;
+        [Range(0f, 1f)] public float cryoWaveFadeStart = 0.45f;
+        [Tooltip("가운데 서리 반짝 (FX_Frost_Burst) 지름 · 보이는 시간 (초) · 알파")]
+        [Min(0f)] public float cryoFlashSize = 0.9f;
+        [Min(0.02f)] public float cryoFlashTime = 0.16f;
+        [Range(0f, 1f)] public float cryoFlashAlpha = 0.8f;
+        [Tooltip("얼음 조각 수 · 크기 · 바깥 속도 (칸/초) · 위로 속도 (칸/초) · 중력 (칸/초²) · 회전 (도/초)")]
+        [Min(0)] public int cryoShardCount = 5;
+        [Min(0f)] public float cryoShardSize = 0.2f;
+        [Min(0f)] public float cryoShardOutSpeed = 2.2f;
+        [Min(0f)] public float cryoShardUpSpeed = 2.4f;
+        [Min(0f)] public float cryoShardGravity = 8f;
+        public float cryoShardSpin = 540f;
+
+        [Header("U24 감속 · 빙결 상태 (FrostFx — SlimeCombat.SlowRate · Frozen, LateUpdate 위치만 따라감)")]
+        [Tooltip("서리 원 (FX_Frost_Ground, 감속 · 빙결 중 발밑) 동시 상한 · 얼음 껍질 (FX_Ice_Crust, 빙결 중) 동시 상한 · 깨짐 동시 상한 · 추적 점액 수")]
+        [Min(1)] public int frostGroundPoolSize = 32;
+        [Min(1)] public int frostCrustPoolSize = 16;
+        [Min(1)] public int frostShatterPoolSize = 16;
+        [Min(1)] public int frostTrackCapacity = 128;
+        [Tooltip("서리 원 지름 (칸 × 점액 크기) · 알파 · 숨쉬기 세기 (비율) · 숨쉬기 속도 (rad/s)")]
+        [Min(0f)] public float frostGroundSize = 1.5f;
+        [Range(0f, 1f)] public float frostGroundAlpha = 0.75f;
+        [Range(0f, 1f)] public float frostGroundPulse = 0.08f;
+        [Min(0f)] public float frostGroundPulseSpeed = 5f;
+        [Tooltip("점액 색을 종류색(냉각) 쪽으로 섞는 비율 — 감속 · 빙결 (MPB _BaseColor, 히트 플래시 중엔 쉼)")]
+        [Range(0f, 1f)] public float frostSlowTint = 0.3f;
+        [Range(0f, 1f)] public float frostFrozenTint = 0.55f;
+        [Tooltip("얼음 껍질 쿼드 한 변 (칸 × 점액 크기) · 알파 · 바닥 = 아래 가장자리 (그림 아래 투명 여백 비율)")]
+        [Min(0f)] public float frostCrustSize = 1.35f;
+        [Range(0f, 1f)] public float frostCrustAlpha = 0.9f;
+        [Range(0f, 0.5f)] public float frostCrustBottomMargin = 0.14f;
+        [Tooltip("빙결이 풀릴 때 얼음 조각 깨짐 — 시간 (초) · 조각 수 (프리팹 조각 수까지)")]
+        [Min(0.05f)] public float frostShatterDuration = 0.4f;
+        [Min(0)] public int frostShatterCount = 6;
 
         /// <summary>이펙트 종류별 풀 크기. 모르는 종류는 1.</summary>
         public int PoolSizeOf(FxKind kind)

@@ -1,5 +1,55 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1106325626660062656
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2943321535349714644}
+  - component: {fileID: 5974625765397295074}
+  m_Layer: 0
+  m_Name: HitImpactFx
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2943321535349714644
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106325626660062656}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1021255027963242266}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5974625765397295074
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1106325626660062656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c7bd4b81eb74d04690c46b78db2a8ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Combat.HitImpactFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  pool: {fileID: 0}
+  board: {fileID: 0}
+  suctionPrefab: {fileID: 5533066588602164936, guid: 8bb454058067d454ebe20fe9046d8475, type: 3}
+  plasmaPrefab: {fileID: 1403025693616308297, guid: 190bc3fcd14a8714db4dc38c212ff9ae, type: 3}
+  cryoPrefab: {fileID: 6506432627415858500, guid: cad6f2533df65754c88d25c3990b7add, type: 3}
 --- !u!1 &3013223916315761345
 GameObject:
   m_ObjectHideFlags: 0
@@ -118,6 +168,8 @@ Transform:
   m_Children:
   - {fileID: 3510557180570350992}
   - {fileID: 6149273010113784949}
+  - {fileID: 2943321535349714644}
+  - {fileID: 6384135483890068587}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7993844475530103913
@@ -186,6 +238,56 @@ MonoBehaviour:
   fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
   pool: {fileID: 0}
   prefab: {fileID: 5556103357208705818, guid: 41e45edac5977f54c9ebe67b553a3d3d, type: 3}
+--- !u!1 &7091589719236219281
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6384135483890068587}
+  - component: {fileID: 5943294762895687518}
+  m_Layer: 0
+  m_Name: FrostFx
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6384135483890068587
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7091589719236219281}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1021255027963242266}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5943294762895687518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7091589719236219281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 95ba66c766920d743ad627c4cd8e2d05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: QL.FX::QL.FX.Combat.FrostFx
+  fx: {fileID: 11400000, guid: 9f25a2a41a8ab724eb99f3eaeb0158da, type: 2}
+  pool: {fileID: 0}
+  hitFlash: {fileID: 0}
+  groundPrefab: {fileID: 3986720873255642021, guid: ada35632afa9c9d4ea275fda45c40ba8, type: 3}
+  crustPrefab: {fileID: 2984059704209250654, guid: bedab53f2a4063a4abfa48ea0900b065, type: 3}
+  shatterPrefab: {fileID: 6141680002750455306, guid: 78d4a5f0fb221c14bb32fd01339da914, type: 3}
 --- !u!1 &8545599636940288289
 GameObject:
   m_ObjectHideFlags: 0

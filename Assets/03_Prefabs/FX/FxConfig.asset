@@ -519,6 +519,22 @@ MonoBehaviour:
   mainStartPunch: 0.12
   mainStartPunchDuration: 0.2
   mainExitFadeDuration: 0.4
+  introCrossfadeDuration: 0.4
+  introZoomFrom: 1
+  introZoomTo: 1.05
+  introZoomDuration: 3.5
+  introTypeDuration: 0.6
+  introAutoAdvanceDelay: 2.5
+  introNoiseDuration: 0.3
+  introNoiseFlickers: 3
+  introNoiseAlpha: 0.85
+  introEndFadeDuration: 0.8
+  introSkipFadeDuration: 0.2
+  introCaptionFontSize: 42
+  introCaptionColor: {r: 1, g: 1, b: 1, a: 1}
+  introCaptionBandAlpha: 0.6
+  introShowProgress: 1
+  introProgressFontSize: 24
   supportDimAlpha: 0.92
   supportDimDuration: 0.2
   supportCardsAt: 0.15
@@ -667,3 +683,68 @@ MonoBehaviour:
   tutorialSkipHoldSeconds: 1
   tutorialSupportHintOffset: {x: 0, y: 330}
   tutorialHeldCountdownOffset: {x: 0, y: 250}
+  hitImpactPoolPerType: 24
+  hitImpactCooldown: 0.15
+  hitImpactCooldownSlots: 96
+  hitImpactHeight: 0.45
+  hitImpactCameraOffset: 0.35
+  hitGrade3Scale: 1.3
+  hitGrade3CountBonus: 0.5
+  hitSuctionColor: {r: 0.18, g: 0.878, b: 0.878, a: 1}
+  hitPlasmaColor: {r: 1, g: 0.604, b: 0.18, a: 1}
+  hitCryoColor: {r: 0.486, g: 0.784, b: 1, a: 1}
+  suckDuration: 0.42
+  suckSwirlSizeFrom: 1.5
+  suckSwirlSizeTo: 0.25
+  suckSwirlSpin: 900
+  suckSwirlAlpha: 1
+  suckDropletCount: 4
+  suckDropletSize: 0.28
+  suckDropletTravel: 1.1
+  suckDropletSpread: 28
+  suckDropletLift: 0.25
+  suckDropletStagger: 0.3
+  plasmaDuration: 0.5
+  plasmaBurstSizeFrom: 0.5
+  plasmaBurstSizeTo: 1.5
+  plasmaBurstTime: 0.22
+  plasmaBurstAlpha: 1
+  plasmaEmberCount: 5
+  plasmaEmberSize: 0.16
+  plasmaEmberUpSpeed: 3.2
+  plasmaEmberSideSpeed: 1.6
+  plasmaEmberGravity: 7
+  plasmaSmokeColor: {r: 0.42, g: 0.42, b: 0.44, a: 0.6}
+  plasmaSmokeSizeFrom: 0.5
+  plasmaSmokeSizeTo: 1.1
+  plasmaSmokeRise: 0.55
+  plasmaSmokeDelay: 0.06
+  cryoDuration: 0.5
+  cryoWaveSizeFrom: 0.5
+  cryoWaveSizeTo: 2.4
+  cryoWaveAlpha: 1
+  cryoWaveFadeStart: 0.45
+  cryoFlashSize: 0.9
+  cryoFlashTime: 0.16
+  cryoFlashAlpha: 0.8
+  cryoShardCount: 5
+  cryoShardSize: 0.2
+  cryoShardOutSpeed: 2.2
+  cryoShardUpSpeed: 2.4
+  cryoShardGravity: 8
+  cryoShardSpin: 540
+  frostGroundPoolSize: 32
+  frostCrustPoolSize: 16
+  frostShatterPoolSize: 16
+  frostTrackCapacity: 128
+  frostGroundSize: 1.5
+  frostGroundAlpha: 0.75
+  frostGroundPulse: 0.08
+  frostGroundPulseSpeed: 5
+  frostSlowTint: 0.3
+  frostFrozenTint: 0.55
+  frostCrustSize: 1.35
+  frostCrustAlpha: 0.9
+  frostCrustBottomMargin: 0.14
+  frostShatterDuration: 0.4
+  frostShatterCount: 6
